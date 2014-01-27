@@ -1,0 +1,22 @@
+#!/sbin/runscript
+# scanbuttond init script for Gentoo
+# copy it to /etc/init.d/scanbuttond
+#
+# Copyright 2005 by Bernhard Stiftner
+# Distributed under the terms of the GNU General Public License v2
+
+depend() {
+	need hotplug
+}
+
+start() {
+	ebegin "Starting scanner button daemon"
+	start-stop-daemon --chuid scanner:scanner --start --quiet --exec /usr/local/bin/scanbuttond
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping scanner button daemon"
+	start-stop-daemon --stop --quiet --exec /usr/local/bin/scanbuttond
+	eend $?
+}

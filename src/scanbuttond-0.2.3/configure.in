@@ -1,0 +1,15 @@
+AC_INIT([scanbuttond], [0.2.3], [root84@users.soureforge.net])
+AC_CONFIG_HEADERS([include/scanbuttond/config.h])
+AM_INIT_AUTOMAKE
+
+AC_DISABLE_STATIC
+
+AC_LANG_C
+AC_PROG_CC
+AC_PROG_LIBTOOL
+
+AC_CHECK_HEADERS(errno.h string.h syslog.h unistd.h dlfcn.h usb.h)
+
+CFLAGS="${CFLAGS} -DCFG_DIR=\$(pkgsysconfdir) -DLIB_DIR=\$(libdir)"
+
+AC_OUTPUT(Makefile contrib/Makefile interface/Makefile backends/Makefile scripts/Makefile)

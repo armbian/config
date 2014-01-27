@@ -1,0 +1,38 @@
+0.2.3, released Feb 17, 2006
+----------------------------
+  * fixed snapscan backend (protocol sync)
+  * added mustek and plustek_umax backends
+  * support for some new scanners
+  * Switched to autoconf/automake
+  * Changed directory/file layout
+
+
+0.2.2, released Jun 6, 2005
+---------------------------
+  * added snapscan backend
+  * added niash backend
+  * support for scanner initialization script
+  * lots of bugs fixed
+  * command line option support
+  * libusb wrapper moved into own dynamic library
+  * scanbuttond now uses dynamic backend loading
+
+
+0.2.1, released Mar 14, 2005
+----------------------------
+  * added plustek and meta backend
+  * added support for more scanners to the epson backend
+  * SIGSEGV bug fixed, scanner hotplugging seems to work now
+  * using /etc/scanbuttond as config file directory
+
+
+0.2, released Dec 31, 2004
+--------------------------
+  * new, modular architecture
+  * support for multiple scanners
+  * several bugfixes
+
+
+0.1, released Oct 17, 2004
+--------------------------
+  * first public version
