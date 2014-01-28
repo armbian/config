@@ -1,0 +1,15 @@
+/etc/dovecot/dovecot.conf
+/etc/cups/
+/etc/transmission-daemon/
+/etc/scanbuttond
+/etc/init.d/scanbuttond
+/etc/init.d/hostapd
+/etc/postfix
+/etc/mysql
+
+service stop dovecot
+service stop cups
+/etc/init.d/scanbuttond stop
+service transmission-daemon stop
+service hostapd stop
+service postfix stop
