@@ -1,0 +1,29 @@
+/etc/dovecot/dovecot.conf
+/etc/cups/
+/etc/transmission-daemon/
+/etc/scanbuttond/
+/etc/init.d/scanbuttond
+/etc/init.d/hostapd
+/etc/postfix/
+/etc/mysql/
+/usr/bin/tv_grab_file
+/home/hts/.hts/tvheadend/
+/etc/samba/
+/etc/modules
+/etc/network/interfaces
+/etc/hostapd.conf
+/etc/init.d/hostapd
+/etc/usbsrvd.conf
+/etc/default/stunnel4
+/etc/stunnel
+
+service stop dovecot
+service stop cups
+service transmission-daemon stop
+service hostapd stop
+service postfix stop
+service tvheadend stop
+service samba stop
+service samba stop
+/etc/init.d/scanbuttond stop
+/etc/init.d/rc.usbsrvd stop
