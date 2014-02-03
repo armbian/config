@@ -119,6 +119,7 @@ install_scaner_and_scanbuttons (){
 apt-get install libusb-dev sane sane-utils
 wget http://wp.psyx.us/wp-content/uploads/2010/10/scanbuttond-0.2.3.genesys.tar.gz
 tar xvfz scanbuttond-0.2.3.genesys.tar.gz
+rm scanbuttond-0.2.3.genesys.tar.gz
 cd scanbuttond-0.2.3.genesys
 chmod +x configure
 ./configure --prefix=/usr --sysconfdir=/etc
@@ -132,7 +133,7 @@ install_ocr (){
 # Install OCR
 # get script from here https://github.com/gkovacs/pdfocr
 wget https://raw2.github.com/gkovacs/pdfocr/master/pdfocr.rb
-cp pdfocr.rb /usr/local/bin/pdfocr
+mv pdfocr.rb /usr/local/bin/pdfocr
 chmod +x /usr/local/bin/pdfocr
 apt-get -y install ruby tesseract-ocr libtiff-tools
 } 
@@ -353,6 +354,7 @@ install_ISPConfig (){
 cd /tmp
 wget http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz
 tar xfz ISPConfig-3-stable.tar.gz
+rm ISPConfig-3-stable.tar.gz
 cd /tmp/ispconfig3_install/install/
 php -q install.php
 } 
