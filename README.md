@@ -1,7 +1,7 @@
 Debian-micro-home-server
 ========================
 
-Samba, TV headend, CUPS, scanner + buttons + OCR, Postfix, Dovecot, Apache, PHP, Mysql install
+Samba, TV headend, CUPS, scanner + buttons + OCR, Postfix, Dovecot, Apache2, PHP, Mysql + phpMyAdmin install
 
 Installation steps
 ------------------
