@@ -116,7 +116,7 @@ service samba restart
 install_scaner_and_scanbuttons (){
 #############################################################################
 #Install Scanner buttons
-apt-get -y install libusb-dev sane sane-utils
+apt-get -y install libusb-dev sane sane-utils libudev-dev
 wget http://wp.psyx.us/wp-content/uploads/2010/10/scanbuttond-0.2.3.genesys.tar.gz
 tar xvfz scanbuttond-0.2.3.genesys.tar.gz
 rm scanbuttond-0.2.3.genesys.tar.gz
