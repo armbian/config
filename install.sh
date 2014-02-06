@@ -139,6 +139,23 @@ apt-get -y install ruby tesseract-ocr libtiff-tools
 } 
 #############################################################################
 
+install_btsync (){
+#############################################################################
+# Install Personal cloud
+# 
+wget http://download.getsyncapp.com/endpoint/btsync/os/linux-arm/track/stable/btsync_arm.tar.gz
+tar xvfz btsync_arm.tar.gz
+mv btsync /usr/local/bin
+ln -sf /lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
+chmod +x /usr/local/bin/btsync
+sed -e 's/exit 0//g' -i /etc/rc.local
+cat >> /etc/rc.local <<"EOF"
+/usr/local/bin/btsync
+exit 0
+EOF
+} 
+#############################################################################
+
 install_DashNTP (){
 #############################################################################
 echo "dash dash/sh boolean false" | debconf-set-selections
