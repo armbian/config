@@ -430,6 +430,7 @@ install_samba
 install_scaner_and_scanbuttons
 install_ocr
 install_cups
+install_btsync
 apt-get -y install tvheadend
 apt-get -y install transmission-cli transmission-common transmission-daemon
 install_ISPConfig
