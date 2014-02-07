@@ -123,7 +123,7 @@ rm scanbuttond-0.2.3.genesys.tar.gz
 cd scanbuttond-0.2.3.genesys
 chmod +x configure
 ./configure --prefix=/usr --sysconfdir=/etc
-make & make install
+make clean & make & make install
 echo "sane-find-scanner" >> /etc/scanbuttond/initscanner.sh
 } 
 #############################################################################
