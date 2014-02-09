@@ -127,6 +127,7 @@ make clean
 make
 make install
 echo "sane-find-scanner" >> /etc/scanbuttond/initscanner.sh
+sed -e 's/exit 0/\/usr\/bin\/scanbuttond\nexit 0/g' -i /etc/rc.local
 } 
 #############################################################################
 
