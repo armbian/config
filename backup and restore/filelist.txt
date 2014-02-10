@@ -1,29 +1,28 @@
 /etc/dovecot/dovecot.conf
-/etc/cups/
-/etc/transmission-daemon/
-/etc/scanbuttond/
+/etc/dovecot/dovecot.pem
+/etc/dovecot/private/dovecot.pem
+/etc/cups
+/etc/fstab
+/etc/transmission-daemon/settings.json
+/etc/scanbuttond
+/etc/apache2
+/etc/dbconfig-common
 /etc/init.d/scanbuttond
 /etc/init.d/hostapd
-/etc/postfix/
-/etc/mysql/
+/etc/postfix
+/etc/rc.local
+/usr/local/bin/.sync
+/etc/mysql/my.cnf
+/etc/default/stunnel4
 /usr/bin/tv_grab_file
-/home/hts/.hts/tvheadend/
-/etc/samba/
+/home/hts/.hts/tvheadend
+/etc/samba/smb.conf
 /etc/modules
 /etc/network/interfaces
 /etc/hostapd.conf
-/etc/init.d/hostapd
 /etc/usbsrvd.conf
 /etc/default/stunnel4
-/etc/stunnel
-
-service stop dovecot
-service stop cups
-service transmission-daemon stop
-service hostapd stop
-service postfix stop
-service tvheadend stop
-service samba stop
-service samba stop
-/etc/init.d/scanbuttond stop
-/etc/init.d/rc.usbsrvd stop
+/etc/stunnel/gmail.conf
+/usr/local/ispconfig/interface/ssl/startssl.chain.class1.server.crt
+/usr/local/ispconfig/interface/ssl/startssl.sub.class1.server.ca.crt
+/root/removecomptorrent.sh
