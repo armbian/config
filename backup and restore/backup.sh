@@ -63,6 +63,7 @@ service postfix stop
 service tvheadend stop
 service samba stop
 /etc/init.d/scanbuttond stop
+/etc/init.d/vpnserver stop
 # backup only minimum 
 tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T filelist.txt --exclude='*.sock'
 #
@@ -74,6 +75,7 @@ service postfix start
 service tvheadend start
 service samba start
 /etc/init.d/scanbuttond start
+/etc/init.d/vpnserver start
 
 echo "";
 echo "************************************";
