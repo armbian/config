@@ -17,7 +17,7 @@ fi
 # What do we need anyway
 apt-get update
 apt-get -y upgrade
-apt-get -y install dnsutils unzip whiptail git build-essential alsa-base alsa-utils stunnel4
+apt-get -y install dnsutils unzip whiptail git build-essential alsa-base alsa-utils stunnel4 html2text
 
 install_basic (){
 #############################################################################
@@ -157,6 +157,65 @@ cat >> /etc/rc.local <<"EOF"
 exit 0
 EOF
 } 
+#############################################################################
+
+install_vpn_server (){
+#############################################################################
+# valid only for ARM installation, script downloads latest stable
+PREFIX="http://www.softether-download.com/files/softether/"
+URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
+SUFIX="${URL/-tree/}"
+DLURL=$PREFIX$URL"/Linux/SoftEther%20VPN%20Server/32bit%20-%20ARM%20legacy%20ABI/softether-vpnserver-$SUFIX-linux-arm-32bit.tar.gz"
+wget $DLURL
+tar xfz softether-vpnserver-$SUFIX-linux-arm-32bit.tar.gz
+rm softether-vpnserver-$SUFIX-linux-arm-32bit.tar.gz
+cd vpnserver
+make i_read_and_agree_the_license_agreement
+cd ..
+mv vpnserver /usr/local
+cd /usr/local/vpnserver/
+chmod 600 *
+chmod 700 vpncmd
+chmod 700 vpnserver
+cat <<EOT > /etc/init.d/vpnserver
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          vpnserver
+# Required-Start:    \$remote_fs \$syslog
+# Required-Stop:     \$remote_fs \$syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time
+# Description:       Enable Softether by daemon.
+### END INIT INFO
+DAEMON=/usr/local/vpnserver/vpnserver
+LOCK=/var/lock/subsys/vpnserver
+test -x $DAEMON || exit 0
+case "\$1" in
+start)
+\$DAEMON start
+touch \$LOCK
+;;
+stop)
+\$DAEMON stop
+rm \$LOCK
+;;
+restart)
+\$DAEMON stop
+sleep 3
+\$DAEMON start
+;;
+*)
+echo "Usage: \$0 {start|stop|restart}"
+exit 1
+esac
+exit 0
+EOT
+chmod 755 /etc/init.d/vpnserver
+mkdir /var/lock/subsys
+update-rc.d vpnserver defaults
+/etc/init.d/vpnserver start
+}
 #############################################################################
 
 install_DashNTP (){
@@ -434,6 +493,7 @@ install_scaner_and_scanbuttons
 install_ocr
 install_cups
 install_btsync
+install_vpn_server
 apt-get -y install tvheadend
 apt-get -y install transmission-cli transmission-common transmission-daemon
 install_ISPConfig
