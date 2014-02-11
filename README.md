@@ -1,7 +1,7 @@
 Debian-micro-home-server
 ========================
 
-Samba, TV headend, Transmission, BitTorrent Sync, CUPS, scanner + buttons + OCR, Postfix, Dovecot, Apache2, PHP, Mysql + phpMyAdmin install, ISPConfig 3
+Samba, TV headend, Transmission, BitTorrent Sync, SoftEther VPN server, CUPS, scanner + buttons + OCR, Postfix, Dovecot, Apache2, PHP, Mysql + phpMyAdmin install, ISPConfig 3
 
 Installation steps
 ------------------
