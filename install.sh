@@ -165,14 +165,14 @@ install_vpn_server (){
 PREFIX="http://www.softether-download.com/files/softether/"
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
 SUFIX="${URL/-tree/}"
-DLURL=$PREFIX$URL"/Linux/SoftEther%20VPN%20Server/32bit%20-%20ARM%20legacy%20ABI/softether-vpnserver-$SUFIX-linux-arm-32bit.tar.gz"
+DLURL=$PREFIX$URL"/Linux/SoftEther%20VPN%20Server/32bit%20-%20ARM%20EABI/softether-vpnserver-$SUFIX-linux-arm_eabi-32bit.tar.gz"
 wget $DLURL
-tar xfz softether-vpnserver-$SUFIX-linux-arm-32bit.tar.gz
-rm softether-vpnserver-$SUFIX-linux-arm-32bit.tar.gz
+tar xfz softether-vpnserver-$SUFIX-linux-arm_eabi-32bit.tar.gz
+rm softether-vpnserver-$SUFIX-linux-arm_eabi-32bit.tar.gz
 cd vpnserver
 make i_read_and_agree_the_license_agreement
 cd ..
-mv vpnserver /usr/local
+cp -R vpnserver /usr/local
 cd /usr/local/vpnserver/
 chmod 600 *
 chmod 700 vpncmd
