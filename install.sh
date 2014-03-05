@@ -189,7 +189,7 @@ cat <<EOT > /etc/init.d/vpnserver
 # Description:       Enable Softether by daemon.
 ### END INIT INFO
 DAEMON=/usr/local/vpnserver/vpnserver
-LOCK=/var/lock/subsys/vpnserver
+LOCK=/var/lock/vpnserver
 test -x $DAEMON || exit 0
 case "\$1" in
 start)
