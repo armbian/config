@@ -343,6 +343,50 @@ apt-get -y install php5-xcache
 }
 #############################################################################
 
+install_NginX (){
+#############################################################################
+#Install NginX, PHP5, phpMyAdmin, FCGI, suExec, Pear, And mcrypt
+
+echo 'phpmyadmin      phpmyadmin/reconfigure-webserver        multiselect' | debconf-set-selections
+echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
+
+apt-get install -y nginx
+/etc/init.d/apache2 stop
+update-rc.d -f apache2 remove
+/etc/init.d/nginx start
+
+apt-get install -y php5-fpm
+apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-memcached php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
+apt-get install -y php-apc
+#PHP Configuration Stuff Goes Here
+apt-get install -y fcgiwrap
+
+echo "========================================================================="
+echo "You will be prompted for some information during the install of phpmyadmin."
+echo "Please enter them where needed."
+echo "========================================================================="
+echo "Press ENTER to continue.."
+read DUMMY
+
+DEBIAN_FRONTEND=noninteractive apt-get install -y dbconfig-common
+apt-get install -y phpmyadmin
+
+#Remove the Apache2 Stuff for NginX
+/etc/init.d/apache2 stop
+insserv -r apache2
+/etc/init.d/nginx start
+
+#Fix Ming Error
+rm /etc/php5/cli/conf.d/ming.ini
+cat > /etc/php5/cli/conf.d/ming.ini <<"EOF"
+extension=ming.so
+EOF
+
+/etc/init.d/php5-fpm restart
+
+}
+#############################################################################
+
 install_PureFTPD (){
 #############################################################################
 #Install PureFTPd
