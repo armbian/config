@@ -528,7 +528,8 @@ install_basic
 install_DashNTP
 install_MySQLDovecot
 install_Virus
-install_Apache
+#install_Apache
+install_NginX
 install_PureFTPD
 install_Fail2BanDovecot
 install_Fail2BanRulesDovecot
