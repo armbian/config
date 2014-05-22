@@ -6,10 +6,7 @@ Samba, TV headend, Transmission, BitTorrent Sync, SoftEther VPN server, CUPS, sc
 Tips:
 - disable Ramlog (service ramlog disable;reboot) before running install. Ramlog is default in my Cubieboard Debian.
 - set fixed ip address
-
-Help:
-Most of installation is based on this:
-http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3
+- installation is based on http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3
 
 Installation steps
 ------------------
