@@ -3,6 +3,10 @@ Debian-micro-home-server
 
 Samba, TV headend, Transmission, BitTorrent Sync, SoftEther VPN server, CUPS, scanner + buttons + OCR, Postfix, Dovecot, Apache2, PHP, Mysql + phpMyAdmin install, ISPConfig 3
 
+Help:
+Most of installation is based on this:
+http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3
+
 Installation steps
 ------------------
 
