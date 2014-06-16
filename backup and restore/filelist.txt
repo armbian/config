@@ -22,7 +22,7 @@
 /etc/hostapd.conf
 /etc/usbsrvd.conf
 /etc/default/stunnel4
-/etc/stunnel/gmail.conf
+/etc/stunnel
 /usr/local/ispconfig/interface/ssl/startssl.chain.class1.server.crt
 /usr/local/ispconfig/interface/ssl/startssl.sub.class1.server.ca.crt
 /root/removecomptorrent.sh
