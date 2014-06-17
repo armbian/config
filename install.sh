@@ -113,11 +113,25 @@ service samba restart
 } 
 #############################################################################
 
+install_temper (){
+#############################################################################
+#Install USB temperature sensor
+apt-get -y install libusb-dev libusb-1.0-0-dev
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/master/src/temper_v14_altered.tgz
+tar xvfz temper_v14_altered.tgz
+cd temperv14
+make
+make rules-install
+cp temperv14 /usr/bin/temper
+} 
+#############################################################################
+
 install_scaner_and_scanbuttons (){
 #############################################################################
 #Install Scanner buttons
 apt-get -y install pdftk libusb-dev sane sane-utils libudev-dev imagemagick 
-wget http://wp.psyx.us/wp-content/uploads/2010/10/scanbuttond-0.2.3.genesys.tar.gz
+# wget http://wp.psyx.us/wp-content/uploads/2010/10/scanbuttond-0.2.3.genesys.tar.gz
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/master/src/scanbuttond-0.2.3.genesys.tar.gz
 tar xvfz scanbuttond-0.2.3.genesys.tar.gz
 rm scanbuttond-0.2.3.genesys.tar.gz
 cd scanbuttond-0.2.3.genesys
@@ -538,6 +552,7 @@ install_scaner_and_scanbuttons
 install_ocr
 install_cups
 install_btsync
+install_temper
 install_vpn_server
 apt-get -y install tvheadend
 apt-get -y install transmission-cli transmission-common transmission-daemon
