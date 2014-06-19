@@ -66,6 +66,15 @@ service samba stop
 /etc/init.d/vpnserver stop
 # backup only minimum 
 tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T filelist.txt --exclude='*.sock'
+
+echo "";
+echo "************************************";
+echo "       MAIL BACKUP";
+echo "************************************";
+echo "";
+
+#
+tar cvPfz $COPY_TO/$FILEBACKUPNAME-mail.tgz /var/vmail
 #
 service dovecot start
 service cups start
