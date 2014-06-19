@@ -21,11 +21,9 @@
 /etc/network/interfaces
 /etc/hostapd.conf
 /etc/usbsrvd.conf
-/etc/hdparm.conf
 /etc/default/stunnel4
 /etc/stunnel
 /etc/logrotate.d
-/etc/bash.bashrc
 /usr/local/ispconfig/interface/ssl/startssl.chain.class1.server.crt
 /usr/local/ispconfig/interface/ssl/startssl.sub.class1.server.ca.crt
 /root/removecomptorrent.sh
