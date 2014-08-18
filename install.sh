@@ -117,7 +117,7 @@ install_temper (){
 #############################################################################
 #Install USB temperature sensor
 apt-get -y install libusb-dev libusb-1.0-0-dev
-wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/master/src/temper_v14_altered.tgz
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/master/src/temper_v14_altered.tgz?raw=true
 tar xvfz temper_v14_altered.tgz
 cd temperv14
 make
