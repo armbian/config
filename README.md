@@ -7,7 +7,7 @@ Project realisation:
 http://www.igorpecovnik.com/2013/12/10/micro-home-server/
 
 Tips:
-- disable Ramlog (service ramlog disable;reboot) before running install. Ramlog is default in my Cubieboard Debian.
+- disable Ramlog (service ramlog disable;reboot) before running install. Ramlog is default on my ARM Debian images.
 - set fixed ip address
 - installation is based on http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3
 
