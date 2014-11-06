@@ -1,4 +1,4 @@
-Debian micro home server / Small Office Home Office
+Debian micro home server
 ========================
 
 ![SOHO server](http://www.igorpecovnik.com/wp-content/uploads/2014/11/sohoserver.png)
