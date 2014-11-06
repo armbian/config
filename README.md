@@ -10,6 +10,7 @@ Project realisation:
 
 Tips:
 - set fixed ip address
+- for those who use ramlog. You can enable ramlog back when installation is finished
 - installation is based on [http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3](http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3)
 
 Installation steps
