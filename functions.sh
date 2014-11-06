@@ -31,6 +31,19 @@ mv * /usr/share/nginx/www
 }
 
 
+install_varnish (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# Install high-performance HTTP accelerator
+#-------------------------------------------------------------------------------------------------------------------------------- 
+apt-get -y -qq install python-docutils python-sphinx automake autotools-dev libjemalloc-dev libtool pkg-config libncurses-dev libpcre3-dev libedit-dev
+git clone https://github.com/varnish/Varnish-Cache /tmp/varnish
+cd /tmp/varnish
+./autogen.sh
+./configure
+make && make install
+}
+
+
 install_tvheadend (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # TVheadend
