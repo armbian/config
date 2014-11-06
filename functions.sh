@@ -187,9 +187,9 @@ install_btsync (){
 #-------------------------------------------------------------------------------------------------------------------------------- 
 cd /tmp
 if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
-wget http://download.getsyncapp.com/endpoint/btsync/os/linux-arm/track/stable/btsync_arm.tar.gz | tar -xz
+wget http://download.getsyncapp.com/endpoint/btsync/os/linux-arm/track/stable/btsync_arm.tar.gz -O - | tar -xz
 else
-wget http://download-new.utorrent.com/endpoint/btsync/os/linux-i386/track/stable/bittorrent_sync_i386.tar.gz | tar -xz
+wget http://download-new.utorrent.com/endpoint/btsync/os/linux-i386/track/stable/bittorrent_sync_i386.tar.gz -O - | tar -xz
 fi
 mv btsync /usr/local/bin
 ln -sf /lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
@@ -215,7 +215,7 @@ DLURL=$PREFIX$URL"/Linux/SoftEther%20VPN%20Server/32bit%20-%20ARM%20EABI/softeth
 else
 DLURL=$PREFIX$URL"/Linux/SoftEther%20VPN%20Server/32bit%20-%20Intel%20x86/softether-vpnserver-$SUFIX-linux-x86-32bit.tar.gz"
 fi
-wget $DLURL | tar -xz
+wget $DLURL -O - | tar -xz
 cd vpnserver
 make i_read_and_agree_the_license_agreement
 cd ..
