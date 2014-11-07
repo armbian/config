@@ -25,7 +25,7 @@ fi
 # What do we need anyway
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get -y upgrade
-debconf-apt-progress -- apt-get -y install dnsutils unzip whiptail git build-essential alsa-base alsa-utils stunnel4 html2text
+debconf-apt-progress -- apt-get -y install debconf-utils dnsutils unzip whiptail git build-essential alsa-base alsa-utils stunnel4 html2text
 #--------------------------------------------------------------------------------------------------------------------------------
 
 SECTION="Basic configuration"
@@ -54,44 +54,47 @@ whiptail --ok-button "Install" --title "Debian micro home server installation (c
 "Temper" "USB temperature sensor" off \
 "Transmission" "Torrent downloading" off \
 "ISPConfig" "WWW, PHP, SQL, SMTP, IMAP, POP3" off 2>results
-
-while read choice
-do 
-	if [[ $choice == "WWW Apache" ]]; then count=$[count+1]; fi
-	if [[ $choice == "WWW Nginx" ]]; then count=$[count+1]; fi
-done < results
-
-if [[ $count == 2 ]]; then echo -e "\e[31mERROR\e[0m Please choose Nginx either Apache. Can't run both!"; exit; fi
-
 while read choice
 do
-        case $choice in
-                "Samba") install_samba
-                ;;
-				"CUPS") install_cups
-                ;;
-				"Scanner") install_scaner_and_scanbuttons
-                ;;
-                "BitTorrent Sync") install_btsync
-                ;;
-				"TV headend") install_tvheadend
-                ;;
-				"SoftEther VPN server") install_vpn_server
-                ;;
-				"Temper") install_temper
-                ;;
-				"Transmission") install_transmission
-                ;;
-				"ISPConfig")
-					install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus;
-					if (whiptail --no-button "Apache" --yes-button "NginX" --title "Choose webserver platform" --yesno "ISPConfig can run on both." 7 78) then
-						install_NginX
-							else
-						install_Apache
-					fi
-				   install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot; install_ISPConfig 
-                ;;             
+   case $choice in
+		   "Samba") 			ins_samba="true";;
+                   "TV headend") 		ins_tvheadend="true";;
+                   "BitTorrent Sync") 	  	ins_btsync="true";;
+                   "SoftEther VPN server") 	ins_vpn_server="true";;
+		   "CUPS") 			ins_cups="true";;
+		   "Scanner") 			ins_scaner_and_scanbuttons="true";;
+                   "Temper") 			ins_temper="true";;
+                   "Transmission")		ins_transmission="true";;
+		   "ISPConfig")			ins_ispconfig="true";;
                 *)
                 ;;
         esac
 done < results
+
+
+if [[ "$ins_samba" == "true" ]]; 			then install_samba; 			fi
+if [[ "$ins_tvheadend" == "true" ]]; 			then install_tvheadend; 		fi
+if [[ "$ins_btsync" == "true" ]]; 			then install_btsync; 			fi
+if [[ "$ins_vpn_server" == "true" ]]; 			then install_vpn_server; 		fi
+if [[ "$ins_cups" == "true" ]]; 			then install_cups; 			fi
+if [[ "$ins_scanner_and_scanbuttons" == "true" ]];	then install_scaner_and_scanbuttons; 	fi
+if [[ "$ins_temper" == "true" ]]; 			then install_temper; 			fi
+if [[ "$ins_transmission" == "true" ]];                 then install_transmission;              fi
+if [[ "$ins_ispconfig" == "true" ]];                    then
+							install_basic
+							install_DashNTP
+							install_MySQL
+							install_MySQLDovecot
+							install_Virus;
+
+
+							if (whiptail --no-button "Apache" --yes-button "NginX" --title "Choose webserver platform" --yesno "ISPConfig can run on both." 7 78) then
+								server="nginx"
+								install_NginX
+							else
+								server="apache"
+								install_Apache
+							fi
+							create_ispconfig_configuration
+				   			install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot; install_ISPConfig
+fi
