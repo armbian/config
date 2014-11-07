@@ -19,6 +19,37 @@ echo "$HOSTNAMESHORT" > /etc/hostname
 }
 
 
+create_ispconfig_configuration (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# ISPConfig autoconfiguration
+#--------------------------------------------------------------------------------------------------------------------------------
+cat > /tmp/isp.conf <<EOF
+<?php
+\$autoinstall['language'] = 'en'; // de, en (default)
+\$autoinstall['install_mode'] = 'standard'; // standard (default), expert
+
+\$autoinstall['hostname'] = '$HOSTNAMEFQDN'; // default
+\$autoinstall['mysql_hostname'] = 'localhost'; // default: localhost
+\$autoinstall['mysql_root_user'] = 'root'; // default: root
+\$autoinstall['mysql_root_password'] = '$mysql_pass';
+\$autoinstall['mysql_database'] = 'dbispconfig'; // default: dbispcongig
+\$autoinstall['mysql_charset'] = 'utf8'; // default: utf8
+\$autoinstall['http_server'] = '$server'; // apache (default), nginx
+\$autoinstall['ispconfig_port'] = '8080'; // default: 8080
+\$autoinstall['ispconfig_use_ssl'] = 'y'; // y (default), n
+
+/* SSL Settings */
+\$autoinstall['ssl_cert_country'] = 'AU';
+\$autoinstall['ssl_cert_state'] = 'Some-State';
+\$autoinstall['ssl_cert_locality'] = 'Chicago';
+\$autoinstall['ssl_cert_organisation'] = 'Internet Widgits Pty Ltd';
+\$autoinstall['ssl_cert_organisation_unit'] = 'IT department';
+\$autoinstall['ssl_cert_common_name'] = \$autoinstall['hostname'];
+?>
+EOF
+}
+
+
 install_sugarcrm (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Community edition CRM
@@ -153,13 +184,13 @@ install_temper (){
 # Install USB temperature sensor
 #--------------------------------------------------------------------------------------------------------------------------------
 debconf-apt-progress -- apt-get -y install libusb-dev libusb-1.0-0-dev
-wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/master/src/temper_v14_altered.tgz?raw=true
-tar xvfz temper_v14_altered.tgz
+cd /tmp
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/temper_v14_altered.tgz?raw=true -O - | tar -xz
 cd temperv14
 make
 make rules-install
 cp temperv14 /usr/bin/temper
-} 
+}
 
 
 install_scaner_and_scanbuttons (){
@@ -300,7 +331,7 @@ debconf-apt-progress -- apt-get -y install mysql-client mysql-server
 #Allow MySQL to listen on all interfaces
 cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
 sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/my.cnf
-/etc/init.d/mysql restart
+service mysql restart >> /dev/null
 }
 
 
@@ -324,8 +355,8 @@ sed -i 's|#  -o smtpd_sasl_auth_enable=yes|  -o smtpd_sasl_auth_enable=yes|' /et
 sed -i 's|#smtps     inet  n       -       -       -       -       smtpd|smtps     inet  n       -       -       -       -       smtpd|' /etc/postfix/master.cf
 sed -i 's|#  -o syslog_name=postfix/smtps|  -o syslog_name=postfix/smtps|' /etc/postfix/master.cf
 sed -i 's|#  -o smtpd_tls_wrappermode=yes|  -o smtpd_tls_wrappermode=yes|' /etc/postfix/master.cf
-/etc/init.d/postfix restart
-} 
+service postfix restart >> /dev/null
+}
 
 
 install_Virus (){
@@ -398,10 +429,10 @@ EOF
 sed -i 's|application/x-ruby|#application/x-ruby|' /etc/mime.types
 
 #Install XCache
-apt-get -y install php5-xcache
+apt-get -y -qq install php5-xcache
 
 #Restart Apache
-/etc/init.d/apache2 restart
+service apache2 restart >> /dev/null
 }
 
 
@@ -414,16 +445,19 @@ echo 'phpmyadmin      phpmyadmin/reconfigure-webserver        multiselect' | deb
 echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
 
 debconf-apt-progress -- apt-get install -y nginx
-/etc/init.d/apache2 stop
-update-rc.d -f apache2 remove
-/etc/init.d/nginx start
+if [ $(dpkg-query -W -f='${Status}' apache2 2>/dev/null | grep -c "ok installed") -eq 1 ];
+then
+/etc/init.d/apache2 stop >> /dev/null
+update-rc.d -f apache2 remove >> /dev/null
+fi
+service nginx start >> /dev/null
 
 debconf-apt-progress -- apt-get install -y php5-fpm
 debconf-apt-progress -- apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-memcached php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
 debconf-apt-progress -- apt-get install -y php-apc
 #PHP Configuration Stuff Goes Here
 debconf-apt-progress -- apt-get install -y fcgiwrap
-
+reset
 echo "========================================================================="
 echo "You will be prompted for some information during the install of phpmyadmin."
 echo "Please enter them where needed."
@@ -434,10 +468,6 @@ read DUMMY
 DEBIAN_FRONTEND=noninteractive apt-get install -y dbconfig-common
 debconf-apt-progress -- apt-get install -y phpmyadmin
 
-#Remove the Apache2 Stuff for NginX
-/etc/init.d/apache2 stop
-insserv -r apache2
-/etc/init.d/nginx start
 
 #Fix Ming Error
 rm /etc/php5/cli/conf.d/ming.ini
@@ -527,7 +557,7 @@ cat > /etc/fail2ban/filter.d/dovecot-pop3imap.conf <<"EOF"
 failregex = (?: pop3-login|imap-login): .*(?:Authentication failure|Aborted login \(auth failed|Aborted login \(tried to use disabled|Disconnected \(auth failed|Aborted login \(\d+ authentication attempts).*rip=(?P<host>\S*),.*
 ignoreregex =
 EOF
-/etc/init.d/fail2ban restart
+service fail2ban restart >> /dev/null
 }
 
 
@@ -536,9 +566,7 @@ install_ISPConfig (){
 # Install ISPConfig 3
 #--------------------------------------------------------------------------------------------------------------------------------
 cd /tmp
-wget http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz
-tar xfz ISPConfig-3-stable.tar.gz
-rm ISPConfig-3-stable.tar.gz
+wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd /tmp/ispconfig3_install/install/
-php -q install.php
+php -q install.php --autoinstall=/tmp/isp.conf
 }
