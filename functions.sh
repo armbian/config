@@ -23,7 +23,7 @@ create_ispconfig_configuration (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # ISPConfig autoconfiguration
 #--------------------------------------------------------------------------------------------------------------------------------
-cat > /tmp/isp.conf <<EOF
+cat > /tmp/isp.conf.php <<EOF
 <?php
 \$autoinstall['language'] = 'en'; // de, en (default)
 \$autoinstall['install_mode'] = 'standard'; // standard (default), expert
@@ -568,5 +568,5 @@ install_ISPConfig (){
 cd /tmp
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd /tmp/ispconfig3_install/install/
-php -q install.php --autoinstall=/tmp/isp.conf
+php -q install.php --autoinstall=/tmp/isp.conf.php
 }
