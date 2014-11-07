@@ -1,7 +1,7 @@
 Debian micro home server
 ========================
 
-![SOHO server](http://www.igorpecovnik.com/wp-content/uploads/2014/11/sohoserver.png)
+![SOHO server](http://www.igorpecovnik.com/wp-content/uploads/2014/11/sohoserver1.png)
 
 Samba, TV headend, BitTorrent Sync, SoftEther VPN server, CUPS, scanner + buttons + OCR, Temper, Transmission, Varnish, ISPConfig  (Apache2 or NginX, PHP, Mysql with phpMyAdmin, Postfix, Dovecot)
 
