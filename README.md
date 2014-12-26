@@ -9,7 +9,7 @@ Project realisation:
 [http://www.igorpecovnik.com/2013/12/10/micro-home-server/](http://www.igorpecovnik.com/2013/12/10/micro-home-server/)
 
 Tips:
-- mail server install will work **only with Debian Wheezy**
+- mail server install (ISPConfig) will work **only with Debian Wheezy**
 - set fixed ip address
 - for those who use ramlog. You can enable ramlog back when installation is finished
 - installation is based on [http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3](http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3)
