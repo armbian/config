@@ -88,18 +88,22 @@ fi
 apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 2C0D3C0F
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get -y install rpimonitor
+service rpimonitor stop
 # add my own configuration which is not default
 cd /etc/rpimonitor
 wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/rpimonitor-myconfig.tgz?raw=true -O - | tar -xz
 cd /usr/local/bin
-wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/temp-pir-daemon.sh?raw=true
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/temp-pir-daemon.sh
 chmod +x /usr/local/bin/temp-pir-daemon.sh
 sed -e 's/exit 0//g' -i /etc/rc.local
 cat >> /etc/rc.local <<"EOF"
-nohup /usr/local/bin/temp-daemon.sh &
+nohup /usr/local/bin/temp-pir-daemon.sh &
 exit 0
 EOF
-service rpimonitor restart
+ln -sf /etc/rpimonitor/template/bananian.conf /etc/rpimonitor/data.conf
+rm -rf /var/lib/rpimonitor/stat
+service rpimonitor start
+/usr/share/rpimonitor/scripts/updatePackagesStatus.pl
 }
 
 
