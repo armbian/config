@@ -91,6 +91,14 @@ debconf-apt-progress -- apt-get -y install rpimonitor
 # add my own configuration which is not default
 cd /etc/rpimonitor
 wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/rpimonitor-myconfig.tgz?raw=true -O - | tar -xz
+cd /usr/local/bin
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/temp-pir-daemon.sh?raw=true
+chmod +x /usr/local/bin/temp-pir-daemon.sh
+sed -e 's/exit 0//g' -i /etc/rc.local
+cat >> /etc/rc.local <<"EOF"
+nohup /usr/local/bin/temp-daemon.sh &
+exit 0
+EOF
 service rpimonitor restart
 }
 
