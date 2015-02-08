@@ -3,7 +3,7 @@ Debian micro home server
 
 ![SOHO server](http://www.igorpecovnik.com/wp-content/uploads/2014/11/sohoserver1.png)
 
-Samba, TV headend, BitTorrent Sync, SoftEther VPN server, CUPS, scanner + buttons + OCR, Temper, Transmission, ISPConfig  (Apache2 or NginX, PHP, Mysql with phpMyAdmin, Postfix, Dovecot)
+Samba, TV headend, BitTorrent Sync, SoftEther VPN server, CUPS, scanner + buttons + OCR, Temper, Rpimonitor + 3 additional sensors, Transmission, ISPConfig  (Apache2 or NginX, PHP, Mysql with phpMyAdmin, Postfix, Dovecot)
 
 Project realisation:
 [http://www.igorpecovnik.com/2013/12/10/micro-home-server/](http://www.igorpecovnik.com/2013/12/10/micro-home-server/)
