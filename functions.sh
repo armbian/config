@@ -75,6 +75,54 @@ make && make install
 }
 
 
+install_rpimonitor (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# Install rpimonitor with custom config
+#--------------------------------------------------------------------------------------------------------------------------------
+if !(grep -qs tvheadend "/etc/apt/sources.list");then
+cat >> /etc/apt/sources.list <<EOF
+# RPi-Monitor official repository
+deb https://github.com XavierBerger/RPi-Monitor-deb/raw/master/repo/
+EOF
+fi
+apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 2C0D3C0F
+debconf-apt-progress -- apt-get update
+debconf-apt-progress -- apt-get -y install rpimonitor
+# add my own configuration which is not default
+cd /etc/rpimonitor
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/rpimonitor-myconfig.tgz?raw=true -O - | tar -xz
+service rpimonitor restart
+}
+
+
+install_bmc180 (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# Install temp and pressure sensor read utility
+#-------------------------------------------------------------------------------------------------------------------------------- 
+cd /tmp
+git clone https://github.com/maasdoel/bmp180
+cd bmp180
+# let's change bus number to suits our need
+sed -i "s/dev\/i2c-1/dev\/i2c-2/" bmp180dev3.c
+gcc -Wall -o bmp180 ./bmp180dev3.c -lm
+cp bmp180 /usr/local/bin
+rm -r /tmp/bmp180
+}
+
+
+install_tsl2561 (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# Install light sensor read utility
+#--------------------------------------------------------------------------------------------------------------------------------
+cd /tmp
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/tsl2561-src.tgz?raw=true -O - | tar -xz
+gcc -Wall -O2 -o TSL2561.o -c TSL2561.c
+gcc -Wall -O2 -o TSL2561_test.o -c TSL2561_test.c
+gcc -Wall -O2 -o TSL2561_test TSL2561.o TSL2561_test.o
+cp TSL2561_test /usr/local/bin/tsl2561
+}
+
+
 install_tvheadend (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # TVheadend

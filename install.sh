@@ -52,6 +52,7 @@ whiptail --ok-button "Install" --title "Debian micro home server installation (c
 "CUPS" "Printing" off \
 "Scanner" "Control your scanner with buttons, OCR" off \
 "Temper" "USB temperature sensor" off \
+"Rpi monitor" "Status page and statistics" off \
 "Transmission" "Torrent downloading" off \
 "ISPConfig" "WWW, PHP, SQL, SMTP, IMAP, POP3" off 2>results
 while read choice
@@ -64,6 +65,7 @@ do
 		   "CUPS") 			ins_cups="true";;
 		   "Scanner") 			ins_scaner_and_scanbuttons="true";;
                    "Temper") 			ins_temper="true";;
+				   "Rpi monitor") 			ins_rpimonitor="true";;
                    "Transmission")		ins_transmission="true";;
 		   "ISPConfig")			ins_ispconfig="true";;
                 *)
@@ -79,6 +81,7 @@ if [[ "$ins_vpn_server" == "true" ]]; 			then install_vpn_server; 		fi
 if [[ "$ins_cups" == "true" ]]; 			then install_cups; 			fi
 if [[ "$ins_scanner_and_scanbuttons" == "true" ]];	then install_scaner_and_scanbuttons; 	fi
 if [[ "$ins_temper" == "true" ]]; 			then install_temper; 			fi
+if [[ "$ins_rpimonitor" == "true" ]]; 			then install_bmc180; install_tsl2561; install_rpimonitor;  			fi
 if [[ "$ins_transmission" == "true" ]];                 then install_transmission;              fi
 if [[ "$ins_ispconfig" == "true" ]];                    then
 							install_basic
