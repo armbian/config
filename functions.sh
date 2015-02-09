@@ -79,7 +79,7 @@ install_rpimonitor (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install rpimonitor with custom config
 #--------------------------------------------------------------------------------------------------------------------------------
-if !(grep -qs tvheadend "/etc/apt/sources.list");then
+if !(grep -qs XavierBerger "/etc/apt/sources.list");then
 cat >> /etc/apt/sources.list <<EOF
 # RPi-Monitor official repository
 deb https://github.com XavierBerger/RPi-Monitor-deb/raw/master/repo/
