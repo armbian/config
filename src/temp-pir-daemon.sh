@@ -41,6 +41,13 @@ Main() {
                         echo -n ${DiskTemp} >/run/hdd-temp
                 fi
 
+				# PIR sensor
+				if [ ! -f /run/pir-temp ]; then echo 0 > /run/pir-temp; fi 
+				if [ "$(cat /sys/class/gpio/gpio22/value)" == "1" ]; then echo 1 > /run/pir-temp; fi
+				if [ `stat --format=%Y /run/pir-temp` -le $(( `date +%s` - 600 )) ]; then
+				cat /sys/class/gpio/gpio22/value > /run/pir-temp   
+				fi
+
                 # sleep 5 secs
                 sleep 5
         done
