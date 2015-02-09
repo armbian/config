@@ -93,7 +93,7 @@ service rpimonitor stop
 cd /etc/rpimonitor
 wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/rpimonitor-myconfig.tgz?raw=true -O - | tar -xhz
 cd /usr/local/bin
-wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/temp-pir-daemon.sh
+wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/temp-pir-daemon.sh?raw=true -O temp-pir-daemon.sh
 chmod +x /usr/local/bin/temp-pir-daemon.sh
 sed -e 's/exit 0//g' -i /etc/rc.local
 cat >> /etc/rc.local <<"EOF"
@@ -102,6 +102,7 @@ exit 0
 EOF
 rm -rf /var/lib/rpimonitor/stat
 mkdir -p /var/log/rpimonitor
+nohup /usr/local/bin/temp-pir-daemon.sh &
 service rpimonitor start
 /usr/share/rpimonitor/scripts/updatePackagesStatus.pl
 }
