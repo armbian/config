@@ -258,7 +258,7 @@ install_scaner_and_scanbuttons (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install Scanner buttons
 #--------------------------------------------------------------------------------------------------------------------------------
-debconf-apt-progress -- apt-get -y install pdftk libusb-dev sane sane-utils libudev-dev imagemagick 
+debconf-apt-progress -- apt-get -y install pdftk libusb-dev sane sane-utils libudev-dev imagemagick libtiff-tools
 # wget http://wp.psyx.us/wp-content/uploads/2010/10/scanbuttond-0.2.3.genesys.tar.gz
 wget https://github.com/igorpecovnik/Debian-micro-home-server/raw/master/src/scanbuttond-0.2.3.genesys.tar.gz
 tar xvfz scanbuttond-0.2.3.genesys.tar.gz
