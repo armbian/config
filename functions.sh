@@ -231,6 +231,7 @@ install_cups (){
 # Install printer system
 #--------------------------------------------------------------------------------------------------------------------------------
 debconf-apt-progress -- apt-get -y install cups lpr foomatic-filters
+# cups-filters if jessie
 sed -e 's/Listen localhost:631/Listen 631/g' -i /etc/cups/cupsd.conf
 sed -e 's/<Location \/>/<Location \/>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
 sed -e 's/<Location \/admin>/<Location \/admin>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
