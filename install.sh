@@ -1,46 +1,87 @@
 #!/bin/bash
 #
 # Debian micro home server installation(c) Igor Pecovnik
-# 
+#
+# Copyright (c) 2015 Igor Pecovnik, igor.pecovnik@gma**.com
+#
+# This file is licensed under the terms of the GNU General Public
+# License version 2. This program is licensed "as is" without any
+# warranty of any kind, whether express or implied.
+#
+# This file is a part of https://github.com/igorpecovnik/Debian-micro-home-server
+#
+
+
+# Read functions
+source "functions.sh"
+
 
 # Check if user is root
 if [ $(id -u) != "0" ]; then
-    echo "Error: You must be root to run this script, please use the root user to install the software."
-    exit 1
+	dialog --msgbox "Error: You must be root to run this script, please use the root user to install the software." 7 70
+	exit 1
 fi
+
 
 # Debian only
 if [ ! -f /etc/debian_version ]; then 
-    echo "Unsupported Linux Distribution. Prepared for Debian"
-    exit 1
+	dialog --msgbox "Warning: Unsupported Linux Distribution, it might not install properly. Tailored for Debian. " 7 70
 fi
+
 
 # Ramlog must be disabled
 if [ -f /run/ramlog.lock ]; then
-    echo "RAMlog is running. Please disable before running (service ramlog disable). Reboot is required."
+	dialog --msgbox "Ramlog is running. Please disable before running (service ramlog disable). Reboot is required." 7 70
     exit 1
 fi
 
+# Choose what to install
+what_to_install
+#before_install
+for i in "${choice[@]}"
+do
 #--------------------------------------------------------------------------------------------------------------------------------
-# What do we need anyway
-debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get -y upgrade
-debconf-apt-progress -- apt-get -y install debconf-utils dnsutils unzip whiptail git build-essential alsa-base alsa-utils stunnel4 html2text
-#--------------------------------------------------------------------------------------------------------------------------------
+    if [ "$i" == "ISPConfig" ] ; then
+		server_conf
+		if [[ "$mysql_pass" == "" ]]; then
+			dialog --msgbox "Mysql password can't be blank. Exiting..." 7 70
+			exit
+		fi
+		install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server
+		create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot; 
+		install_ISPConfig
+    fi
+	if [ "$i" == "Samba" ] ; then
+		install_samba
+	fi
+	if [ "$i" == "TV headend" ] ; then
+		install_tvheadend
+	fi
+	if [ "$i" == "Transmission" ] ; then
+		install_transmission
+	fi
+	
+#--------------------------------------------------------------------------------------------------------------------------------	
+done
+
+
+
+
+
+
+exit
+
+
+
+
+
+
 
 SECTION="Basic configuration"
 # Read IP address
 #
-serverIP=$(ip route get 8.8.8.8 | awk '{ print $NF; exit }')
-set ${serverIP//./ }
-SUBNET="$1.$2.$3."
 #
 # Read full qualified hostname
-HOSTNAMEFQDN=$(hostname -f)
-HOSTNAMEFQDN=$(whiptail --inputbox "\nWhat is your full qualified hostname for $serverIP ?" 10 78 $HOSTNAMEFQDN --title "$SECTION" 3>&1 1>&2 2>&3)
-exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
-set ${HOSTNAMEFQDN//./ }
-HOSTNAMESHORT="$1"
 
 source "functions.sh"
 
@@ -74,31 +115,12 @@ do
 done < results
 
 
-if [[ "$ins_samba" == "true" ]]; 			then install_samba; 			fi
-if [[ "$ins_tvheadend" == "true" ]]; 			then install_tvheadend; 		fi
+if [[ "$ins_samba" == "true" ]]; 			then ; 			fi
+if [[ "$ins_tvheadend" == "true" ]]; 			then ; 		fi
 if [[ "$ins_btsync" == "true" ]]; 			then install_btsync; 			fi
 if [[ "$ins_vpn_server" == "true" ]]; 			then install_vpn_server; 		fi
 if [[ "$ins_cups" == "true" ]]; 			then install_cups; 			fi
 if [[ "$ins_scanner_and_scanbuttons" == "true" ]];	then install_scaner_and_scanbuttons; 	fi
 if [[ "$ins_temper" == "true" ]]; 			then install_temper; 			fi
 if [[ "$ins_rpimonitor" == "true" ]]; 			then install_bmc180; install_tsl2561; install_rpimonitor;  			fi
-if [[ "$ins_transmission" == "true" ]];                 then install_transmission;              fi
-if [[ "$ins_ispconfig" == "true" ]];                    then
-							install_basic
-							install_DashNTP
-							install_MySQL
-							install_MySQLDovecot
-							install_Virus;
-
-
-							if (whiptail --no-button "Apache" --yes-button "NginX" --title "Choose webserver platform" --yesno "ISPConfig can run on both." 7 78) then
-								server="nginx"
-								install_NginX
-							else
-								server="apache"
-								install_Apache
-							fi
-							create_ispconfig_configuration
-				   			install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot; install_ISPConfig
-fi
-rm results
+if [[ "$ins_transmission" == "true" ]];                 then ;              fi
