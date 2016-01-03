@@ -335,10 +335,11 @@ debconf-apt-progress -- apt-get -y install transmission-cli transmission-common 
 
 
 install_samba (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------------------------
 # install Samba file sharing
-#--------------------------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------------------------
 # Read samba user / pass / group
+local SECTION="Samba"
 SMBUSER=$(whiptail --inputbox "What is your samba username?" 8 78 $SMBUSER --title "$SECTION" 3>&1 1>&2 2>&3)
 exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
 SMBPASS=$(whiptail --inputbox "What is your samba password?" 8 78 $SMBPASS --title "$SECTION" 3>&1 1>&2 2>&3)
@@ -350,53 +351,14 @@ debconf-apt-progress -- apt-get -y install samba samba-common-bin
 useradd $SMBUSER
 echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER
 echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER
-service samba stop
- cat > /etc/samba/smb.conf <<"EOF"
-[global]
-	workgroup = SMBGROUP
-	server string = %h server
-	hosts allow = SUBNET
-	log file = /var/log/samba/log.%m
-	max log size = 1000
-	syslog = 0
-	panic action = /usr/share/samba/panic-action %d
-	load printers = yes
-	printing = cups
-	printcap name = cups
-
-[printers]
-	comment = All Printers
-	path = /var/spool/samba
-	browseable = no
-	public = yes
-	guest ok = yes
-	writable = no
-	printable = yes
-	printer admin = SMBUSER
-
-[print$]
-	comment = Printer Drivers
-	path = /etc/samba/drivers
-	browseable = yes
-	guest ok = no
-	read only = yes
-	write list = SMBUSER
-	
-[ext]
-	comment = Storage	
-	path = /ext
-	writable = yes
-	public = no
-	valid users = SMBUSER
-	force create mode = 0777
-	force directory mode = 0777
-EOF
+service samba stop | service smbd stop
+cp scripts/smb.conf /etc/samba/smb.conf
 sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf
 sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf
 sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf
 mkdir /ext
 chmod -R 777 /ext
-service samba start
+service samba stop | service smbd start >/dev/null 2>&1
 }
 
 
