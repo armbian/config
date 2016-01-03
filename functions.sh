@@ -348,15 +348,15 @@ SMBGROUP=$(whiptail --inputbox "What is your samba group?" 8 78 $SMBGROUP --titl
 exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
 #
 debconf-apt-progress -- apt-get -y install samba samba-common-bin
-useradd $SMBUSER
-echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER
-echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER
+useradd $SMBUSER checkout
+echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER >/dev/null 2>&1
+echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER >/dev/null 2>&1
 service samba stop | service smbd stop
 cp scripts/smb.conf /etc/samba/smb.conf
 sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf
 sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf
 sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf
-mkdir /ext
+mkdir -p /ext
 chmod -R 777 /ext
 service samba stop | service smbd start >/dev/null 2>&1
 }
