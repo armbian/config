@@ -66,6 +66,9 @@ do
 	if [ "$i" == "Scanner" ] ; then
 		install_scaner_and_scanbuttons
 	fi
+	if [ "$i" == "Rpi monitor" ] ; then
+		install_rpimonitor
+	fi
 	if	[ "$i" == "Transmission" ] ; then
 		install_transmission
 	fi

@@ -97,7 +97,6 @@ $DIALOG --backtitle "Micro home server (c) Igor Pecovnik" \
 "Syncthing" "Personal cloud @syncthing.net" off \
 "CUPS" "Printing" off \
 "Scanner" "Control your scanner with buttons + OCR" off \
-"Temper" "USB temperature sensor" off \
 "Rpi monitor" "Status page and statistics" off \
 "Transmission" "Torrent downloading" off \
 "ISPConfig" "WWW, PHP, SQL, SMTP, IMAP, POP3" off 2> $tempfile
@@ -333,7 +332,7 @@ install_transmission (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # transmission
 #--------------------------------------------------------------------------------------------------------------------------------
-debconf-apt-progress -- apt-get -y install transmission-cli transmission-common transmission-daemon
+install_packet "transmission-cli transmission-common transmission-daemon" "Install torrent server"
 }
 
 
@@ -384,7 +383,7 @@ install_scaner_and_scanbuttons (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install Scanner buttons
 #--------------------------------------------------------------------------------------------------------------------------------
-debconf-apt-progress -- apt-get -y install pdftk libusb-dev sane sane-utils libudev-dev imagemagick libtiff-tools
+install_packet "pdftk libusb-dev sane sane-utils libudev-dev imagemagick libtiff-tools" "Install Scanner buttons"
 # wget http://wp.psyx.us/wp-content/uploads/2010/10/scanbuttond-0.2.3.genesys.tar.gz
 wget https://github.com/igorpecovnik/Debian-micro-home-server/raw/master/src/scanbuttond-0.2.3.genesys.tar.gz
 tar xvfz scanbuttond-0.2.3.genesys.tar.gz
