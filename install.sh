@@ -69,6 +69,9 @@ do
 	if [ "$i" == "Rpi monitor" ] ; then
 		install_rpimonitor
 	fi
+	if [ "$i" == "Ad blocker" ] ; then
+		curl -L install.pi-hole.net | bash
+	fi
 	if	[ "$i" == "Transmission" ] ; then
 		install_transmission
 	fi

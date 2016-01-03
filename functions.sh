@@ -98,6 +98,7 @@ $DIALOG --backtitle "Micro home server (c) Igor Pecovnik" \
 "CUPS" "Printing" off \
 "Scanner" "Control your scanner with buttons + OCR" off \
 "Rpi monitor" "Status page and statistics" off \
+"Pi hole" "Ad blocker" off \
 "Transmission" "Torrent downloading" off \
 "ISPConfig" "WWW, PHP, SQL, SMTP, IMAP, POP3" off 2> $tempfile
 
