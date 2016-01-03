@@ -15,13 +15,15 @@ set ${serverIP//./ }
 SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
 mysql_pass=""
+backtitle="Micro home server (c) Igor Pecovnik"
+
 
 #distribution=$(lsb_release -i)" "$(lsb_release -cs)
 
 function choose_webserver
 {
 dialog --title "Choose a webserver" \
---backtitle "Micro home server (c) Igor Pecovnik " \
+--backtitle $backtitle \
 --yes-label "Apache" \
 --no-label "Nginx" \
 --yesno "\nChoose a wenserver which you are familiar with. They both work almost the same." 8 70
@@ -320,7 +322,7 @@ if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
 	echo "deb http://apt.tvheadend.org/stable wheezy main" >> /etc/apt/sources.list.d/tvheadend.list
 	wget -qO - http://apt.tvheadend.org/stable/repo.gpg.key | apt-key add -
 fi
-apt-get update | dialog --progressbox "Force package list update ..." 20 70
+apt-get update | dialog --backtitle $backtitle --progressbox "Force package list update ..." 20 70
 install_packet "tvheadend xmltv-util"
 install -m 755 scripts/tv_grab_file /usr/bin/tv_grab_file
 sed -i 's/name": ".*"/name": "'$0'"/' /home/hts/.hts/tvheadend/superuser
