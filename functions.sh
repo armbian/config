@@ -348,7 +348,7 @@ SMBGROUP=$(whiptail --inputbox "What is your samba group?" 8 78 $SMBGROUP --titl
 exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
 #
 debconf-apt-progress -- apt-get -y install samba samba-common-bin
-useradd $SMBUSER checkout
+useradd $SMBUSER
 echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER >/dev/null 2>&1
 echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER >/dev/null 2>&1
 service samba stop | service smbd stop
