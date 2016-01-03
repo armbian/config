@@ -63,7 +63,10 @@ do
 	if [ "$i" == "CUPS" ] ; then
 		install_cups
 	fi
-	if [ "$i" == "Transmission" ] ; then
+	if [ "$i" == "Scanner" ] ; then
+		install_scaner_and_scanbuttons
+	fi
+	if	[ "$i" == "Transmission" ] ; then
 		install_transmission
 	fi
 	
