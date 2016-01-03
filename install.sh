@@ -57,6 +57,9 @@ do
 	if [ "$i" == "TV headend" ] ; then
 		install_tvheadend
 	fi
+	if [ "$i" == "Syncthing" ] ; then
+		install_syncthing
+	fi
 	if [ "$i" == "Transmission" ] ; then
 		install_transmission
 	fi

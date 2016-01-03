@@ -313,6 +313,9 @@ install_tvheadend (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # TVheadend https://tvheadend.org/
 #--------------------------------------------------------------------------------------------------------------------------------
+
+apt-get install libssl-doc libssl1.0.0 zlib1g-dev
+
 if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
 	echo "deb http://apt.tvheadend.org/stable wheezy main" >> /etc/apt/sources.list.d/tvheadend.list
 	wget -qO - http://apt.tvheadend.org/stable/repo.gpg.key | apt-key add -
