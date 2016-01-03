@@ -419,7 +419,7 @@ install_syncthing (){
 curl -s https://syncthing.net/release-key.txt | sudo apt-key add -
 echo deb http://apt.syncthing.net/ syncthing release | sudo tee /etc/apt/sources.list.d/syncthing-release.list
 sudo apt-get update
-sudo apt-get install syncthing
+install_packet "syncthing" "Install Personal cloud https://syncthing.net/"
 sed -e 's/exit 0//g' -i /etc/rc.local
 cat >> /etc/rc.local <<"EOF"
 syncthing

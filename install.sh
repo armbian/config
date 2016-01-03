@@ -60,6 +60,9 @@ do
 	if [ "$i" == "Syncthing" ] ; then
 		install_syncthing
 	fi
+	if [ "$i" == "CUPS" ] ; then
+		install_cups
+	fi
 	if [ "$i" == "Transmission" ] ; then
 		install_transmission
 	fi
