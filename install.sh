@@ -43,7 +43,7 @@ do
 #--------------------------------------------------------------------------------------------------------------------------------
     if [ "$i" == "ISPConfig" ] ; then
 		server_conf
-		if [[ "$mysql_pass" == "" ]]; then
+		if [[ "$MYSQL_PASS" == "" ]]; then
 			dialog --msgbox "Mysql password can't be blank. Exiting..." 7 70
 			exit
 		fi
