@@ -98,6 +98,7 @@ $DIALOG --backtitle "Micro home server (c) Igor Pecovnik" \
 "TV headend" "TV streaming / proxy" off \
 "Syncthing" "Personal cloud @syncthing.net" off \
 "CUPS" "Printing" off \
+"VPN server" "VPN server" off \
 "Scanner" "Control your scanner with buttons + OCR" off \
 "Rpi monitor" "Status page and statistics" off \
 "Pi hole" "Ad blocker" off \

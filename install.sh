@@ -63,6 +63,9 @@ do
 	if [ "$i" == "CUPS" ] ; then
 		install_cups
 	fi
+	if [ "$i" == "VPN server" ] ; then
+		install_vpn_server
+	fi	
 	if [ "$i" == "Scanner" ] ; then
 		install_scaner_and_scanbuttons
 	fi
