@@ -58,8 +58,8 @@ choose_webserver
 }
 exec 3>&-
 # read variables back
-mysql_pass=`cat /tmp/mysql_pass`
-hostnamefqdn=`cat /tmp/hostnamefqdn`
+MYSQL_PASS=`cat /tmp/mysql_pass`
+HOSTNAMEFQDN=`cat /tmp/hostnamefqdn`
 server=`cat /tmp/server`
 }
 
@@ -157,14 +157,7 @@ install_basic (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Set hostname, FQDN, add to sources list
 #--------------------------------------------------------------------------------------------------------------------------------
-if [ "$distribution" != "wheezy" ]; then
-	dialog --msgbox "This installation of ISPConfig works only on Wheezy." 7 70
-	exit 1
-fi
 IFS=" " 
-HOSTNAMEFQDN="server1.example.com"
-HOSTNAMEFQDN=$(whiptail --inputbox "\nWhat is your full hostname?" 10 78 $HOSTNAMEFQDN --title "$serverIP" 3>&1 1>&2 2>&3)
-exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
 set ${HOSTNAMEFQDN//./ }
 HOSTNAMESHORT="$1"
 cp /etc/hosts /etc/hosts.backup
@@ -507,10 +500,8 @@ install_MySQL (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # MYSQL
 #--------------------------------------------------------------------------------------------------------------------------------
-mysql_pass=$(whiptail --inputbox "What is your mysql root password?" 8 78 $mysql_pass --title "$SECTION" 3>&1 1>&2 2>&3)
-exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
-echo "mysql-server-5.5 mysql-server/root_password password $mysql_pass" | debconf-set-selections
-echo "mysql-server-5.5 mysql-server/root_password_again password $mysql_pass" | debconf-set-selections
+echo "mysql-server-5.5 mysql-server/root_password password $MYSQL_PASS" | debconf-set-selections
+echo "mysql-server-5.5 mysql-server/root_password_again password $MYSQL_PASS" | debconf-set-selections
 install_packet "mysql-client mysql-server" "Install Mysql client / server"
 #Allow MySQL to listen on all interfaces
 cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
