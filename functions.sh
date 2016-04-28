@@ -28,7 +28,7 @@ TTY_Y=$(($(stty size | awk '{print $1}')-6)) # determine terminal height
 function choose_webserver
 {
 dialog --title "Choose a webserver" \
---backtitle $backtitle \
+--backtitle "$backtitle" \
 --yes-label "Apache" \
 --no-label "Nginx" \
 --yesno "\nChoose a wenserver which you are familiar with. They both work almost the same." 8 70
@@ -47,7 +47,7 @@ function server_conf
 exec 3>&1
 dialog --title "Server configuration" \
 --separate-widget $'\n' --ok-label "Install" \
---backtitle "Micro home server (c) Igor Pecovnik " \
+--backtitle "$backtitle" \
 --form "\nPlease fill out this form:\n " \
 12 70 0 \
 "Your FQDN for $serverip:"	1 1 "$hostnamefqdn"         1 31 32 0 \
@@ -74,11 +74,11 @@ before_install ()
 #--------------------------------------------------------------------------------------------------------------------------------
 # What do we need anyway
 #--------------------------------------------------------------------------------------------------------------------------------
-apt-get update 		| dialog --backtitle "Micro home server (c) Igor Pecovnik " \
+apt-get update 		| dialog --backtitle "$backtitle" \
 										--progressbox "Force package list update ..." $TTY_X $TTY_Y
-apt-get -y upgrade	| dialog --backtitle "Micro home server (c) Igor Pecovnik " \
+apt-get -y upgrade	| dialog --backtitle "$backtitle" \
 										--progressbox "Force upgrade ..." $TTY_X $TTY_Y 
-apt-get -y autoremove	| dialog --backtitle "Micro home server (c) Igor Pecovnik " \
+apt-get -y autoremove	| dialog --backtitle "$backtitle" \
 										--progressbox "Remove packages that are no more needed ..." $TTY_X $TTY_Y 
 install_packet "debconf-utils dnsutils unzip build-essential alsa-base alsa-utils stunnel4 html2text apt-transport-https"\
 										"Downloading basic packages"
@@ -97,7 +97,7 @@ DIALOG=${DIALOG=dialog}
 tempfile=`tempfile 2>/dev/null` || tempfile=/tmp/test$$
 trap "rm -f $tempfile" 0 1 2 5 15
 
-$DIALOG --backtitle "Micro home server (c) Igor Pecovnik" \
+$DIALOG --backtitle "$backtitle" \
 	--title "Installing to $family $distribution" --clear --checklist "\nChoose what you want to install:\n " 20 70 15 \
 	"Samba" "Windows compatible file sharing        " off \
 "TV headend" "TV streaming / proxy" off \
@@ -143,7 +143,7 @@ procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
 		x=${PACKETS[$i]}	
 		if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then 
 			printf '%.0f\n' $procent | dialog \
-			--backtitle "Micro home server (c) Igor Pecovnik " \
+			--backtitle "$backtitle" \
 			--title "Installing" \
 			--gauge "\n$2\n\n$x" 10 70
 		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >/tmp/install.log 2>&1 || echo 'Installation failed' | grep 'Installation failed')" != "" ]; then    
@@ -776,5 +776,6 @@ install_ISPConfig (){
 cd /tmp
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd /tmp/ispconfig3_install/install/
+#apt-get -y install php5-cli php5-mysql 
 php -q install.php --autoinstall=/tmp/isp.conf.php
 }
