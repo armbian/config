@@ -37,7 +37,7 @@ fi
 
 # Choose what to install
 what_to_install
-#before_install
+before_install
 for i in "${choice[@]}"
 do
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -74,7 +74,7 @@ do
 	fi
 	if [ "$i" == "Pi hole" ] ; then
 		curl -L install.pi-hole.net | bash
-	fi
+		fi
 	if	[ "$i" == "Transmission" ] ; then
 		install_transmission
 	fi

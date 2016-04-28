@@ -16,6 +16,11 @@ SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
 mysql_pass=""
 backtitle="Micro home server (c) Igor Pecovnik"
+logfile="/tmp/microhomeserver.log"
+echo "Start:" > $logfile
+
+TTY_X=$(($(stty size | awk '{print $2}')-6)) # determine terminal width
+TTY_Y=$(($(stty size | awk '{print $1}')-6)) # determine terminal height 
 
 
 #distribution=$(lsb_release -i)" "$(lsb_release -cs)
@@ -70,11 +75,11 @@ before_install ()
 # What do we need anyway
 #--------------------------------------------------------------------------------------------------------------------------------
 apt-get update 		| dialog --backtitle "Micro home server (c) Igor Pecovnik " \
-										--progressbox "Force package list update ..." 20 70 
+										--progressbox "Force package list update ..." $TTY_X $TTY_Y
 apt-get -y upgrade	| dialog --backtitle "Micro home server (c) Igor Pecovnik " \
-										--progressbox "Force upgrade ..." 20 70 
+										--progressbox "Force upgrade ..." $TTY_X $TTY_Y 
 apt-get -y autoremove	| dialog --backtitle "Micro home server (c) Igor Pecovnik " \
-										--progressbox "Remove packages that are no more needed ..." 20 70 
+										--progressbox "Remove packages that are no more needed ..." $TTY_X $TTY_Y 
 install_packet "debconf-utils dnsutils unzip build-essential alsa-base alsa-utils stunnel4 html2text apt-transport-https"\
 										"Downloading basic packages"
 
@@ -310,13 +315,13 @@ install_tvheadend (){
 # TVheadend https://tvheadend.org/
 #--------------------------------------------------------------------------------------------------------------------------------
 
-apt-get install libssl-doc libssl1.0.0 zlib1g-dev
+apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev
 
 if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
-	echo "deb http://apt.tvheadend.org/stable wheezy main" >> /etc/apt/sources.list.d/tvheadend.list
-	wget -qO - http://apt.tvheadend.org/stable/repo.gpg.key | apt-key add -
+	echo "deb https://dl.bintray.com/tvheadend/deb $distribution release" >> /etc/apt/sources.list.d/tvheadend.list
+	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1	
 fi
-apt-get update | dialog --backtitle $backtitle --progressbox "Force package list update ..." 20 70
+apt-get update | dialog --backtitle $backtitle --progressbox "Force package list update ..." $TTY_X $TTY_Y
 install_packet "tvheadend xmltv-util"
 install -m 755 scripts/tv_grab_file /usr/bin/tv_grab_file
 sed -i 's/name": ".*"/name": "'$0'"/' /home/hts/.hts/tvheadend/superuser
@@ -412,9 +417,9 @@ install_syncthing (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install Personal cloud https://syncthing.net/
 #-------------------------------------------------------------------------------------------------------------------------------- 
-curl -s https://syncthing.net/release-key.txt | sudo apt-key add -
-echo deb http://apt.syncthing.net/ syncthing release | sudo tee /etc/apt/sources.list.d/syncthing-release.list
-sudo apt-get update
+curl -s https://syncthing.net/release-key.txt | apt-key add -
+echo "deb http://apt.syncthing.net/ syncthing release" | tee /etc/apt/sources.list.d/syncthing-release.list
+apt-get update | dialog --backtitle $backtitle --progressbox "Force package list update ..." $TTY_X $TTY_Y
 install_packet "syncthing" "Install Personal cloud https://syncthing.net/"
 sed -e 's/exit 0//g' -i /etc/rc.local
 cat >> /etc/rc.local <<"EOF"
@@ -437,15 +442,34 @@ DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Server/32bit_-_ARM_EABI/softether-vpnserv
 else
 DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Server/32bit_-_Intel_x86/softether-vpnserver-$SUFIX-linux-x86-32bit.tar.gz"
 fi
-wget $DLURL -O - | tar -xz
+wget -q $DLURL -O - | tar -xz
 cd vpnserver
-make i_read_and_agree_the_license_agreement
+make i_read_and_agree_the_license_agreement >> $logfile
 cd ..
 cp -R vpnserver /usr/local
 cd /usr/local/vpnserver/
 chmod 600 *
 chmod 700 vpncmd
 chmod 700 vpnserver
+if [[ -d /run/systemd/system/ ]]; then
+cat <<EOT >/lib/systemd/system/ethervpn.service
+[Unit]
+Description=VPN service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/vpnserver/vpnserver start
+ExecStop=/usr/local/vpnserver/vpnserver stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOT
+systemctl enable ethervpn.service
+service ethervpn start
+
+else 
+
 cat <<EOT > /etc/init.d/vpnserver
 #!/bin/sh
 ### BEGIN INIT INFO
@@ -482,8 +506,9 @@ exit 0
 EOT
 chmod 755 /etc/init.d/vpnserver
 mkdir /var/lock/subsys
-update-rc.d vpnserver defaults
+update-rc.d vpnserver defaults >> $logfile
 /etc/init.d/vpnserver start
+fi
 }
 
 
