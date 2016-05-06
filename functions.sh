@@ -190,7 +190,7 @@ cat > /tmp/isp.conf.php <<EOF
 \$autoinstall['hostname'] = '$HOSTNAMEFQDN'; // default
 \$autoinstall['mysql_hostname'] = 'localhost'; // default: localhost
 \$autoinstall['mysql_root_user'] = 'root'; // default: root
-\$autoinstall['mysql_root_password'] = '$mysql_pass';
+\$autoinstall['mysql_root_password'] = '$MYSQL_PASS';
 \$autoinstall['mysql_database'] = 'dbispconfig'; // default: dbispcongig
 \$autoinstall['mysql_charset'] = 'utf8'; // default: utf8
 \$autoinstall['http_server'] = '$server'; // apache (default), nginx
@@ -591,17 +591,11 @@ echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf
 install_packet "apache2 apache2.2-common apache2-doc apache2-mpm-prefork apache2-utils libexpat1 ssl-cert libapache2-mod-php5 \
 php5 php5-common php5-gd php5-mysql php5-imap phpmyadmin php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear \
 php-auth php5-mcrypt mcrypt php5-imagick imagemagick libapache2-mod-suphp libruby libapache2-mod-ruby libapache2-mod-python \
-php5-curl php5-intl php5-memcache php5-memcached php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy \
+php5-curl php5-intl php5-memcache php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy \
 php5-xmlrpc php5-xsl memcached" "apache2, PHP5, phpMyAdmin, FCGI, suExec, pear and mcrypt"
 
 a2enmod suexec rewrite ssl actions include >> /dev/null
 a2enmod dav_fs dav auth_digest >> /dev/null
-
-#Fix Ming Error
-rm /etc/php5/cli/conf.d/ming.ini
-cat > /etc/php5/cli/conf.d/ming.ini <<"EOF"
-extension=ming.so
-EOF
 
 #Fix SuPHP
 cp /etc/apache2/mods-available/suphp.conf /etc/apache2/mods-available/suphp.conf.backup
@@ -659,7 +653,7 @@ fi
 service nginx start >> /dev/null
 
 debconf-apt-progress -- apt-get install -y php5-fpm
-debconf-apt-progress -- apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-memcached php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
+debconf-apt-progress -- apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
 debconf-apt-progress -- apt-get install -y php-apc
 #PHP Configuration Stuff Goes Here
 debconf-apt-progress -- apt-get install -y fcgiwrap
@@ -674,12 +668,6 @@ read DUMMY
 DEBIAN_FRONTEND=noninteractive apt-get install -y dbconfig-common
 debconf-apt-progress -- apt-get install -y phpmyadmin
 
-
-#Fix Ming Error
-rm /etc/php5/cli/conf.d/ming.ini
-cat > /etc/php5/cli/conf.d/ming.ini <<"EOF"
-extension=ming.so
-EOF
 /etc/init.d/php5-fpm restart >> /dev/null
 }
 
