@@ -55,7 +55,7 @@ do
 		install_samba
 	fi
 	if [ "$i" == "TV headend" ] ; then
-		install_tvheadend
+		install_tvheadend "$tv_user" "$tv_pass"
 	fi
 	if [ "$i" == "Syncthing" ] ; then
 		install_syncthing

@@ -15,6 +15,8 @@ set ${serverIP//./ }
 SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
 mysql_pass=""
+tv_user="admin"
+tv_pass="1234"
 backtitle="Micro home server (c) Igor Pecovnik"
 logfile="/tmp/microhomeserver.log"
 echo "Start:" > $logfile
@@ -75,11 +77,11 @@ before_install ()
 # What do we need anyway
 #--------------------------------------------------------------------------------------------------------------------------------
 apt-get update 		| dialog --backtitle "$backtitle" \
-										--progressbox "Force package list update ..." $TTY_X $TTY_Y
+										--progressbox "Force package list update ..." $TTY_Y $TTY_X 
 apt-get -y upgrade	| dialog --backtitle "$backtitle" \
-										--progressbox "Force upgrade ..." $TTY_X $TTY_Y 
+										--progressbox "Force upgrade ..." $TTY_Y $TTY_X 
 apt-get -y autoremove	| dialog --backtitle "$backtitle" \
-										--progressbox "Remove packages that are no more needed ..." $TTY_X $TTY_Y 
+										--progressbox "Remove packages that are no more needed ..." $TTY_Y $TTY_X  
 install_packet "debconf-utils dnsutils unzip build-essential alsa-base alsa-utils stunnel4 html2text apt-transport-https"\
 										"Downloading basic packages"
 
@@ -314,15 +316,11 @@ install_tvheadend (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # TVheadend https://tvheadend.org/
 #--------------------------------------------------------------------------------------------------------------------------------
-
-apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev
-
 if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
 	echo "deb https://dl.bintray.com/tvheadend/deb $distribution release" >> /etc/apt/sources.list.d/tvheadend.list
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1	
 fi
-apt-get update | dialog --backtitle $backtitle --progressbox "Force package list update ..." $TTY_X $TTY_Y
-install_packet "tvheadend xmltv-util"
+install_packet "libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util"
 install -m 755 scripts/tv_grab_file /usr/bin/tv_grab_file
 sed -i 's/name": ".*"/name": "'$0'"/' /home/hts/.hts/tvheadend/superuser
 sed -i 's/word": ".*"/word": "'$1'"/' /home/hts/.hts/tvheadend/superuser
