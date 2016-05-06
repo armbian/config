@@ -322,8 +322,8 @@ if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
 fi
 install_packet "libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util"
 install -m 755 scripts/tv_grab_file /usr/bin/tv_grab_file
-sed -i 's/name": ".*"/name": "'$0'"/' /home/hts/.hts/tvheadend/superuser
-sed -i 's/word": ".*"/word": "'$1'"/' /home/hts/.hts/tvheadend/superuser
+sed -i 's/name": ".*"/name": "'$tv_user'"/' /home/hts/.hts/tvheadend/superuser
+sed -i 's/word": ".*"/word": "'$tv_pass'"/' /home/hts/.hts/tvheadend/superuser
 service tvheadend restart
 }
 
