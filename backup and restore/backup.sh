@@ -23,6 +23,7 @@ function crontab_backup ()
 
 function database_backup ()
 {
+	if which mysql >/dev/null; then
 	for db in $(echo 'SHOW DATABASES;'|mysql -u$USER -p$PASSWORD -h$HOST|grep -v '^Database$'|grep -v "^performance_schema" |grep -v "^information_schema" |grep -v "^mysql"); 
 	do
 		mysqldump \
@@ -31,6 +32,7 @@ function database_backup ()
               $db | gzip --best -c > $COPY_TO/$DBBACKUPNAME-$db.sql.gz;
 		echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mDatabase $db backup"		
 	done;
+	fi
 }
 
 
@@ -62,7 +64,7 @@ function conf_backup ()
 	do
 		[[ -f $next || -d $next ]] && echo "$next" >> $tmpfilename
 	done
-	tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T $tmpfilename --exclude='*.sock'
+	tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T $tmpfilename --exclude='*.sock' &> /dev/null
 	service samba start
 	service cups start
 	service tvheadend start
