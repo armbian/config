@@ -12,7 +12,6 @@
 /etc/nginx
 /etc/dbconfig-common
 /etc/init.d/scanbuttond
-/etc/init.d/hostapd
 /etc/postfix
 /etc/rc.local
 /etc/getmail
@@ -26,6 +25,7 @@
 /etc/modules
 /etc/network/interfaces
 /etc/hostapd.conf
+/etc/hostapd-rt.conf
 /etc/usbsrvd.conf
 /etc/default/stunnel4
 /etc/stunnel

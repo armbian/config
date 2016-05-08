@@ -17,7 +17,7 @@ mkdir -p $COPY_TO
 function crontab_backup ()
 {
 	echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mCrontab backup"
-	crontab -l > $COPY_TO/crontab-root.txt
+	crontab -l > $COPY_TO/crontab-root.txt &> /dev/null
 }
 
 
@@ -53,7 +53,16 @@ function conf_backup ()
 	service cups stop
 	service samba stop
 	echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mConf files backup"
-	tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T filelist.txt --exclude='*.sock'
+	# find only existing
+	filename=filelist.txt
+	tmpfilename=/tmp/filelist.txt
+	touch tmpfilename
+	IFS=$'\n'
+	for next in `cat $filename`
+	do
+		[[ -f $next || -d $next ]] && echo "$next" >> $tmpfilename
+	done
+	tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T $tmpfilename --exclude='*.sock'
 	service samba start
 	service cups start
 	service tvheadend start
@@ -65,12 +74,14 @@ function conf_backup ()
 
 function mail_backup ()
 {
-	service dovecot stop
-	service postfix stop
-	echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mMail backup"
-	tar cvPfz $COPY_TO/$FILEBACKUPNAME-mail.tgz /var/vmail	
-	service postfix start
-	service dovecot start
+	if [[ -d /var/vmail ]]; then 
+		service dovecot stop
+		service postfix stop
+		echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mMail backup"
+		tar cvPfz $COPY_TO/$FILEBACKUPNAME-mail.tgz /var/vmail	
+		service postfix start
+		service dovecot start
+	fi
 }
 
 
