@@ -57,7 +57,10 @@ function conf_backup ()
 	IFS=$'\n'
 	for next in `cat $filename`
 	do
-		[[ -f $next || -d $next ]] && echo "$next" >> $tmpfilename
+		if [[ $next != \#* ]]; then
+			echo $next
+			[[ -f $next || -d $next ]] && echo "$next" >> $tmpfilename
+		fi
 	done
 	tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T $tmpfilename --exclude='*.sock' &> /dev/null
 	service samba start &> /dev/null
