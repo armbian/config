@@ -14,13 +14,6 @@ HOST=localhost
 mkdir -p $COPY_TO
 
 
-function crontab_backup ()
-{
-	echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mCrontab backup"
-	crontab -l > $COPY_TO/crontab-root.txt &> /dev/null
-}
-
-
 function database_backup ()
 {
 	if which mysql >/dev/null; then
@@ -97,7 +90,6 @@ function pkglist_backup ()
 
 
 # main app
-crontab_backup
 database_backup
 web_backup
 conf_backup
