@@ -19,6 +19,7 @@
 /usr/local/bin/.sync
 /etc/mysql/my.cnf
 /etc/default/stunnel4
+/usr/local/vpnserver/vpn_server.config
 /usr/bin/tv_grab_file
 /home/hts/.hts/tvheadend
 /etc/samba/smb.conf
