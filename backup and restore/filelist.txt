@@ -6,11 +6,16 @@
 /etc/transmission-daemon/settings.json
 /etc/scanbuttond
 /etc/apache2
+/etc/memcached.conf
+/etc/logrotate.conf
+/etc/mailname
+/etc/nginx
 /etc/dbconfig-common
 /etc/init.d/scanbuttond
 /etc/init.d/hostapd
 /etc/postfix
 /etc/rc.local
+/etc/getmail
 /usr/local/bin/.sync
 /etc/mysql/my.cnf
 /etc/default/stunnel4
@@ -27,3 +32,5 @@
 /usr/local/ispconfig/interface/ssl/startssl.chain.class1.server.crt
 /usr/local/ispconfig/interface/ssl/startssl.sub.class1.server.ca.crt
 /root/removecomptorrent.sh
+/root/.ssh
+/root/.gnupg
