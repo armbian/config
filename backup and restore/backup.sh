@@ -38,22 +38,24 @@ function database_backup ()
 
 function web_backup ()
 {
+	if [[ -d /var/www ]]; then 
 	echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mWebsites backup"
 	for x in $(find $COPY_FROM -maxdepth 2 -name "web*" -type d -print0 | xargs -0)
 	do
 	tar -cpvzf $COPY_TO/$WEBBACKUPNAME-$(basename $x).tar.gz $x &> /dev/null
 	done;
+	fi
 }
 
 
 function conf_backup ()
 {
-	/etc/init.d/scanbuttond stop
-	/etc/init.d/vpnserver stop
-	service transmission-daemon stop
-	service tvheadend stop
-	service cups stop
-	service samba stop
+	[[ -f /etc/init.d/scanbuttond ]] && /etc/init.d/scanbuttond stop
+	[[ -f /etc/init.d/vpnserver ]] && /etc/init.d/vpnserver stop
+	service transmission-daemon stop &> /dev/null
+	service tvheadend stop &> /dev/null
+	service cups stop &> /dev/null
+	service samba stop &> /dev/null
 	echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mConf files backup"
 	# find only existing
 	filename=filelist.txt
@@ -65,24 +67,24 @@ function conf_backup ()
 		[[ -f $next || -d $next ]] && echo "$next" >> $tmpfilename
 	done
 	tar cvPfz $COPY_TO/$FILEBACKUPNAME-allfiles.tgz -T $tmpfilename --exclude='*.sock' &> /dev/null
-	service samba start
-	service cups start
-	service tvheadend start
-	service transmission-daemon start
-	/etc/init.d/scanbuttond start
-	/etc/init.d/vpnserver start
+	service samba start &> /dev/null
+	service cups start &> /dev/null
+	service tvheadend start &> /dev/null
+	service transmission-daemon start &> /dev/null
+	[[ -f /etc/init.d/scanbuttond ]] && /etc/init.d/scanbuttond start
+	[[ -f /etc/init.d/vpnserver ]] && /etc/init.d/vpnserver start
 }
 
 
 function mail_backup ()
 {
 	if [[ -d /var/vmail ]]; then 
-		service dovecot stop
-		service postfix stop
+		service dovecot stop &> /dev/null
+		service postfix stop &> /dev/null
 		echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mMail backup"
 		tar cvPfz $COPY_TO/$FILEBACKUPNAME-mail.tgz /var/vmail	
-		service postfix start
-		service dovecot start
+		service postfix start &> /dev/null
+		service dovecot start &> /dev/null
 	fi
 }
 
