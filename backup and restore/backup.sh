@@ -17,6 +17,7 @@ mkdir -p $COPY_TO
 function database_backup ()
 {
 	if which mysql >/dev/null; then
+	mysqldump -Q -q -e -R --add-drop-table -A -u $USER -p$PASSWORD > $COPY_TO/all.db
 	for db in $(echo 'SHOW DATABASES;'|mysql -u$USER -p$PASSWORD -h$HOST|grep -v '^Database$'|grep -v "^performance_schema" |grep -v "^information_schema" |grep -v "^mysql"); 
 	do
 		mysqldump \

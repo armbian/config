@@ -12,7 +12,7 @@ function sync_backup ()
         do
                 if [[ $next != \#* ]]; then
 					echo $next
-					rsync --dry-run -az --progress $REMOTE:$next $next
+					rsync --dry-run -az --progress $REMOTE:$next ${next%*/*}
 					[[ ! $? -eq 0 ]] && read
 				fi
         done
