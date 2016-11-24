@@ -438,6 +438,7 @@ SUFIX="${URL/-tree/}"
 if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
 DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Server/32bit_-_ARM_EABI/softether-vpnserver-$SUFIX-linux-arm_eabi-32bit.tar.gz"
 else
+apt-get -y install gcc-multilib
 DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Server/32bit_-_Intel_x86/softether-vpnserver-$SUFIX-linux-x86-32bit.tar.gz"
 fi
 wget -q $DLURL -O - | tar -xz
