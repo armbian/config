@@ -174,8 +174,8 @@ set ${HOSTNAMEFQDN//./ }
 HOSTNAMESHORT="$1"
 cp /etc/hosts /etc/hosts.backup
 cp /etc/hostname /etc/hostname.backup
-sed -i '/#ispconfig/d' /etc/hosts
-sed -e 's/127.0.0.1.*/127.0.0.1   localhost.localdomain   localhost/g' -i /etc/hosts
+# create new
+echo "127.0.0.1   localhost.localdomain   localhost" > /etc/hosts
 echo "${serverIP} ${HOSTNAMEFQDN} ${HOSTNAMESHORT} #ispconfig " >> /etc/hosts
 echo "$HOSTNAMESHORT" > /etc/hostname
 /etc/init.d/hostname.sh start >/dev/null 2>&1
