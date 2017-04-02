@@ -179,6 +179,12 @@ echo "127.0.0.1   localhost.localdomain   localhost" > /etc/hosts
 echo "${serverIP} ${HOSTNAMEFQDN} ${HOSTNAMESHORT} #ispconfig " >> /etc/hosts
 echo "$HOSTNAMESHORT" > /etc/hostname
 /etc/init.d/hostname.sh start >/dev/null 2>&1
+if [[ $family == "Ubuntu" ]]; then
+	# disable AppArmor
+	service apparmor stop
+	update-rc.d -f apparmor remove
+	apt-get remove apparmor apparmor-utils
+fi
 }
 
 
