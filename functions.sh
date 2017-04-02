@@ -442,7 +442,7 @@ install_Virus (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install Amavisd-new, SpamAssassin, And Clamav
 #--------------------------------------------------------------------------------------------------------------------------------
-install_packet "amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 arj p7zip unrar ripole rpm nomarch lzop \
+install_packet "amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 arj p7zip unrar-free ripole rpm nomarch lzop \
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
 libnet-ident-perl zip libnet-dns-perl" "amavisd, spamassassin, clamav"
 /etc/init.d/spamassassin stop
