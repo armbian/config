@@ -97,13 +97,11 @@ tempfile=`tempfile 2>/dev/null` || tempfile=/tmp/test$$
 trap "rm -f $tempfile" 0 1 2 5 15
 
 $DIALOG --backtitle "$backtitle" \
---title "Installing to $family $distribution" --clear --checklist "\nChoose what you want to install:\n " 22 70 15 \
+--title "Installing to $family $distribution" --clear --checklist "\nChoose what you want to install:\n " 18 70 15 \
 "Tasksel" "Stock $family $distribution app installer" off \
 "TV headend" "TV streaming / proxy" off \
 "Syncthing" "Personal cloud @syncthing.net" off \
-"CUPS" "Printing" off \
 "VPN server" "VPN server" off \
-"Armbianmonitor" "Status page and statistics" off \
 "OMV" "OpenMediaVault NAS solution" off \
 "Minidlna" "Lightweight DLNA/UPnP-AV server" off \
 "Pi hole" "Ad blocker" off \
