@@ -1,11 +1,11 @@
 #!/bin/bash
-# 
+#
 # (c) Igor Pecovnik
-# 
+#
 
 
 # Very basic stuff
-apt-get -y -qq install dialog whiptail lsb-release
+apt-get -y -qq install dialog whiptail lsb-release bc
 
 # gather some info
 distribution=$(lsb_release -cs)
@@ -15,14 +15,12 @@ set ${serverIP//./ }
 SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
 mysql_pass=""
-tv_user="admin"
-tv_pass="1234"
-backtitle="Micro home server (c) Igor Pecovnik"
+backtitle="Armbian post deployment scripts, http://www.armbian.com"
 logfile="/tmp/microhomeserver.log"
 echo "Start:" > $logfile
 
 TTY_X=$(($(stty size | awk '{print $2}')-6)) # determine terminal width
-TTY_Y=$(($(stty size | awk '{print $1}')-6)) # determine terminal height 
+TTY_Y=$(($(stty size | awk '{print $1}')-6)) # determine terminal height
 
 
 #distribution=$(lsb_release -i)" "$(lsb_release -cs)
@@ -77,13 +75,12 @@ before_install ()
 # What do we need anyway
 #--------------------------------------------------------------------------------------------------------------------------------
 apt-get update 		| dialog --backtitle "$backtitle" \
-										--progressbox "Force package list update ..." $TTY_Y $TTY_X 
+										--progressbox "Force package list update ..." $TTY_Y $TTY_X
 apt-get -y upgrade	| dialog --backtitle "$backtitle" \
-										--progressbox "Force upgrade ..." $TTY_Y $TTY_X 
+										--progressbox "Force upgrade ..." $TTY_Y $TTY_X
 apt-get -y autoremove	| dialog --backtitle "$backtitle" \
-										--progressbox "Remove packages that are no more needed ..." $TTY_Y $TTY_X  
-install_packet "debconf-utils dnsutils unzip build-essential alsa-base alsa-utils stunnel4 html2text apt-transport-https"\
-										"Downloading basic packages"
+										--progressbox "Remove packages that are no more needed ..." $TTY_Y $TTY_X
+install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
 
 }
 
@@ -100,17 +97,18 @@ tempfile=`tempfile 2>/dev/null` || tempfile=/tmp/test$$
 trap "rm -f $tempfile" 0 1 2 5 15
 
 $DIALOG --backtitle "$backtitle" \
-	--title "Installing to $family $distribution" --clear --checklist "\nChoose what you want to install:\n " 20 70 15 \
-	"Samba" "Windows compatible file sharing        " off \
+--title "Installing to $family $distribution" --clear --checklist "\nChoose what you want to install:\n " 22 70 15 \
+"Tasksel" "Stock $family $distribution app installer" off \
 "TV headend" "TV streaming / proxy" off \
 "Syncthing" "Personal cloud @syncthing.net" off \
 "CUPS" "Printing" off \
 "VPN server" "VPN server" off \
-"Scanner" "Control your scanner with buttons + OCR" off \
-"Rpi monitor" "Status page and statistics" off \
+"Armbianmonitor" "Status page and statistics" off \
+"OMV" "OpenMediaVault NAS solution" off \
+"Minidlna" "Lightweight DLNA/UPnP-AV server" off \
 "Pi hole" "Ad blocker" off \
 "Transmission" "Torrent downloading" off \
-"ISPConfig" "WWW, PHP, SQL, SMTP, IMAP, POP3" off 2> $tempfile
+"ISPConfig" "Advanced LAMP + SMTP, IMAP, POP3" off 2> $tempfile
 
 retval=$?
 
@@ -123,7 +121,7 @@ case $retval in
   255)
     exit;;
 esac
-IFS=";" 
+IFS=";"
 choice="${choice//\" /;}"
 choice="${choice//\"/}"
 declare -a choice=($choice)
@@ -137,18 +135,18 @@ install_packet ()
 #--------------------------------------------------------------------------------------------------------------------------------
 i=0
 j=1
-IFS=" " 
+IFS=" "
 declare -a PACKETS=($1)
 skupaj=${#PACKETS[@]}
 while [[ $i -lt $skupaj ]]; do
 procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
-		x=${PACKETS[$i]}	
-		if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then 
+		x=${PACKETS[$i]}
+		if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
 			printf '%.0f\n' $procent | dialog \
 			--backtitle "$backtitle" \
 			--title "Installing" \
 			--gauge "\n$2\n\n$x" 10 70
-		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >/tmp/install.log 2>&1 || echo 'Installation failed' | grep 'Installation failed')" != "" ]; then    
+		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >/tmp/install.log 2>&1 || echo 'Installation failed' | grep 'Installation failed')" != "" ]; then
 			echo -e "[\e[0;31m error \x1B[0m] Installation failed"
 			tail /tmp/install.log
 			exit
@@ -158,21 +156,27 @@ procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
 		j=$[$j+1]
 done
 echo ""
-} 
+}
+
+
+check_port (){
+[[ -z $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".$1"') ]] && dialog --backtitle "$backtitle" --title "Checking service" --infobox "\nIt looks good.\n\nThere is $2 service on port $1" 7 52
+sleep 3
+}
 
 
 install_basic (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Set hostname, FQDN, add to sources list
 #--------------------------------------------------------------------------------------------------------------------------------
-IFS=" " 
+IFS=" "
 set ${HOSTNAMEFQDN//./ }
 HOSTNAMESHORT="$1"
 cp /etc/hosts /etc/hosts.backup
 cp /etc/hostname /etc/hostname.backup
 sed -i '/#ispconfig/d' /etc/hosts
 sed -e 's/127.0.0.1.*/127.0.0.1   localhost.localdomain   localhost/g' -i /etc/hosts
-echo "${serverIP} ${HOSTNAMEFQDN} ${HOSTNAMESHORT} #ispconfig " >> /etc/hosts 
+echo "${serverIP} ${HOSTNAMEFQDN} ${HOSTNAMESHORT} #ispconfig " >> /etc/hosts
 echo "$HOSTNAMESHORT" > /etc/hostname
 /etc/init.d/hostname.sh start >/dev/null 2>&1
 }
@@ -209,106 +213,33 @@ EOF
 }
 
 
-install_sugarcrm (){
-#--------------------------------------------------------------------------------------------------------------------------------
-# Community edition CRM
-#--------------------------------------------------------------------------------------------------------------------------------
-cd /tmp
-wget http://downloads.sourceforge.net/project/sugarcrm/1%20-%20SugarCRM%206.5.X/WebPI/SugarCE-6.5.18-WebPI.zip
-unzip SugarCE-6.5.18-WebPI.zip
-cd SugarCE-Full-6.5.18
-mv * /usr/share/nginx/www
-}
-
-
-install_varnish (){
+install_omv (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install high-performance HTTP accelerator
-#-------------------------------------------------------------------------------------------------------------------------------- 
-wget -O - https://repo.varnish-cache.org/GPG-key.txt | apt-key add -
-cat > /etc/apt/sources.list.d/varnish-cache.list<<EOF
-deb-src https://repo.varnish-cache.org/debian/ jessie varnish-4.1
-EOF
-apt-get update
-apt-get build-dep varnish -y
-cd /tmp
-apt-get source varnish -y
-rm varnish_*.dsc
-rm varnish_*.orig.tar.gz
-rm varnish_*.diff.gz
-cd varnish-4*
-./configure --prefix=/usr
-make -j$(ncpu)
-make install
-cp debian/varnish.init /etc/init.d/varnish
-chmod +x /etc/init.d/varnish
-cp debian/varnish.default /etc/default/varnish
-update-rc.d varnish defaults
-mkdir -p /etc/varnish
-cp etc/example.vcl /etc/varnish/default.vcl
-dd if=/dev/random of=/etc/varnish/secret count=1
-service varnish start
-}
+#--------------------------------------------------------------------------------------------------------------------------------
+wget -qO - packages.openmediavault.org/public/archive.key | apt-key add -
+apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
+
+cat > /etc/apt/sources.list.d/openmediavault.list << EOF
+deb http://packages.openmediavault.org/public erasmus main
+
+## Uncomment the following line to add software from the proposed repository.
+# deb http://packages.openmediavault.org/public erasmus-proposed main
 
 
-install_rpimonitor (){
-#--------------------------------------------------------------------------------------------------------------------------------
-# Install rpimonitor with custom config
-#--------------------------------------------------------------------------------------------------------------------------------
-if !(grep -qs XavierBerger "/etc/apt/sources.list");then
-cat >> /etc/apt/sources.list <<EOF
-# RPi-Monitor official repository
-deb https://github.com XavierBerger/RPi-Monitor-deb/raw/master/repo/
+## This software is not part of OpenMediaVault, but is offered by third-party
+## developers as a service to OpenMediaVault users.
+
+# deb http://packages.openmediavault.org/public erasmus partner
+
 EOF
-fi
-apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 2C0D3C0F
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get -y install rpimonitor
-service rpimonitor stop
-# add my own configuration which is not default
-cd /etc/rpimonitor
-wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/rpimonitor-myconfig.tgz?raw=true -O - | tar -xhz
-cd /usr/local/bin
-wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/temp-pir-daemon.sh?raw=true -O temp-pir-daemon.sh
-chmod +x /usr/local/bin/temp-pir-daemon.sh
-sed -e 's/exit 0//g' -i /etc/rc.local
-cat >> /etc/rc.local <<"EOF"
-nohup /usr/local/bin/temp-pir-daemon.sh &
-exit 0
-EOF
-rm -rf /var/lib/rpimonitor/stat
-mkdir -p /var/log/rpimonitor
-nohup /usr/local/bin/temp-pir-daemon.sh &
-service rpimonitor start
-/usr/share/rpimonitor/scripts/updatePackagesStatus.pl
-}
-
-
-install_bmc180 (){
-#--------------------------------------------------------------------------------------------------------------------------------
-# Install temp and pressure sensor read utility
-#-------------------------------------------------------------------------------------------------------------------------------- 
-cd /tmp
-git clone https://github.com/maasdoel/bmp180
-cd bmp180
-# let's change bus number to suits our need
-sed -i "s/dev\/i2c-1/dev\/i2c-2/" bmp180dev3.c
-gcc -Wall -o bmp180 ./bmp180dev3.c -lm
-cp bmp180 /usr/local/bin
-rm -r /tmp/bmp180
-}
-
-
-install_tsl2561 (){
-#--------------------------------------------------------------------------------------------------------------------------------
-# Install light sensor read utility
-#--------------------------------------------------------------------------------------------------------------------------------
-cd /tmp
-wget https://github.com/igorpecovnik/Debian-micro-home-server/blob/next/src/tsl2561-src.tgz?raw=true -O - | tar -xz
-gcc -Wall -O2 -o TSL2561.o -c TSL2561.c
-gcc -Wall -O2 -o TSL2561_test.o -c TSL2561_test.c
-gcc -Wall -O2 -o TSL2561_test TSL2561.o TSL2561_test.o
-cp TSL2561_test /usr/local/bin/tsl2561
+install_packet "openmediavault postfix openmediavault-flashmemory" "Install network attached storage (NAS) solution"
+URL='http://omv-extras.org/openmediavault-omvextrasorg_latest_all3.deb'; FILE=`mktemp`; wget "$URL" -qO $FILE && sudo dpkg -i $FILE; rm $FILE
+/usr/sbin/omv-update
+sed -i '/<flashmemory>/,/<\/flashmemory>/ s/<enable>0/<enable>1/' /etc/openmediavault/config.xml
+/usr/sbin/omv-mkconf flashmemory
+check_port 80
 }
 
 
@@ -316,14 +247,16 @@ install_tvheadend (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # TVheadend https://tvheadend.org/
 #--------------------------------------------------------------------------------------------------------------------------------
+install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
+
 if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
-	echo "deb https://dl.bintray.com/tvheadend/deb $distribution release" >> /etc/apt/sources.list.d/tvheadend.list
-	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1	
+	echo "deb https://dl.bintray.com/tvheadend/deb $distribution stable" >> /etc/apt/sources.list.d/tvheadend.list
+	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1
 fi
+debconf-apt-progress -- apt-get update
 install_packet "libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util"
 install -m 755 scripts/tv_grab_file /usr/bin/tv_grab_file
-sed -i 's/name": ".*"/name": "'$tv_user'"/' /home/hts/.hts/tvheadend/superuser
-sed -i 's/word": ".*"/word": "'$tv_pass'"/' /home/hts/.hts/tvheadend/superuser
+dpkg-reconfigure tvheadend
 service tvheadend restart
 }
 
@@ -332,35 +265,8 @@ install_transmission (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # transmission
 #--------------------------------------------------------------------------------------------------------------------------------
+install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
 install_packet "transmission-cli transmission-common transmission-daemon" "Install torrent server"
-}
-
-
-install_samba (){
-#---------------------------------------------------------------------------------------------------------------------------------
-# install Samba file sharing
-#---------------------------------------------------------------------------------------------------------------------------------
-# Read samba user / pass / group
-local SECTION="Samba"
-SMBUSER=$(whiptail --inputbox "What is your samba username?" 8 78 $SMBUSER --title "$SECTION" 3>&1 1>&2 2>&3)
-exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
-SMBPASS=$(whiptail --inputbox "What is your samba password?" 8 78 $SMBPASS --title "$SECTION" 3>&1 1>&2 2>&3)
-exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
-SMBGROUP=$(whiptail --inputbox "What is your samba group?" 8 78 $SMBGROUP --title "$SECTION" 3>&1 1>&2 2>&3)
-exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
-#
-debconf-apt-progress -- apt-get -y install samba samba-common-bin
-useradd $SMBUSER
-echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER >/dev/null 2>&1
-echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER >/dev/null 2>&1
-service samba stop | service smbd stop >/dev/null 2>&1
-cp scripts/smb.conf /etc/samba/smb.conf
-sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf
-sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf
-sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf
-mkdir -p /ext
-chmod -R 777 /ext
-service samba start | service smbd start >/dev/null 2>&1
 }
 
 
@@ -368,7 +274,7 @@ install_cups (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install printer system
 #--------------------------------------------------------------------------------------------------------------------------------
-debconf-apt-progress -- apt-get -y install cups lpr foomatic-filters
+install_packet "cups lpr cups-filters" "Installing CUPS"
 # cups-filters if jessie
 sed -e 's/Listen localhost:631/Listen 631/g' -i /etc/cups/cupsd.conf
 sed -e 's/<Location \/>/<Location \/>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
@@ -376,54 +282,26 @@ sed -e 's/<Location \/admin>/<Location \/admin>\nallow $SUBNET/g' -i /etc/cups/c
 sed -e 's/<Location \/admin\/conf>/<Location \/admin\/conf>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
 service cups restart
 service samba restart | service smbd restart >/dev/null 2>&1
-} 
-
-
-install_scaner_and_scanbuttons (){
-#--------------------------------------------------------------------------------------------------------------------------------
-# Install Scanner buttons
-#--------------------------------------------------------------------------------------------------------------------------------
-install_packet "pdftk libusb-dev sane sane-utils libudev-dev imagemagick libtiff-tools" "Install Scanner buttons"
-# wget http://wp.psyx.us/wp-content/uploads/2010/10/scanbuttond-0.2.3.genesys.tar.gz
-wget https://github.com/igorpecovnik/Debian-micro-home-server/raw/master/src/scanbuttond-0.2.3.genesys.tar.gz
-tar xvfz scanbuttond-0.2.3.genesys.tar.gz
-rm scanbuttond-0.2.3.genesys.tar.gz
-cd scanbuttond-0.2.3.genesys
-chmod +x configure
-make clean 
-./configure --prefix=/usr --sysconfdir=/etc
-make
-make install
-echo "sane-find-scanner" >> /etc/scanbuttond/initscanner.sh
-sed -e 's/does nothing./does nothing.\n\/usr\/bin\/scanbuttond/g' -i /etc/rc.local
-} 
-
-
-install_ocr (){
-#--------------------------------------------------------------------------------------------------------------------------------
-# Install OCR
-# get script from here https://github.com/gkovacs/pdfocr
-#--------------------------------------------------------------------------------------------------------------------------------
-wget https://raw2.github.com/gkovacs/pdfocr/master/pdfocr.rb
-mv pdfocr.rb /usr/local/bin/pdfocr
-chmod +x /usr/local/bin/pdfocr
-apt-get -y install ruby tesseract-ocr libtiff-tools
-} 
+}
 
 
 install_syncthing (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install Personal cloud https://syncthing.net/
-#-------------------------------------------------------------------------------------------------------------------------------- 
+#--------------------------------------------------------------------------------------------------------------------------------
 curl -s https://syncthing.net/release-key.txt | apt-key add -
-echo "deb http://apt.syncthing.net/ syncthing release" | tee /etc/apt/sources.list.d/syncthing-release.list
-apt-get update | dialog --backtitle $backtitle --progressbox "Force package list update ..." $TTY_X $TTY_Y
-install_packet "syncthing" "Install Personal cloud https://syncthing.net/"
-sed -e 's/exit 0//g' -i /etc/rc.local
-cat >> /etc/rc.local <<"EOF"
+	if !(grep -qs syncthing "/etc/apt/sources.list.d/syncthing.list");then
+	echo "deb http://apt.syncthing.net/ syncthing release" | tee /etc/apt/sources.list.d/syncthing.list
+	debconf-apt-progress -- apt-get update
+	install_packet "syncthing" "Install Personal cloud https://syncthing.net/"
+	sed -e 's/exit 0//g' -i /etc/rc.local
+	cat >> /etc/rc.local <<"EOF"
 syncthing
 exit 0
 EOF
+	syncthing >/dev/null 2>&1 &
+	sleep 5
+	fi
 }
 
 
@@ -467,7 +345,7 @@ EOT
 systemctl enable ethervpn.service
 service ethervpn start
 
-else 
+else
 
 cat <<EOT > /etc/init.d/vpnserver
 #!/bin/sh
@@ -518,7 +396,7 @@ install_DashNTP (){
 echo "dash dash/sh boolean false" | debconf-set-selections
 dpkg-reconfigure -f noninteractive dash > /dev/null 2>&1
 install_packet "ntp ntpdate" "Install DASH and ntp service"
-} 
+}
 
 
 install_MySQL (){
@@ -763,6 +641,6 @@ install_ISPConfig (){
 cd /tmp
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd /tmp/ispconfig3_install/install/
-#apt-get -y install php5-cli php5-mysql 
+#apt-get -y install php5-cli php5-mysql
 php -q install.php --autoinstall=/tmp/isp.conf.php
 }
