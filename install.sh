@@ -54,7 +54,7 @@ do
 	fi
 	if [[ "$menu_choice" == *headend* ]] ; then
 		install_tvheadend
-		check_port 9981
+		check_port 9981 "HTS tvheadend"
 		echo $menu_choice;
 	fi
 	if [[ "$menu_choice" == *Syncthing* ]] ; then
