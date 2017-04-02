@@ -511,48 +511,26 @@ echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf
 #BELOW ARE STILL NOT WORKING
 #echo 'phpmyadmin      phpmyadmin/dbconfig-reinstall   boolean false' | debconf-set-selections
 #echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
-install_packet "apache2 apache2.2-common apache2-doc apache2-mpm-prefork apache2-utils libexpat1 ssl-cert libapache2-mod-php5 \
-php5 php5-common php5-gd php5-mysql php5-imap phpmyadmin php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear \
-php-auth php5-mcrypt mcrypt php5-imagick imagemagick libapache2-mod-suphp libruby libapache2-mod-ruby libapache2-mod-python \
-php5-curl php5-intl php5-memcache php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy \
-php5-xmlrpc php5-xsl memcached" "apache2, PHP5, phpMyAdmin, FCGI, suExec, pear and mcrypt"
+install_packet "apache2 apache2.2-common apache2-doc apache2-mpm-prefork apache2-utils libexpat1 ssl-cert libapache2-mod-php5 php5 \
+php5-common php5-gd php5-mysql php5-imap phpmyadmin php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear php-auth php5-mcrypt \
+mcrypt php5-imagick imagemagick libruby libapache2-mod-python php5-curl php5-intl php5-memcache php5-memcached php5-pspell php5-recode \
+php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached libapache2-mod-passenger" "apache2, PHP5, phpMyAdmin, FCGI, suExec, pear and mcrypt"
+
+cat <<EOT > /etc/apache2/conf-available/httpoxy.conf
+<IfModule mod_headers.c>
+    RequestHeader unset Proxy early
+</IfModule>
+
+EOT
+
+a2enconf httpoxy >> /dev/null
 
 a2enmod suexec rewrite ssl actions include >> /dev/null
-a2enmod dav_fs dav auth_digest >> /dev/null
-
-#Fix SuPHP
-cp /etc/apache2/mods-available/suphp.conf /etc/apache2/mods-available/suphp.conf.backup
-rm /etc/apache2/mods-available/suphp.conf
-cat > /etc/apache2/mods-available/suphp.conf <<"EOF"
-<IfModule mod_suphp.c>
-    #<FilesMatch "\.ph(p3?|tml)$">
-    #    SetHandler application/x-httpd-suphp
-    #</FilesMatch>
-        AddType application/x-httpd-suphp .php .php3 .php4 .php5 .phtml
-        suPHP_AddHandler application/x-httpd-suphp
-
-    <Directory />
-        suPHP_Engine on
-    </Directory>
-
-    # By default, disable suPHP for debian packaged web applications as files
-    # are owned by root and cannot be executed by suPHP because of min_uid.
-    <Directory /usr/share>
-        suPHP_Engine off
-    </Directory>
-
-# # Use a specific php config file (a dir which contains a php.ini file)
-#       suPHP_ConfigPath /etc/php5/cgi/suphp/
-# # Tells mod_suphp NOT to handle requests with the type <mime-type>.
-#       suPHP_RemoveHandler <mime-type>
-</IfModule>
-EOF
-
-#Enable Ruby Support
-sed -i 's|application/x-ruby|#application/x-ruby|' /etc/mime.types
+a2enmod dav_fs dav auth_digest cgi headers >> /dev/null
 
 #Install XCache
-install_packet "php5-xcache" "Install XCache"
+install_packet "php5-xcache libapache2-mod-fastcgi php5-fpm" "Install XCache PHP Fpm"
+a2enmod actions fastcgi alias >> /dev/null
 
 #Restart Apache
 service apache2 restart >> /dev/null
