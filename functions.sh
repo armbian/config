@@ -183,7 +183,7 @@ if [[ $family == "Ubuntu" ]]; then
 	# disable AppArmor
 	service apparmor stop
 	update-rc.d -f apparmor remove
-	apt-get remove apparmor apparmor-utils
+	apt-get -y -qq remove apparmor apparmor-utils
 fi
 }
 
@@ -203,6 +203,7 @@ cat > /tmp/isp.conf.php <<EOF
 \$autoinstall['mysql_root_password'] = '$MYSQL_PASS';
 \$autoinstall['mysql_database'] = 'dbispconfig'; // default: dbispcongig
 \$autoinstall['mysql_charset'] = 'utf8'; // default: utf8
+\$autoinstall['mysql_server_port'] = '3306'; // default: 3306
 \$autoinstall['http_server'] = '$server'; // apache (default), nginx
 \$autoinstall['ispconfig_port'] = '8080'; // default: 8080
 \$autoinstall['ispconfig_use_ssl'] = 'y'; // y (default), n
@@ -426,7 +427,7 @@ install_MySQL (){
 install_packet "mariadb-client mariadb-server" "Install Mysql client / server"
 #Allow MySQL to listen on all interfaces
 cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
-sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/mariadb.conf.d/50-server.cnf
+sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/my.cnf
 SECURE_MYSQL=$(expect -c "
 set timeout 3
 spawn mysql_secure_installation
@@ -686,4 +687,5 @@ wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar 
 cd /tmp/ispconfig3_install/install/
 #apt-get -y install php5-cli php5-mysql
 php -q install.php --autoinstall=/tmp/isp.conf.php
+echo "Go to: https://$serverIP:8080"
 }
