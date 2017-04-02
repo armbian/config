@@ -184,6 +184,10 @@ if [[ $family == "Ubuntu" ]]; then
 	service apparmor stop
 	update-rc.d -f apparmor remove
 	apt-get -y -qq remove apparmor apparmor-utils
+else
+	grep -q "contrib" /etc/apt/sources.list || sed -i 's|main|main contrib|' /etc/apt/sources.list
+	grep -q "non-free" /etc/apt/sources.list || sed -i 's|contrib|contrib non-free|' /etc/apt/sources.list
+	debconf-apt-progress -- apt-get update
 fi
 }
 
