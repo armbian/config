@@ -5,7 +5,7 @@
 
 
 # Very basic stuff
-apt-get -y -qq install dialog whiptail lsb-release bc
+apt-get -y -qq install dialog whiptail lsb-release bc expect --no-install-recommends
 
 # gather some info
 distribution=$(lsb_release -cs)
@@ -405,7 +405,7 @@ install_packet "ntp ntpdate" "Install DASH and ntp service"
 }
 
 
-install_MySQL (){
+install_MySQL_old (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # MYSQL
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -415,6 +415,43 @@ install_packet "mysql-client mysql-server" "Install Mysql client / server"
 #Allow MySQL to listen on all interfaces
 cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
 sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/my.cnf
+service mysql restart >> /dev/null
+}
+
+
+install_MySQL (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# Maria SQL
+#--------------------------------------------------------------------------------------------------------------------------------
+install_packet "mariadb-client mariadb-server" "Install Mysql client / server"
+#Allow MySQL to listen on all interfaces
+cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
+sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/mariadb.conf.d/50-server.cnf
+SECURE_MYSQL=$(expect -c "
+set timeout 3
+spawn mysql_secure_installation
+expect \"Enter current password for root (enter for none):\"
+send \"\r\"
+expect \"root password?\"
+send \"y\r\"
+expect \"New password:\"
+send \"$MYSQL_PASS\r\"
+expect \"Re-enter new password:\"
+send \"$MYSQL_PASS\r\"
+expect \"Remove anonymous users?\"
+send \"y\r\"
+expect \"Disallow root login remotely?\"
+send \"y\r\"
+expect \"Remove test database and access to it?\"
+send \"y\r\"
+expect \"Reload privilege tables now?\"
+send \"y\r\"
+expect eof
+")
+#
+# Execution mysql_secure_installation
+#
+echo "${SECURE_MYSQL}"
 service mysql restart >> /dev/null
 }
 
