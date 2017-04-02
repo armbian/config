@@ -226,6 +226,11 @@ install_omv (){
 #--------------------------------------------------------------------------------------------------------------------------------
 # Install high-performance HTTP accelerator
 #--------------------------------------------------------------------------------------------------------------------------------
+if [[ $family == "Ubuntu" ]]; then
+	dialog --backtitle "$backtitle" --title "Dependencies not met" --infobox "\nOpenmediavault can be installed only on Debian." 5 52
+	sleep 5
+	exit
+fi
 wget -qO - packages.openmediavault.org/public/archive.key | apt-key add -
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
 
@@ -243,10 +248,10 @@ deb http://packages.openmediavault.org/public erasmus main
 
 EOF
 debconf-apt-progress -- apt-get update
-install_packet "openmediavault postfix" "Install network attached storage (NAS) solution"
+apt-get -y install openmediavault postfix
 URL='http://omv-extras.org/openmediavault-omvextrasorg_latest_all3.deb'; FILE=`mktemp`; wget "$URL" -qO $FILE && dpkg -i $FILE; rm $FILE
 /usr/sbin/omv-update
-install_packet "openmediavault-flashmemory" "Install openmediavault-flashmemory"
+apt-get -y install openmediavault-flashmemory
 sed -i '/<flashmemory>/,/<\/flashmemory>/ s/<enable>0/<enable>1/' /etc/openmediavault/config.xml
 /usr/sbin/omv-mkconf flashmemory
 check_port 80
