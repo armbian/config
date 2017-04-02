@@ -1,9 +1,17 @@
-Debian micro home server
+Debian and Ubuntu post-installation tasks
 ========================
 
-![](http://www.armbian.com/wp-content/uploads/2016/05/serverinstall.png)
+![](https://www.armbian.com/wp-content/uploads/2017/04/serverinstallnew.png)
 
-Samba, TV headend, Syncthing, SoftEther VPN server, CUPS, scanner + buttons + OCR, Rpimonitor + 3 additional sensors, Transmission, ISPConfig  (Apache2 or NginX, PHP, Mysql with phpMyAdmin, Postfix, Dovecot)
+- Debian or Ubuntu stock post-install options: dekstops, DNS, LAMP, MAIL, SAMBA, SSH, ...
+- [TV headend](https://tvheadend.org/)
+- [Syncthing](https://syncthing.net/)
+- [SoftEther VPN server](https://www.softether.org/)
+- [Transmission](https://transmissionbt.com/)
+- [ISPConfig](https://www.ispconfig.org/)
+- [Openmediavault NAS](http://www.openmediavault.org/)
+- [PI hole](https://pi-hole.net)
+- [MiniDLNA](http://minidlna.sourceforge.net/)
 
 Project realisation:
 [http://www.igorpecovnik.com/2013/12/10/micro-home-server/](http://www.igorpecovnik.com/2013/12/10/micro-home-server/)
