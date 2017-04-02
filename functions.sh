@@ -254,6 +254,7 @@ URL='http://omv-extras.org/openmediavault-omvextrasorg_latest_all3.deb'; FILE=`m
 apt-get -y install openmediavault-flashmemory
 sed -i '/<flashmemory>/,/<\/flashmemory>/ s/<enable>0/<enable>1/' /etc/openmediavault/config.xml
 /usr/sbin/omv-mkconf flashmemory
+omv-initsystem
 check_port 80
 }
 
