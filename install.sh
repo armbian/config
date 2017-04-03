@@ -45,7 +45,7 @@ do
 			dialog --msgbox "Mysql password can't be blank. Exiting..." 7 70
 			exit
 		fi
-		install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server
+		install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
 		create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 		install_ISPConfig
     fi

@@ -502,6 +502,17 @@ libnet-ident-perl zip libnet-dns-perl" "amavisd, spamassassin, clamav"
 insserv -rf spamassassin
 }
 
+install_hhvm (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# Install HipHop Virtual Machine
+#--------------------------------------------------------------------------------------------------------------------------------
+apt-get -y -qq install software-properties-common
+apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449
+add-apt-repository "deb http://dl.hhvm.com/ubuntu $distribution main"
+apt-get update
+apt-get -y -qq install hhvm
+}
+
 
 install_apache (){
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -520,26 +531,45 @@ echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf
 #BELOW ARE STILL NOT WORKING
 #echo 'phpmyadmin      phpmyadmin/dbconfig-reinstall   boolean false' | debconf-set-selections
 #echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
+
+if [[ $family == "Ubuntu" ]]; then
+
+install_packet "apt-get install apache2 apache2-doc apache2-utils libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql \
+php7.0-imap phpmyadmin php7.0-cli php7.0-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear php-auth php7.0-mcrypt mcrypt \
+imagemagick libruby libapache2-mod-python php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy php7.0-xmlrpc \
+php7.0-xsl memcached php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring" "apache2, PHP5, phpMyAdmin, FCGI, suExec, pear and mcrypt"
+# PHP Opcode cache
+install_packet "install php7.0-opcache php-apcu" "PHP Opcode cache"
+# PHP-FPM
+install_packet "libapache2-mod-fastcgi php7.0-fpm" "PHP-FPM"
+a2enmod actions fastcgi alias
+# Install Let's Encrypt
+install_packet "letsencrypt" "Install Let's Encrypt"
+
+else
+
 install_packet "apache2 apache2.2-common apache2-doc apache2-mpm-prefork apache2-utils libexpat1 ssl-cert libapache2-mod-php5 php5 \
 php5-common php5-gd php5-mysql php5-imap phpmyadmin php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear php-auth php5-mcrypt \
 mcrypt php5-imagick imagemagick libruby libapache2-mod-python php5-curl php5-intl php5-memcache php5-memcached php5-pspell php5-recode \
 php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached libapache2-mod-passenger" "apache2, PHP5, phpMyAdmin, FCGI, suExec, pear and mcrypt"
+#Install XCache
+install_packet "php5-xcache libapache2-mod-fastcgi php5-fpm" "Install XCache PHP Fpm"
+a2enmod actions fastcgi alias >> /dev/null
 
+fi
+
+# fix HTTPOXY vulnerability
 cat <<EOT > /etc/apache2/conf-available/httpoxy.conf
 <IfModule mod_headers.c>
     RequestHeader unset Proxy early
 </IfModule>
 
 EOT
-
 a2enconf httpoxy >> /dev/null
 
+# enable modules
 a2enmod suexec rewrite ssl actions include >> /dev/null
 a2enmod dav_fs dav auth_digest cgi headers >> /dev/null
-
-#Install XCache
-install_packet "php5-xcache libapache2-mod-fastcgi php5-fpm" "Install XCache PHP Fpm"
-a2enmod actions fastcgi alias >> /dev/null
 
 #Restart Apache
 service apache2 restart >> /dev/null
@@ -661,6 +691,8 @@ cat > /etc/fail2ban/filter.d/dovecot-pop3imap.conf <<"EOF"
 failregex = (?: pop3-login|imap-login): .*(?:Authentication failure|Aborted login \(auth failed|Aborted login \(tried to use disabled|Disconnected \(auth failed|Aborted login \(\d+ authentication attempts).*rip=(?P<host>\S*),.*
 ignoreregex =
 EOF
+# Add the missing ignoreregex line
+echo "ignoreregex =" >> /etc/fail2ban/filter.d/postfix-sasl.conf
 service fail2ban restart >> /dev/null
 }
 
