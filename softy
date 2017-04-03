@@ -1,42 +1,23 @@
 #!/bin/bash
 #
-# (c) Igor Pecovnik
+# Copyright (c) 2017 Igor Pecovnik, igor.pecovnik@gma**.com
 #
-
-
-# Very basic stuff
-apt-get -y -qq install dialog whiptail lsb-release bc expect --no-install-recommends
-
-# gather some info
-distribution=$(lsb_release -cs)
-family=$(lsb_release -is)
-serverIP=$(ip route get 8.8.8.8 | awk '{ print $NF; exit }')
-set ${serverIP//./ }
-SUBNET="$1.$2.$3."
-hostnamefqdn=$(hostname -f)
-mysql_pass=""
-backtitle="Armbian post deployment scripts, http://www.armbian.com"
-logfile="/tmp/microhomeserver.log"
-echo "Start:" > $logfile
-
-TTY_X=$(($(stty size | awk '{print $2}')-6)) # determine terminal width
-TTY_Y=$(($(stty size | awk '{print $1}')-6)) # determine terminal height
-
-
-#distribution=$(lsb_release -i)" "$(lsb_release -cs)
+# This file is licensed under the terms of the GNU General Public
+# License version 2. This program is licensed "as is" without any
+# warranty of any kind, whether express or implied.
 
 function choose_webserver
 {
-dialog --title "Choose a webserver" \
---backtitle "$backtitle" \
---yes-label "Apache" \
---no-label "Nginx" \
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Target web server selection
+#------------------------------------------------------------------------------------------------------------------------------------------
+dialog --title "Choose a webserver" --backtitle "$backtitle" --yes-label "Apache" --no-label "Nginx" \
 --yesno "\nChoose a wenserver which you are familiar with. They both work almost the same." 8 70
 response=$?
 case $response in
-   0) server="apache";;
-   1) server="nginx";;
-   255) exit;;
+	0) server="apache";;
+	1) server="nginx";;
+	255) exit;;
 esac
 echo $server > /tmp/server
 }
@@ -44,10 +25,11 @@ echo $server > /tmp/server
 
 function server_conf
 {
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Add some reqired date for installation
+#------------------------------------------------------------------------------------------------------------------------------------------
 exec 3>&1
-dialog --title "Server configuration" \
---separate-widget $'\n' --ok-label "Install" \
---backtitle "$backtitle" \
+dialog --title "Server configuration" --separate-widget $'\n' --ok-label "Install" --backtitle "$backtitle" \
 --form "\nPlease fill out this form:\n " \
 12 70 0 \
 "Your FQDN for $serverip:"	1 1 "$hostnamefqdn"         1 31 32 0 \
@@ -69,68 +51,11 @@ server=`cat /tmp/server`
 }
 
 
-before_install ()
-{
-#--------------------------------------------------------------------------------------------------------------------------------
-# What do we need anyway
-#--------------------------------------------------------------------------------------------------------------------------------
-apt-get update 		| dialog --backtitle "$backtitle" \
-										--progressbox "Force package list update ..." $TTY_Y $TTY_X
-apt-get -y upgrade	| dialog --backtitle "$backtitle" \
-										--progressbox "Force upgrade ..." $TTY_Y $TTY_X
-apt-get -y autoremove	| dialog --backtitle "$backtitle" \
-										--progressbox "Remove packages that are no more needed ..." $TTY_Y $TTY_X
-install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
-
-}
-
-
-
-
-function what_to_install()
-{
-#--------------------------------------------------------------------------------------------------------------------------------
-# Installation menu
-#--------------------------------------------------------------------------------------------------------------------------------
-DIALOG=${DIALOG=dialog}
-tempfile=`tempfile 2>/dev/null` || tempfile=/tmp/test$$
-trap "rm -f $tempfile" 0 1 2 5 15
-
-$DIALOG --backtitle "$backtitle" \
---title "Installing to $family $distribution" --clear --checklist "\nChoose what you want to install:\n " 18 70 15 \
-"Tasksel" "Stock $family $distribution app installer" off \
-"TV headend" "TV streaming / proxy" off \
-"Syncthing" "Personal cloud @syncthing.net" off \
-"VPN server" "VPN server" off \
-"OMV" "OpenMediaVault NAS solution" off \
-"Minidlna" "Lightweight DLNA/UPnP-AV server" off \
-"Pi hole" "Ad blocker" off \
-"Transmission" "Torrent downloading" off \
-"ISPConfig" "Advanced LAMP + SMTP, IMAP, POP3" off 2> $tempfile
-
-retval=$?
-
-choice=`cat $tempfile`
-case $retval in
-  0)
-   ;;
-  1)
-    exit;;
-  255)
-    exit;;
-esac
-IFS=";"
-choice="${choice//\" /;}"
-choice="${choice//\"/}"
-declare -a choice=($choice)
-}
-
-
 install_packet ()
 {
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install missing packets
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 i=0
 j=1
 IFS=" "
@@ -144,7 +69,8 @@ procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
 			--backtitle "$backtitle" \
 			--title "Installing" \
 			--gauge "\n$2\n\n$x" 10 70
-		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >/tmp/install.log 2>&1 || echo 'Installation failed' | grep 'Installation failed')" != "" ]; then
+		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >/tmp/install.log 2>&1 || echo 'Installation failed' \
+		| grep 'Installation failed')" != "" ]; then
 			echo -e "[\e[0;31m error \x1B[0m] Installation failed"
 			tail /tmp/install.log
 			exit
@@ -157,16 +83,21 @@ echo ""
 }
 
 
-check_port (){
-[[ -z $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".$1"') ]] && dialog --backtitle "$backtitle" --title "Checking service" --infobox "\nIt looks good.\n\nThere is $2 service on port $1" 7 52
+check_port ()
+{
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Check if something is running on port $1 and display info
+#------------------------------------------------------------------------------------------------------------------------------------------
+[[ -z $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".$1"') ]] && dialog --backtitle "$backtitle" --title "Checking service" \
+--infobox "\nIt looks good.\n\nThere is $2 service on port $1" 7 52
 sleep 3
 }
 
 
 install_basic (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Set hostname, FQDN, add to sources list
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 IFS=" "
 set ${HOSTNAMEFQDN//./ }
 HOSTNAMESHORT="$1"
@@ -191,9 +122,9 @@ fi
 
 
 create_ispconfig_configuration (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # ISPConfig autoconfiguration
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 cat > /tmp/isp.conf.php <<EOF
 <?php
 \$autoinstall['language'] = 'en'; // de, en (default)
@@ -223,9 +154,9 @@ EOF
 
 
 install_omv (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install high-performance HTTP accelerator
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 if [[ $family == "Ubuntu" ]]; then
 	dialog --backtitle "$backtitle" --title "Dependencies not met" --infobox "\nOpenmediavault can be installed only on Debian." 5 52
 	sleep 5
@@ -260,9 +191,9 @@ check_port 80
 
 
 install_tvheadend (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # TVheadend https://tvheadend.org/
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
 
 if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
@@ -278,18 +209,18 @@ service tvheadend restart
 
 
 install_transmission (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # transmission
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
 install_packet "transmission-cli transmission-common transmission-daemon" "Install torrent server"
 }
 
 
 install_cups (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install printer system
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "cups lpr cups-filters" "Installing CUPS"
 # cups-filters if jessie
 sed -e 's/Listen localhost:631/Listen 631/g' -i /etc/cups/cupsd.conf
@@ -302,9 +233,9 @@ service samba restart | service smbd restart >/dev/null 2>&1
 
 
 install_syncthing (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install Personal cloud https://syncthing.net/
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 curl -s https://syncthing.net/release-key.txt | apt-key add -
 	if !(grep -qs syncthing "/etc/apt/sources.list.d/syncthing.list");then
 	echo "deb http://apt.syncthing.net/ syncthing release" | tee /etc/apt/sources.list.d/syncthing.list
@@ -322,9 +253,9 @@ EOF
 
 
 install_vpn_server (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Script downloads latest stable
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 cd /tmp
 PREFIX="http://www.softether-download.com/files/softether/"
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
@@ -406,9 +337,9 @@ fi
 
 
 install_DashNTP (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install DASH and ntp service
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 echo "dash dash/sh boolean false" | debconf-set-selections
 dpkg-reconfigure -f noninteractive dash > /dev/null 2>&1
 install_packet "ntp ntpdate" "Install DASH and ntp service"
@@ -416,9 +347,9 @@ install_packet "ntp ntpdate" "Install DASH and ntp service"
 
 
 install_MySQL_old (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # MYSQL
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 echo "mysql-server-5.5 mysql-server/root_password password $MYSQL_PASS" | debconf-set-selections
 echo "mysql-server-5.5 mysql-server/root_password_again password $MYSQL_PASS" | debconf-set-selections
 install_packet "mysql-client mysql-server" "Install Mysql client / server"
@@ -430,9 +361,9 @@ service mysql restart >> /dev/null
 
 
 install_MySQL (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Maria SQL
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "mariadb-client mariadb-server" "Install Mysql client / server"
 #Allow MySQL to listen on all interfaces
 cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
@@ -467,9 +398,9 @@ service mysql restart >> /dev/null
 
 
 install_MySQLDovecot (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install Postfix, Dovecot, Saslauthd, phpMyAdmin, rkhunter, binutils
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
 echo "postfix postfix/mailname string $HOSTNAMEFQDN" | debconf-set-selections
 install_packet "postfix postfix-mysql postfix-doc openssl getmail4 rkhunter binutils dovecot-imapd dovecot-pop3d dovecot-mysql \
@@ -492,9 +423,9 @@ service postfix restart >> /dev/null
 
 
 install_Virus (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install Amavisd-new, SpamAssassin, And Clamav
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 arj p7zip unrar-free ripole rpm nomarch lzop \
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
 libnet-ident-perl zip libnet-dns-perl" "amavisd, spamassassin, clamav"
@@ -503,9 +434,9 @@ insserv -rf spamassassin
 }
 
 install_hhvm (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install HipHop Virtual Machine
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 apt-get -y -qq install software-properties-common
 apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449
 add-apt-repository "deb http://dl.hhvm.com/ubuntu $distribution main"
@@ -515,9 +446,9 @@ apt-get -y -qq install hhvm
 
 
 install_apache (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install Apache2, PHP5, phpMyAdmin, FCGI, suExec, Pear and mcrypt
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 clear_console
 echo "========================================================================="
 echo "You will be prompted for some information during the install of phpmyadmin."
@@ -577,9 +508,9 @@ service apache2 restart >> /dev/null
 
 
 install_nginx (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install NginX, PHP5, phpMyAdmin, FCGI, suExec, Pear, And mcrypt
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 
 echo 'phpmyadmin      phpmyadmin/reconfigure-webserver        multiselect' | debconf-set-selections
 echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
@@ -593,7 +524,8 @@ fi
 service nginx start >> /dev/null
 
 debconf-apt-progress -- apt-get install -y php5-fpm
-debconf-apt-progress -- apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
+debconf-apt-progress -- apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt \
+php5-memcache php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
 debconf-apt-progress -- apt-get install -y php-apc
 #PHP Configuration Stuff Goes Here
 debconf-apt-progress -- apt-get install -y fcgiwrap
@@ -613,9 +545,9 @@ debconf-apt-progress -- apt-get install -y phpmyadmin
 
 
 install_PureFTPD (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install PureFTPd
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "pure-ftpd-common pure-ftpd-mysql" "p3ureFTPd"
 
 sed -i 's/VIRTUALCHROOT=false/VIRTUALCHROOT=true/' /etc/default/pure-ftpd-common
@@ -630,17 +562,17 @@ chmod 600 /etc/ssl/private/pure-ftpd.pem
 
 
 install_Bind (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install BIND DNS Server
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "bind9 dnsutils" "Install BIND DNS Server"
 }
 
 
 install_Stats (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install Vlogger, Webalizer, And AWstats
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "vlogger webalizer awstats geoip-database libclass-dbi-mysql-perl" "vlogger, webalizer, awstats"
 sed -i "s/*/10 * * * * www-data/#*/10 * * * * www-data/" /etc/cron.d/awstats
 sed -i "s/10 03 * * * www-data/#10 03 * * * www-data/" /etc/cron.d/awstats
@@ -648,9 +580,9 @@ sed -i "s/10 03 * * * www-data/#10 03 * * * www-data/" /etc/cron.d/awstats
 
 
 install_Fail2BanDovecot() {
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install fail2ban
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "fail2ban" "Install fail2ban"
 
 cat > /etc/fail2ban/jail.local <<"EOF"
@@ -679,7 +611,7 @@ EOF
 
 
 install_Fail2BanRulesDovecot() {
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 cat > /etc/fail2ban/filter.d/pureftpd.conf <<"EOF"
 [Definition]
 failregex = .*pure-ftpd: \(.*@<HOST>\) \[WARNING\] Authentication failed for user.*
@@ -698,9 +630,9 @@ service fail2ban restart >> /dev/null
 
 
 install_ISPConfig (){
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Install ISPConfig 3
-#--------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 cd /tmp
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd /tmp/ispconfig3_install/install/
@@ -708,3 +640,121 @@ cd /tmp/ispconfig3_install/install/
 php -q install.php --autoinstall=/tmp/isp.conf.php
 echo "Go to: https://$serverIP:8080"
 }
+
+
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------
+# Main choices
+#----------------------------------------------------------------------------------------------------------------------------------------------------
+
+# check for root
+#
+if [[ $EUID != 0 ]]; then
+	dialog --title "Warning" --infobox "\nThis script requires root privileges.\n\nExiting ..." 7 41
+	sleep 3
+	exit
+fi
+
+# Install basic stuff
+#
+apt-get -y -qq --no-install-recommends install dialog whiptail lsb-release bc expect
+
+# gather some info
+#
+distribution=$(lsb_release -cs)
+family=$(lsb_release -is)
+serverIP=$(ip route get 8.8.8.8 | awk '{ print $NF; exit }')
+set ${serverIP//./ }
+SUBNET="$1.$2.$3."
+hostnamefqdn=$(hostname -f)
+mysql_pass=""
+backtitle="Softy - Armbian post deployment scripts, http://www.armbian.com"
+
+
+
+# here we add new items to menu. with condition when needed
+#
+LIST=()
+LIST+=( "Tasksel" "Stock $family $distribution app installer" "off" )
+LIST+=( "TV headend" "TV streaming / proxy" "off" )
+LIST+=( "Syncthing" "Personal cloud @syncthing.net" "off" )
+LIST+=( "VPN server" "VPN server" "off" )
+[[ "$family" == "Debian" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "off" )
+LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "off" )
+LIST+=( "Pi hole" "Ad blocker" "off" )
+LIST+=( "Transmission" "Torrent downloading" "off" )
+LIST+=( "ISPConfig" "Advanced LAMP + SMTP, IMAP, POP3" "off" )
+LISTLENGHT="$((5+${#LIST[@]}/2))"
+
+
+# main dialog routine
+#
+DIALOG_CANCEL=1
+DIALOG_ESC=255
+
+while true; do
+	exec 3>&1
+	selection=$(dialog --backtitle "$backtitle" --title "Installing to $family $distribution" --clear --cancel-label \
+	"Exit" --checklist "\nChoose what you want to install:\n " $LISTLENGHT 70 15 "${LIST[@]}" 2>&1 1>&3)
+	exit_status=$?
+	exec 3>&-
+	case $exit_status in
+	$DIALOG_CANCEL)
+		clear
+		echo -e "\n\e[0;33mThank you for using Armbian configuration tool! Support: \e[1m\e[39mwww.armbian.com\x1B[0m\n"
+		exit
+	;;
+	$DIALOG_ESC)
+		clear
+		exit 1
+		;;
+	esac
+
+	case $selection in
+
+	ISPConfig* )
+		server_conf
+		if [[ "$MYSQL_PASS" == "" ]]; then
+			dialog --msgbox "Mysql password can't be blank. Exiting..." 7 70
+			exit
+		fi
+		install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
+		create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
+		install_ISPConfig
+	;;
+
+	*Tasksel* )
+		tasksel
+	;;
+
+	*headend* )
+		install_tvheadend
+		check_port 9981 "HTS tvheadend"
+	;;
+
+	*Syncthing* )
+		install_syncthing
+		check_port 8384 "Syncthing"
+	;;
+	*CUPS* )
+		install_cups
+	;;
+	*VPN* )
+		install_vpn_server
+	;;
+	*OMV* )
+		install_omv
+	;;
+	*hole* )
+		curl -L install.pi-hole.net | bash
+	;;
+	*Minidlna* )
+		install_packet "minidlna" "Install lightweight DLNA/UPnP-AV server"
+		check_port 8200
+	;;
+	*Transmission* )
+		install_transmission
+		check_port 9091
+	;;
+	esac
+done

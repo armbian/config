@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# Copyright (c) 2017 Igor Pecovnik, igor.pecovnik@gma**.com
+#
+# This file is licensed under the terms of the GNU General Public
+# License version 2. This program is licensed "as is" without any
+# warranty of any kind, whether express or implied.
+
+# check for root
+#
+if [[ $EUID != 0 ]]; then
+	dialog --title "Warning" --infobox "\nThis script requires root privileges.\n\nExiting ..." 7 41
+	sleep 3
+	exit
+fi
+
+# Install basic stuff
+#
+apt-get -y --no-install-recommends install dialog whiptail lsb-release bc expect rcconf
+
+# gather some info
+#
+[[ -f /etc/armbian-release ]] && source /etc/armbian-release && ARMBIAN="Armbian $VERSION $IMAGE_TYPE";
+DISTRO=$(lsb_release -is)
+DISTROID=$(lsb_release -rs)
+BACKTITLE="$ARMBIAN $DISTRO $DISTROID configuration utility, http://www.armbian.com"
+TITLE="Configuring $BOARD_NAME"
+
+LIST=()
+###########################################################################################################################################
+# here we add new items to menu. with condition when needed
+[[ -n $(ls -1 /sys/class/net/ | grep -vE "eth|lo|enp") ]] && LIST+=( "Wireless" "Connect to your router" )
+LIST+=( "Network" "Edit network settings" )
+[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
+[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install Armbian to SATA, eMMC, NAND, USB" )
+LIST+=( "Services" "Toogle running services" )
+[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Provides simple CLI monitoring" )
+[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Install 3rd party applications" )
+[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
+###########################################################################################################################################
+LISTLENGHT="$((7+${#LIST[@]}/2))"
+
+
+# main dialog routine
+DIALOG_CANCEL=1
+DIALOG_ESC=255
+
+while true; do
+	exec 3>&1
+	selection=$(dialog --backtitle "$BACKTITLE" --title "$TITLE" --clear --cancel-label "Exit" --menu "Please select:" $LISTLENGHT 70 15 \
+	"${LIST[@]}" 2>&1 1>&3)
+	exit_status=$?
+	exec 3>&-
+	case $exit_status in
+	$DIALOG_CANCEL)
+		clear
+		echo -e "\n\e[0;33mThank you for using Armbian configuration tool! Support: \e[1m\e[39mwww.armbian.com\x1B[0m\n"
+		exit
+	;;
+	$DIALOG_ESC)
+		clear
+		exit 1
+		;;
+	esac
+
+	#######################################################################################################################################
+	case $selection in
+
+	"Services" )
+		rcconf
+	;;
+
+	"Network" )
+		dialog --title "Edit network configuration" --no-collapse --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
+		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces
+	;;
+
+	"Booting" )
+		dialog --title "Edit u-boot environment" --no-collapse --editbox /boot/armbianEnv.txt 30 0 2> /boot/armbianEnv.txt.out
+		[[ $? = 0 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt
+	;;
+
+	"Install" )
+		nand-sata-install
+	;;
+
+	"Wireless" )
+		nmtui-connect
+	;;
+
+	"Diagnostics" )
+		clear
+		armbianmonitor -u
+		echo ""
+		read -n 1 -s -p "Press any key to continue"
+	;;
+
+	"Softy" )
+		softy
+	;;
+
+	"Monitor" )
+		clear
+		armbianmonitor -m | dialog --backtitle "$BACKTITLE" --title "Simple CLI monitoring $BOARD" --progressbox 15 64
+	;;
+
+	esac
+	#######################################################################################################################################
+done

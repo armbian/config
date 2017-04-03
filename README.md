@@ -28,7 +28,7 @@ Installation steps
 	cd ~
 	git clone https://github.com/igorpecovnik/Debian-micro-home-server
 	cd Debian-micro-home-server
-	sudo ./install.sh
+	sudo ./softy
 
 
 Thank you for your support
