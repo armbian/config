@@ -434,8 +434,8 @@ install_packet "amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 ar
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
 libnet-ident-perl zip libnet-dns-perl postgrey" "amavisd, spamassassin, clamav"
 sed -i "s/^AllowSupplementaryGroups.*/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
-/etc/init.d/spamassassin stop
-insserv -rf spamassassin
+service spamassassin stop
+systemctl disable spamassassin
 }
 
 install_hhvm (){
@@ -562,8 +562,11 @@ read DUMMY
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y dbconfig-common
 debconf-apt-progress -- apt-get install -y phpmyadmin
-
-/etc/init.d/php5-fpm restart || service php7.0-fpm reload >> /dev/null
+if [[ $family == "Ubuntu" ]]; then
+	service php7.0-fpm reload >> /dev/null
+	else
+	service php5-fpm reload >> /dev/null
+fi
 }
 
 
@@ -662,7 +665,7 @@ cd /tmp/ispconfig3_install/install/
 #apt-get -y install php5-cli php5-mysql
 php -q install.php --autoinstall=/tmp/isp.conf.php
 echo "Admin panel: https://$serverIP:8080"
-echo "PHPmyadmin://$serverIP:8081/phpmyadmin"
+echo "PHPmyadmin: http://$serverIP:8081/phpmyadmin"
 }
 
 
