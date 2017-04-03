@@ -428,7 +428,8 @@ install_Virus (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 arj p7zip unrar-free ripole rpm nomarch lzop \
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
-libnet-ident-perl zip libnet-dns-perl" "amavisd, spamassassin, clamav"
+libnet-ident-perl zip libnet-dns-perl postgrey" "amavisd, spamassassin, clamav"
+sed -i "s/^AllowSupplementaryGroups.*/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
 /etc/init.d/spamassassin stop
 insserv -rf spamassassin
 }
@@ -523,10 +524,28 @@ update-rc.d -f apache2 remove >> /dev/null
 fi
 service nginx start >> /dev/null
 
+if [[ $family == "Ubuntu" ]]; then
+
+debconf-apt-progress -- apt-get install -y php7.0-fpm
+debconf-apt-progress -- apt-get install -y php7.0-opcache php7.0-fpm php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli \
+php7.0-cgi php-pear php-auth php7.0-mcrypt mcrypt imagemagick libruby php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 \
+php7.0-tidy php7.0-xmlrpc php7.0-xsl memcached php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring
+phpenmod mcrypt
+phpenmod mbstring
+debconf-apt-progress -- apt-get install -y php-apcu
+sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+tz=$(cat /etc/timezone | sed 's/\//\\\//g')
+sed -i "s/^date.timezone=.*/date.timezone=""$ls""/" /etc/php/7.0/fpm/php.ini
+
+else
+
 debconf-apt-progress -- apt-get install -y php5-fpm
 debconf-apt-progress -- apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt \
 php5-memcache php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
 debconf-apt-progress -- apt-get install -y php-apc
+
+fi
+
 #PHP Configuration Stuff Goes Here
 debconf-apt-progress -- apt-get install -y fcgiwrap
 reset
@@ -721,6 +740,7 @@ while true; do
 		install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
 		create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 		install_ISPConfig
+		read -n 1 -s -p "Press any key to continue"
 	;;
 
 	*Tasksel* )
@@ -730,31 +750,39 @@ while true; do
 	*headend* )
 		install_tvheadend
 		check_port 9981 "HTS tvheadend"
+		read -n 1 -s -p "Press any key to continue"
 	;;
 
 	*Syncthing* )
 		install_syncthing
 		check_port 8384 "Syncthing"
+		read -n 1 -s -p "Press any key to continue"
 	;;
 	*CUPS* )
 		install_cups
+		read -n 1 -s -p "Press any key to continue"
 	;;
 	*VPN* )
 		install_vpn_server
+		read -n 1 -s -p "Press any key to continue"
 	;;
 	*OMV* )
 		install_omv
+		read -n 1 -s -p "Press any key to continue"
 	;;
 	*hole* )
 		curl -L install.pi-hole.net | bash
+		read -n 1 -s -p "Press any key to continue"
 	;;
 	*Minidlna* )
 		install_packet "minidlna" "Install lightweight DLNA/UPnP-AV server"
 		check_port 8200
+		read -n 1 -s -p "Press any key to continue"
 	;;
 	*Transmission* )
 		install_transmission
 		check_port 9091
+		read -n 1 -s -p "Press any key to continue"
 	;;
 	esac
 done
