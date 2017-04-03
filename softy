@@ -200,6 +200,7 @@ if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
 	echo "deb https://dl.bintray.com/tvheadend/deb $distribution stable" >> /etc/apt/sources.list.d/tvheadend.list
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1
 fi
+
 debconf-apt-progress -- apt-get update
 install_packet "libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util"
 install -m 755 scripts/tv_grab_file /usr/bin/tv_grab_file
@@ -258,6 +259,7 @@ install_vpn_server (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 cd /tmp
 PREFIX="http://www.softether-download.com/files/softether/"
+nstall_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
 SUFIX="${URL/-tree/}"
 if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
@@ -268,7 +270,7 @@ DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Server/32bit_-_Intel_x86/softether-vpnser
 fi
 wget -q $DLURL -O - | tar -xz
 cd vpnserver
-make i_read_and_agree_the_license_agreement >> $logfile
+make i_read_and_agree_the_license_agreement >> /dev/null
 cd ..
 cp -R vpnserver /usr/local
 cd /usr/local/vpnserver/
@@ -559,7 +561,7 @@ read DUMMY
 DEBIAN_FRONTEND=noninteractive apt-get install -y dbconfig-common
 debconf-apt-progress -- apt-get install -y phpmyadmin
 
-/etc/init.d/php5-fpm restart >> /dev/null
+/etc/init.d/php5-fpm restart || service php7.0-fpm reload >> /dev/null
 }
 
 
@@ -602,7 +604,7 @@ install_Fail2BanDovecot() {
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Install fail2ban
 #------------------------------------------------------------------------------------------------------------------------------------------
-install_packet "fail2ban" "Install fail2ban"
+install_packet "fail2ban ufv" "Install fail2ban and UFW Firewall"
 
 cat > /etc/fail2ban/jail.local <<"EOF"
 [pureftpd]
@@ -622,7 +624,7 @@ maxretry = 5
 [sasl]
 enabled  = true
 port     = smtp
-filter   = sasl
+filter   = postfix-sasl
 logpath  = /var/log/mail.log
 maxretry = 3
 EOF
@@ -676,7 +678,7 @@ fi
 
 # Install basic stuff
 #
-apt-get -y -qq --no-install-recommends install dialog whiptail lsb-release bc expect
+apt-get -y -qq --no-install-recommends install dialog whiptail lsb-release bc expect html2text
 
 # gather some info
 #
