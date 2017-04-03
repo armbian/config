@@ -136,7 +136,9 @@ cat > /tmp/isp.conf.php <<EOF
 \$autoinstall['mysql_root_password'] = '$MYSQL_PASS';
 \$autoinstall['mysql_database'] = 'dbispconfig'; // default: dbispcongig
 \$autoinstall['mysql_charset'] = 'utf8'; // default: utf8
-\$autoinstall['mysql_server_port'] = '3306'; // default: 3306
+\$autoinstall['mysql_port'] = '3306'; // default: 3306
+\$autoinstall['configure_jailkit'] = 'n'; // y (default), n
+\$autoinstall['configure_dns'] = 'n'; // y (default), n
 \$autoinstall['http_server'] = '$server'; // apache (default), nginx
 \$autoinstall['ispconfig_port'] = '8080'; // default: 8080
 \$autoinstall['ispconfig_use_ssl'] = 'y'; // y (default), n
@@ -259,18 +261,18 @@ install_vpn_server (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 cd /tmp
 PREFIX="http://www.softether-download.com/files/softether/"
-nstall_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
+install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
 SUFIX="${URL/-tree/}"
 if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
 DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Server/32bit_-_ARM_EABI/softether-vpnserver-$SUFIX-linux-arm_eabi-32bit.tar.gz"
 else
-apt-get -y install gcc-multilib
+install_packet "gcc-multilib" "Install libraries"
 DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Server/32bit_-_Intel_x86/softether-vpnserver-$SUFIX-linux-x86-32bit.tar.gz"
 fi
 wget -q $DLURL -O - | tar -xz
 cd vpnserver
-make i_read_and_agree_the_license_agreement >> /dev/null
+make i_read_and_agree_the_license_agreement | dialog --backtitle "$BACKTITLE" --title "Compiling SoftEther VPN" --progressbox $TTY_Y $TTY_X
 cd ..
 cp -R vpnserver /usr/local
 cd /usr/local/vpnserver/
@@ -394,7 +396,7 @@ expect eof
 #
 # Execution mysql_secure_installation
 #
-echo "${SECURE_MYSQL}"
+echo "${SECURE_MYSQL}" >> /dev/null
 service mysql restart >> /dev/null
 }
 
@@ -604,7 +606,7 @@ install_Fail2BanDovecot() {
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Install fail2ban
 #------------------------------------------------------------------------------------------------------------------------------------------
-install_packet "fail2ban ufv" "Install fail2ban and UFW Firewall"
+install_packet "fail2ban ufw" "Install fail2ban and UFW Firewall"
 
 cat > /etc/fail2ban/jail.local <<"EOF"
 [pureftpd]
@@ -659,7 +661,8 @@ wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar 
 cd /tmp/ispconfig3_install/install/
 #apt-get -y install php5-cli php5-mysql
 php -q install.php --autoinstall=/tmp/isp.conf.php
-echo "Go to: https://$serverIP:8080"
+echo "Admin panel: https://$serverIP:8080"
+echo "PHPmyadmin://$serverIP:8081/phpmyadmin"
 }
 
 
@@ -682,6 +685,8 @@ apt-get -y -qq --no-install-recommends install dialog whiptail lsb-release bc ex
 
 # gather some info
 #
+TTY_X=$(($(stty size | awk '{print $2}')-6)) # determine terminal width
+TTY_Y=$(($(stty size | awk '{print $1}')-6)) # determine terminal height
 distribution=$(lsb_release -cs)
 family=$(lsb_release -is)
 serverIP=$(ip route get 8.8.8.8 | awk '{ print $NF; exit }')
