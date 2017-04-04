@@ -176,6 +176,7 @@ while true; do
 
 	"Install" )
 		nand-sata-install
+		read -n 1 -s -p "Press any key to continue"
 	;;
 
 	"Wireless" )
