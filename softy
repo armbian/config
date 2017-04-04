@@ -154,6 +154,45 @@ cat > /tmp/isp.conf.php <<EOF
 EOF
 }
 
+install_cups (){
+#--------------------------------------------------------------------------------------------------------------------------------
+# Install printer system
+#--------------------------------------------------------------------------------------------------------------------------------
+debconf-apt-progress -- apt-get -y install cups lpr cups-filters
+# cups-filters if jessie
+sed -e 's/Listen localhost:631/Listen 631/g' -i /etc/cups/cupsd.conf
+sed -e 's/<Location \/>/<Location \/>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
+sed -e 's/<Location \/admin>/<Location \/admin>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
+sed -e 's/<Location \/admin\/conf>/<Location \/admin\/conf>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
+service cups restart
+service samba restart | service smbd restart >/dev/null 2>&1
+}
+
+install_samba (){
+#---------------------------------------------------------------------------------------------------------------------------------
+# install Samba file sharing
+#---------------------------------------------------------------------------------------------------------------------------------
+# Read samba user / pass / group
+local SECTION="Samba"
+SMBUSER=$(whiptail --inputbox "What is your samba username?" 8 78 $SMBUSER --title "$SECTION" 3>&1 1>&2 2>&3)
+exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
+SMBPASS=$(whiptail --inputbox "What is your samba password?" 8 78 $SMBPASS --title "$SECTION" 3>&1 1>&2 2>&3)
+exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
+SMBGROUP=$(whiptail --inputbox "What is your samba group?" 8 78 $SMBGROUP --title "$SECTION" 3>&1 1>&2 2>&3)
+exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
+#
+debconf-apt-progress -- apt-get -y install samba samba-common-bin
+useradd $SMBUSER
+echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER >/dev/null 2>&1
+echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER >/dev/null 2>&1
+service samba stop | service smbd stop >/dev/null 2>&1
+cp scripts/smb.conf /etc/samba/smb.conf
+sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf
+sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf
+sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf
+install -m 755 -g $SMBUSER -o $SMBUSER -d /ext
+service samba start | service smbd start >/dev/null 2>&1
+}
 
 install_omv (){
 #------------------------------------------------------------------------------------------------------------------------------------------
@@ -705,6 +744,8 @@ backtitle="Softy - Armbian post deployment scripts, http://www.armbian.com"
 #
 LIST=()
 LIST+=( "Tasksel" "Stock $family $distribution app installer" "off" )
+LIST+=( "Samba" "Windows compatible file sharing" "off" )
+LIST+=( "CUPS" "Common UNIX Printing System (CUPS)" "off" )
 LIST+=( "TV headend" "TV streaming / proxy" "off" )
 LIST+=( "Syncthing" "Personal cloud @syncthing.net" "off" )
 LIST+=( "VPN server" "VPN server" "off" )
@@ -756,7 +797,16 @@ while true; do
 	*Tasksel* )
 		tasksel
 	;;
-
+	*Samba* )
+		install_samba
+		check_port 445 "Samba"
+		read -n 1 -s -p "Press any key to continue"
+	;;
+	*CUPS* )
+		install_cups
+		check_port 445 "CUPS"
+		read -n 1 -s -p "Press any key to continue"
+	;;
 	*headend* )
 		install_tvheadend
 		check_port 9981 "HTS tvheadend"
