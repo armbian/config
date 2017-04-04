@@ -1,7 +1,7 @@
 Debian and Ubuntu post-installation tasks
 ========================
 
-![](https://www.armbian.com/wp-content/uploads/2017/04/serverinstallnew1.png)
+![](https://www.armbian.com/wp-content/uploads/2017/04/serverinstallnew2.png)
 
 - Debian or Ubuntu stock post-install options: dekstops, DNS, LAMP, MAIL, SAMBA, SSH, ...
 - [TV headend](https://tvheadend.org/)
