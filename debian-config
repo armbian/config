@@ -56,14 +56,14 @@ DIALOG_ESC=255
 
 while true; do
 	exec 3>&1
-	selection=$(dialog --backtitle "$BACKTITLE" --title "$TITLE" --clear --cancel-label "Exit" --menu "Please select:" $LISTLENGHT 70 15 \
+	selection=$(dialog --backtitle "$BACKTITLE" --title "$TITLE" --clear --cancel-label "Exit to shell" --menu "Please select:" $LISTLENGHT 70 15 \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 	case $exit_status in
 	$DIALOG_CANCEL)
-		clear
-		echo -e "\n\e[0;33mThank you for using Armbian configuration tool! Support: \e[1m\e[39mwww.armbian.com\x1B[0m\n"
+		#clear
+		#echo -e "\n\e[0;33mThank you for using Armbian configuration tool! Support: \e[1m\e[39mwww.armbian.com\x1B[0m\n"
 		exit
 	;;
 	$DIALOG_ESC)
@@ -89,7 +89,7 @@ while true; do
 	;;
 
 	"Hotspot" )
-		if [[ -n $(service hostapd status | grep -w active) ]]; then
+		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nHostapd service is configured and running.\n\nDo you want to stop the service?" 9 57
 			[[ $? = 0 ]] && service hostapd stop && sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 		else
@@ -169,9 +169,9 @@ while true; do
 					# - Save IP tables, applied during ifup in /etc/network/interfaces.
 					iptables-save > /etc/iptables.ipv4.nat
 					# change to proper device
-					sed -i 's/^INTERFACES=.*/INTERFACES="$WIRELESS_ADAPTER"/' /etc/default/isc-dhcp-server
+					sed -i 's/^INTERFACES=.*/INTERFACES='$WIRELESS_ADAPTER'/' /etc/default/isc-dhcp-server
 					service isc-dhcp-server restart
-					sed -i '/^bridge=.*/ d' /etc/hostapd.conf
+					sed -i 's/^bridge=.*/#bridge=.*/' /etc/hostapd.conf
 				;;
 			3) exit;;
 			255) exit;;
@@ -191,13 +191,16 @@ while true; do
 
 	"Install" )
 		nand-sata-install
-		read -n 1 -s -p "Press any key to continue"
 	;;
 
 	"Wireless" )
-		if [[ -n $(service hostapd status | grep active) ]]; then
+		CURRENT_SSID=$(nmcli -m m connection show --active | head -1 | awk '{print $2}')
+		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nHostapd service is running. Disable it and try again." 7 57
 			exit
+		elif [[ -n $CURRENT_SSID ]]; then
+			dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nAlready connected to $CURRENT_SSID.\n\nDo you want to disconnect?" 9 57
+			[[ $? = 0 ]] && nmcli connection down id $CURRENT_SSID
 		else
 		nmtui-connect
 		fi
