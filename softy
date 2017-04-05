@@ -723,7 +723,7 @@ fi
 
 # Install basic stuff
 #
-apt-get -y -qq --no-install-recommends install dialog whiptail lsb-release bc expect html2text
+apt-get -qq -y --no-install-recommends install dialog whiptail lsb-release bc expect html2text > /dev/null
 
 # gather some info
 #

@@ -6,20 +6,21 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
-cp /etc/network/interfaces /etc/network/interfaces.backup
-
 # check for root
 #
 if [[ $EUID != 0 ]]; then
-	dialog --title "Warning" --infobox "\nThis script requires root privileges.\n\nExiting ..." 7 41
+	echo "Warning. This script requires root privileges. Exiting ..."
 	sleep 3
 	exit
 fi
 
+# make a bacup
+cp /etc/network/interfaces /etc/network/interfaces.debian-config.backup
+
 # Install basic stuff
 #
 echo "Downloading dependencies ..."
-apt-get -qq -y --no-install-recommends install dialog whiptail lsb-release bc expect rcconf
+apt-get -qq -y --no-install-recommends install bc expect rcconf  >> /dev/null
 
 # gather some info
 #
@@ -34,6 +35,8 @@ NETWORK_CONF="/etc/network/interfaces"
 LIST=()
 ###########################################################################################################################################
 # here we add new items to menu. with condition when needed
+
+[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 [[ -n $(ls -1 /sys/class/net/ | grep -vE "eth|lo|enp") ]] && LIST+=( "Wireless" "Connect to your router" )
 LIST+=( "Hotspot" "Creates wireless Access Point" )
 LIST+=( "Network" "Edit network settings" )
@@ -72,6 +75,10 @@ while true; do
 	#######################################################################################################################################
 	case $selection in
 
+	"Display" )
+		h3disp
+		exit
+	;;
 	"Services" )
 		rcconf
 	;;
@@ -82,91 +89,99 @@ while true; do
 	;;
 
 	"Hotspot" )
-		dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nChecking nl80211 hostapd driver compatibility." 5 50
-		apt-get -y -qq --no-install-recommends install hostapd > /dev/null
-		# add hostapd.conf to services
-		sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=\/etc\/hostapd.conf/" /etc/init.d/hostapd
-		# check both options
-		CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
-		if [[ -n "$CHECK" ]]; then
-			dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nChecking Realtek hostapd driver compatibility." 5 50
-			apt-get -y -qq --no-install-recommends install hostapd-realtek > /dev/null
+		if [[ -n $(service hostapd status | grep -w active) ]]; then
+			dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nHostapd service is configured and running.\n\nDo you want to stop the service?" 9 57
+			[[ $? = 0 ]] && service hostapd stop && sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
+		else
+			dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nChecking nl80211 hostapd driver compatibility." 5 50
+			apt-get -y -qq --no-install-recommends install hostapd > /dev/null
+			# add hostapd.conf to services
+			sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=\/etc\/hostapd.conf/" /etc/init.d/hostapd
+			# check both options
+			CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
+			if [[ -n "$CHECK" ]]; then
+				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nChecking Realtek hostapd driver compatibility." 5 50
+				apt-get -y -qq --no-install-recommends install hostapd-realtek > /dev/null
+			fi
+			CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
+			# if both fails there is other problem
+			if [[ -n "$CHECK" ]]; then
+				dialog --backtitle "$BACKTITLE" --title "Warning" --infobox "\nNo compatible hostapd driver found." 5 39
+				sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
+				systemctl daemon-reload;service hostapd restart
+				sleep 3
+				exit
+			fi
+
+			dialog --title "Choose a AP mode" --backtitle "$BACKTITLE" --help-button --help-label "Manual" --yes-label "Bridge" --no-label "NAT" --yesno "\nBridge: wireless clients will use your routers DHCP server\n\nNAT: with own DHCP server, out of your primary network\n\nManual: edit configuration manually" 11 70
+			response=$?
+			DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
+
+			TEMP_CONF=/etc/network/interfaces.out
+			cp $NETWORK_CONF $TEMP_CONF
+
+			case $response in
+				# bridge
+				0)
+					sed -i '/^#/ d' $TEMP_CONF
+					apt-get -qq -y --no-install-recommends install bridge-utils >> /dev/null
+					sed -i "s/^auto lo.*/auto lo br0/" $TEMP_CONF
+					# if we have dhcp on default adapter
+					if [[ -n $(grep dhcp $TEMP_CONF | grep "$DEFAULT_ADAPTER" | grep -v br) ]]; then
+						sed -i "s/^iface $DEFAULT_ADAPTER inet dhcp/iface $DEFAULT_ADAPTER inet manual/" $TEMP_CONF
+						echo -e "\niface br0 inet dhcp\nbridge_ports $DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $TEMP_CONF
+						echo -e "\nauto $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual" >> $TEMP_CONF
+					#fi
+					# if we have static on default adapter
+					#if [[ -n $(grep static $TEMP_CONF | grep "$DEFAULT_ADAPTER" | grep -v br) ]]; then
+					else
+						sed -i "s/^iface $DEFAULT_ADAPTER inet static/iface $DEFAULT_ADAPTER inet manual/" $TEMP_CONF
+						sed -i "/^iface $DEFAULT_ADAPTER inet manual/a iface br0 inet static" $TEMP_CONF
+						echo -e "bridge_ports $DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $TEMP_CONF
+						echo -e "\nauto $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual" >> $TEMP_CONF
+					fi
+					sed -i 's/^bridge=.*/bridge=br0/' /etc/hostapd.conf
+				;;
+
+				# NAT
+				1)
+					sed -i '/^#/ d' $TEMP_CONF
+					apt-get -qq -y --no-install-recommends install isc-dhcp-server
+					echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static\naddress 192.168.3.10\nnetmask 255.255.255.0\ngateway 192.168.3.1" >> $TEMP_CONF
+					sed -i 's/^option domain-name "example.org";/#option domain-name "example.org";/' /etc/dhcp/dhcpd.conf
+					sed -i 's/^option domain-name-servers ns1.example.org, ns2.example.org;/#option domain-name-servers ns1.example.org, ns2.example.org;/' /etc/dhcp/dhcpd.conf
+					sed -i 's/^#authoritative;/authoritative;/' /etc/dhcp/dhcpd.conf
+					# removes our previous conf
+					sed -i '/# armbian conf/,$d' /etc/dhcp/dhcpd.conf
+					# creates new
+					echo "# armbian conf" >> /etc/dhcp/dhcpd.conf
+					echo -e "subnet 192.168.3.0 netmask 255.255.255.0 {\nrange 192.168.3.10 192.168.3.210;" >> /etc/dhcp/dhcpd.conf
+					echo -e "option broadcast-address 192.168.3.255;\noption routers 192.168.3.1;" >> /etc/dhcp/dhcpd.conf
+					echo -e "default-lease-time 600;\nmax-lease-time 7200;\noption domain-name \"local\";" >> /etc/dhcp/dhcpd.conf
+					echo -e "option domain-name-servers 8.8.8.8, 8.8.4.4;\n}" >> /etc/dhcp/dhcpd.conf
+					# - Enable IPv4 forwarding
+					sed -i "/net.ipv4.ip_forward=/c\net.ipv4.ip_forward=1" /etc/sysctl.conf
+					echo 1 > /proc/sys/net/ipv4/ip_forward
+					# - Apply iptables
+					iptables -t nat -A POSTROUTING -o $DEFAULT_ADAPTER -j MASQUERADE
+					iptables -A FORWARD -i $DEFAULT_ADAPTER -o $WIRELESS_ADAPTER -m state --state RELATED,ESTABLISHED -j ACCEPT
+					iptables -A FORWARD -i $WIRELESS_ADAPTER -o $DEFAULT_ADAPTER -j ACCEPT
+					# - Save IP tables, applied during ifup in /etc/network/interfaces.
+					iptables-save > /etc/iptables.ipv4.nat
+					# change to proper device
+					sed -i 's/^INTERFACES=.*/INTERFACES="$WIRELESS_ADAPTER"/' /etc/default/isc-dhcp-server
+					service isc-dhcp-server restart
+					sed -i '/^bridge=.*/ d' /etc/hostapd.conf
+				;;
+			3) exit;;
+			255) exit;;
+			esac
+			dialog --title "Manually adjust network configuration if needed" --backtitle "$BACKTITLE" --ok-label "Reboot to apply new settings" --no-collapse --editbox $TEMP_CONF 30 0 2> $TEMP_CONF".tmp"
+			if [[ $? = 0 ]]; then
+				mv $TEMP_CONF $NETWORK_CONF
+				reboot
+			fi
 		fi
-		CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
-		# if both fails there is other problem
-		if [[ -n "$CHECK" ]]; then
-			dialog --backtitle "$BACKTITLE" --title "Warning" --infobox "\nNo compatible hostapd driver found." 5 39
-			sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
-			systemctl daemon-reload;service hostapd restart
-			sleep 3
-			exit
-		fi
-
-		dialog --title "Choose a AP mode" --backtitle "$backtitle" --yes-label "Bridge" --no-label "NAT" --yesno "\nBridge: wireless clients will use your routers DHCP server\n\nNAT: with own DHCP server, out of your primary network" 10 70
-		response=$?
-		DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
-
-		DEFAULT_CONF=/etc/network/interfaces.out
-		cp $NETWORK_CONF $DEFAULT_CONF
-
-		case $response in
-			0)
-				sed -i '/^#/ d' $DEFAULT_CONF
-				apt-get -qq -y --no-install-recommends install bridge-utils
-				sed -i "s/^auto lo.*/auto lo br0/" $DEFAULT_CONF
-				# if we have dhcp on default adapter
-				if [[ -n $(grep dhcp $DEFAULT_CONF | grep "$DEFAULT_ADAPTER" | grep -v br) ]]; then
-					sed -i "s/^iface $DEFAULT_ADAPTER inet dhcp/iface $DEFAULT_ADAPTER inet manual/" $DEFAULT_CONF
-					echo -e "\niface br0 inet dhcp\nbridge_ports $DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $DEFAULT_CONF
-					echo -e "\nauto $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual" >> $DEFAULT_CONF
-				#fi
-				# if we have static on default adapter
-				#if [[ -n $(grep static $DEFAULT_CONF | grep "$DEFAULT_ADAPTER" | grep -v br) ]]; then
-				else
-					sed -i "s/^iface $DEFAULT_ADAPTER inet static/iface $DEFAULT_ADAPTER inet manual/" $DEFAULT_CONF
-					sed -i "/^iface $DEFAULT_ADAPTER inet manual/a iface br0 inet static" $DEFAULT_CONF
-					echo -e "bridge_ports $DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $DEFAULT_CONF
-					echo -e "\nauto $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual" >> $DEFAULT_CONF
-				fi
-				sed -i 's/^bridge=.*/bridge=br0/' /etc/hostapd.conf
-			;;
-			1)
-				sed -i '/^#/ d' $DEFAULT_CONF
-				apt-get -qq -y --no-install-recommends install isc-dhcp-server
-				echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static\naddress 192.168.3.10\nnetmask 255.255.255.0\ngateway 192.168.3.1" >> $DEFAULT_CONF
-				sed -i 's/^option domain-name "example.org";/#option domain-name "example.org";/' /etc/dhcp/dhcpd.conf
-				sed -i 's/^option domain-name-servers ns1.example.org, ns2.example.org;/#option domain-name-servers ns1.example.org, ns2.example.org;/' /etc/dhcp/dhcpd.conf
-				sed -i 's/^#authoritative;/authoritative;/' /etc/dhcp/dhcpd.conf
-				# removes our previous conf
-				sed -i '/# armbian conf/,$d' /etc/dhcp/dhcpd.conf
-				# creates new
-				echo "# armbian conf" >> /etc/dhcp/dhcpd.conf
-				echo -e "subnet 192.168.3.0 netmask 255.255.255.0 {\nrange 192.168.3.10 192.168.3.210;" >> /etc/dhcp/dhcpd.conf
-				echo -e "option broadcast-address 192.168.3.255;\noption routers 192.168.3.1;" >> /etc/dhcp/dhcpd.conf
-				echo -e "default-lease-time 600;\nmax-lease-time 7200;\noption domain-name \"local\";" >> /etc/dhcp/dhcpd.conf
-				echo -e "option domain-name-servers 8.8.8.8, 8.8.4.4;\n}" >> /etc/dhcp/dhcpd.conf
-				# - Enable IPv4 forwarding
-				sed -i "/net.ipv4.ip_forward=/c\net.ipv4.ip_forward=1" /etc/sysctl.conf
-				echo 1 > /proc/sys/net/ipv4/ip_forward
-				# - Apply iptables
-				iptables -t nat -A POSTROUTING -o $DEFAULT_ADAPTER -j MASQUERADE
-				iptables -A FORWARD -i $DEFAULT_ADAPTER -o $WIRELESS_ADAPTER -m state --state RELATED,ESTABLISHED -j ACCEPT
-				iptables -A FORWARD -i $WIRELESS_ADAPTER -o $DEFAULT_ADAPTER -j ACCEPT
-				# - Save IP tables, applied during ifup in /etc/network/interfaces.
-				iptables-save > /etc/iptables.ipv4.nat
-				# change to proper device
-				sed -i 's/^INTERFACES=.*/INTERFACES="$WIRELESS_ADAPTER"/' /etc/default/isc-dhcp-server
-				service isc-dhcp-server restart
-				sed -i '/^bridge=.*/ d' /etc/hostapd.conf
-			;;
-		255) exit;;
-		esac
-		dialog --title "Manually adjust network configuration if needed" --no-collapse --editbox $DEFAULT_CONF 30 0 2> $DEFAULT_CONF".tmp"
-		[[ $? = 0 ]] && mv $DEFAULT_CONF".tmp" $NETWORK_CONF
-		systemctl daemon-reload
-		service networking restart
-		service hostapd restart
-		exit
 	;;
 
 	"Booting" )
@@ -180,7 +195,12 @@ while true; do
 	;;
 
 	"Wireless" )
+		if [[ -n $(service hostapd status | grep active) ]]; then
+			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nHostapd service is running. Disable it and try again." 7 57
+			exit
+		else
 		nmtui-connect
+		fi
 	;;
 
 	"Diagnostics" )
