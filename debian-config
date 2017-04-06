@@ -14,6 +14,28 @@ if [[ $EUID != 0 ]]; then
 	exit
 fi
 
+
+function get_wlan_interface ()
+{
+# search for wlan interfaces and provide a selection menu if there are more than one
+# selected is stored into variable WLAN_SELECTED
+#
+	IFS=$'\r\n' GLOBIGNORE='*' command eval  'WLAN_INTERFACES=($(iw dev | grep Interface | sed -e "s/\tInterface //" | sort))'
+	local LIST=()
+	for i in "${WLAN_INTERFACES[@]}"
+	do
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGHT=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGHT" -eq 1 ]; then
+			WLAN_SELECTED=${WLAN_INTERFACES[0]}
+	else
+			exec 3>&1
+			WLAN_SELECTED=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Select interface" --clear --menu "" $((6+${LIST_LENGHT})) 30 15 "${LIST[@]}" 2>&1 1>&3)
+			exec 3>&-
+	fi
+}
+
 # make a bacup
 cp /etc/network/interfaces /etc/network/interfaces.debian-config.backup
 
@@ -93,15 +115,22 @@ while true; do
 			dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nHostapd service is configured and running.\n\nDo you want to stop the service?" 9 57
 			[[ $? = 0 ]] && service hostapd stop && sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 		else
+			# check for WLAN interfaces
+			get_wlan_interface
+			# display dialog
 			dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nChecking nl80211 hostapd driver compatibility." 5 50
-			apt-get -y -qq --no-install-recommends install hostapd > /dev/null
+			apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd > /dev/null
+			# change to selected interface
+			sed -i "s/^interface=.*/interface=$WLAN_SELECTED/" /etc/hostapd.conf
 			# add hostapd.conf to services
 			sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=\/etc\/hostapd.conf/" /etc/init.d/hostapd
 			# check both options
 			CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
 			if [[ -n "$CHECK" ]]; then
 				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nChecking Realtek hostapd driver compatibility." 5 50
-				apt-get -y -qq --no-install-recommends install hostapd-realtek > /dev/null
+				apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd-realtek > /dev/null
+				# change to selected interface
+				sed -i "s/^interface=.*/interface=$WLAN_SELECTED/" /etc/hostapd.conf
 			fi
 			CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
 			# if both fails there is other problem
@@ -194,15 +223,28 @@ while true; do
 	;;
 
 	"Wireless" )
-		CURRENT_SSID=$(nmcli -m m connection show --active | head -1 | awk '{print $2}')
-		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nHostapd service is running. Disable it and try again." 7 57
-			exit
-		elif [[ -n $CURRENT_SSID ]]; then
-			dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nAlready connected to $CURRENT_SSID.\n\nDo you want to disconnect?" 9 57
-			[[ $? = 0 ]] && nmcli connection down id $CURRENT_SSID
+		array=( $(iw dev | grep Interface | sed -e "s/\tInterface//") )
+		declared_wlans=0;
+		echo ${#array[@]}
+		for i in "${array[@]}"
+			do
+			if grep --quiet "^iface $i" /etc/network/interfaces; then
+				let declared_wlans+=1
+			fi
+		done
+		if [ $declared_wlans = ${#array[@]} ]; then
+			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nWireless network is in use by if-up service. Remove it from config." 7 57
 		else
-		nmtui-connect
+			CURRENT_SSID=$(nmcli -m m connection show --active | head -1 | awk '{print $2}')
+			if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
+				dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nHostapd service is running. Disable it and try again." 7 57
+				exit
+			elif [[ -n $CURRENT_SSID ]]; then
+				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nAlready connected to $CURRENT_SSID.\n\nDo you want to disconnect?" 9 57
+				[[ $? = 0 ]] && nmcli connection down id $CURRENT_SSID
+			else
+			nmtui-connect
+			fi
 		fi
 	;;
 
