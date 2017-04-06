@@ -60,6 +60,7 @@ LIST=()
 
 [[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 [[ -n $(ls -1 /sys/class/net/ | grep -vE "eth|lo|enp") ]] && LIST+=( "Wireless" "Connect to your router" )
+[[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
 LIST+=( "Hotspot" "Creates wireless Access Point" )
 LIST+=( "Network" "Edit network settings" )
 [[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
@@ -218,6 +219,11 @@ while true; do
 		[[ $? = 0 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt
 	;;
 
+	"Nightly" )
+		sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
+		debconf-apt-progress -- apt-get update
+		debconf-apt-progress -- apt-get upgrade
+	;;
 	"Install" )
 		nand-sata-install
 	;;
