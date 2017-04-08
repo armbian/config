@@ -234,7 +234,7 @@ while true; do
 	"Nightly" )
 		sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
 		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get upgrade
+		debconf-apt-progress -- apt-get -y upgrade
 	;;
 	"Install" )
 		nand-sata-install
@@ -242,7 +242,7 @@ while true; do
 
 	"Wireless" )
 		# scan for wifi modules
-		array=( $(iw dev | grep Interface | sed -e "s/\tInterface//") )
+		array=( $(nmcli dev | grep "wifi" | awk '{print $1}') )
 		declared_wlans=0;
 		echo ${#array[@]}
 		for i in "${array[@]}"
@@ -254,13 +254,13 @@ while true; do
 		if [ $declared_wlans = ${#array[@]} ]; then
 			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nWireless network is in use by if-up service. Remove it from config." 7 57
 		else
-			CURRENT_SSID=$(nmcli -m m connection show --active | head -1 | awk '{print $2}')
+			CURRENT_UUID=$(nmcli -f UUID,TYPE connection show --active | grep wireless | awk '{print $1}')
 			if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 				dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nHostapd service is running. Disable it and try again." 7 57
 				exit
-			elif [[ -n $CURRENT_SSID ]]; then
-				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nAlready connected to $CURRENT_SSID.\n\nDo you want to disconnect?" 9 57
-				[[ $? = 0 ]] && nmcli connection down id $CURRENT_SSID
+			elif [[ -n $CURRENT_UUID ]]; then
+				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nAlready connected via wireless.\n\nDo you want to disconnect?" 9 57
+				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID
 			else
 			# disable AP mode on certain adapters
 			wlan_exceptions "off"
