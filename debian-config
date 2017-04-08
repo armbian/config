@@ -127,7 +127,7 @@ while true; do
 			[[ $? = 0 ]] && service hostapd stop && sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 		else
 			# change special adapters to AP mode
-			wlan_exceptions ("on")
+			wlan_exceptions "on"
 			# check for WLAN interfaces
 			get_wlan_interface
 			# display dialog
@@ -242,7 +242,7 @@ while true; do
 
 	"Wireless" )
 		# disable AP mode on certain adapters
-		wlan_exceptions ("off")
+		wlan_exceptions "off"
 		# scan for wifi modules
 		array=( $(iw dev | grep Interface | sed -e "s/\tInterface//") )
 		declared_wlans=0;
