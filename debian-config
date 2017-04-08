@@ -241,8 +241,6 @@ while true; do
 	;;
 
 	"Wireless" )
-		# disable AP mode on certain adapters
-		wlan_exceptions "off"
 		# scan for wifi modules
 		array=( $(iw dev | grep Interface | sed -e "s/\tInterface//") )
 		declared_wlans=0;
@@ -264,6 +262,8 @@ while true; do
 				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nAlready connected to $CURRENT_SSID.\n\nDo you want to disconnect?" 9 57
 				[[ $? = 0 ]] && nmcli connection down id $CURRENT_SSID
 			else
+			# disable AP mode on certain adapters
+			wlan_exceptions "off"
 			nmtui-connect
 			fi
 		fi
