@@ -19,6 +19,12 @@ if [[ $? -ne 0 ]]; then
 	read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. Press CTRL C to stop to stop or any key to ignore and continue."
 fi
 
+function wlan_exceptions ()
+{
+[[ -n "$(lsmod | grep -w dhd)" && $1 = "on" ]] && echo 'options dhd op_mode=2' >/etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
+[[ -n "$(lsmod | grep -w dhd)" && $1 = "off" ]] && rm /etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
+}
+
 function get_wlan_interface ()
 {
 # search for wlan interfaces and provide a selection menu if there are more than one
@@ -120,6 +126,8 @@ while true; do
 			dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nHostapd service is configured and running.\n\nDo you want to stop the service?" 9 57
 			[[ $? = 0 ]] && service hostapd stop && sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 		else
+			# change special adapters to AP mode
+			wlan_exceptions ("on")
 			# check for WLAN interfaces
 			get_wlan_interface
 			# display dialog
@@ -233,6 +241,9 @@ while true; do
 	;;
 
 	"Wireless" )
+		# disable AP mode on certain adapters
+		wlan_exceptions ("off")
+		# scan for wifi modules
 		array=( $(iw dev | grep Interface | sed -e "s/\tInterface//") )
 		declared_wlans=0;
 		echo ${#array[@]}
