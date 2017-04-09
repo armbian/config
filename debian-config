@@ -23,7 +23,7 @@ function wlan_edit ()
 {
 source /etc/hostapd.conf
 exec 3>&1
-dialog --title "AP configuration" --backtitle "$backtitle" --form "\nWPA2 enabled, advanced config: edit /etc/hostapd.conf\n " 12 58 0 \
+dialog --title "AP configuration" --backtitle "$BACKTITLE" --form "\nWPA2 enabled, advanced config: edit /etc/hostapd.conf\n " 12 58 0 \
 "SSID:"				1 1 "$ssid"				1 31 22 0 \
 "Password:"			2 1 "$wpa_passphrase"	2 31 22 0 \
 "Channel:"			3 1 "$channel"			3 31 3 0 \
@@ -91,14 +91,15 @@ LIST=()
 [[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 [[ -n $(ls -1 /sys/class/net/ | grep -vE "eth|lo|enp") ]] && LIST+=( "Wireless" "Connect to your router" )
 [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
-LIST+=( "Hotspot" "Creates wireless Access Point" )
+LIST+=( "Hotspot" "Manage wireless access point" )
 LIST+=( "Network" "Edit network settings" )
 [[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
 [[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install Armbian to SATA, eMMC, NAND, USB" )
 LIST+=( "Services" "Toogle running services" )
-[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Provides simple CLI monitoring" )
-[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Install 3rd party applications" )
+[[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]] && LIST+=( "Overlayroot" "Toogle virtual read-only root filesystem" )
+[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI monitoring" )
 [[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
+[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Install 3rd party applications" )
 ###########################################################################################################################################
 LISTLENGHT="$((7+${#LIST[@]}/2))"
 
@@ -136,6 +137,18 @@ while true; do
 		rcconf
 	;;
 
+	"Overlayroot" )
+		if [[ -n $(mount | grep -w overlay) ]]; then
+			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Disable" --no-label "Cancel" --yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
+			[[ $? = 0 ]] && overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf && reboot
+		else
+			apt-get -qq -y --no-install-recommends install overlayroot
+			echo 'echo -e "[\e[0m \e[1mremember: root is in virtual read only mode\e[0m ]"' > /etc/update-motd.d/97-overlayroot
+			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
+			[[ $? = 0 ]] && sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf && reboot
+		fi
+	;;
+
 	"Network" )
 		dialog --backtitle "$BACKTITLE" --title "Edit network configuration" --no-collapse --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
 		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces
@@ -144,8 +157,10 @@ while true; do
 	"Hotspot" )
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
-			[[ $? = 0 ]] && service hostapd stop && sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
-			[[ $? = 1 ]] && wlan_edit && service hostapd stop; sleep 1; service hostapd start
+			exitstatus=$?;
+			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; fi
+			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
+
 		else
 			# change special adapters to AP mode
 			wlan_exceptions "on"
@@ -239,7 +254,8 @@ while true; do
 			3) exit;;
 			255) exit;;
 			esac
-			dialog --title "Manually adjust network configuration if needed" --backtitle "$BACKTITLE" --ok-label "Reboot to apply new settings" --no-collapse --editbox $TEMP_CONF 30 0 2> $TEMP_CONF".tmp"
+			dialog --title "Manually adjust network configuration if needed" --backtitle "$BACKTITLE" \
+			--ok-label "Reboot to apply new settings" --no-collapse --editbox $TEMP_CONF 30 0 2> $TEMP_CONF".tmp"
 			if [[ $? = 0 ]]; then
 				mv $TEMP_CONF $NETWORK_CONF
 				reboot
@@ -265,22 +281,31 @@ while true; do
 		# scan for wifi modules
 		array=( $(nmcli dev | grep "wifi" | awk '{print $1}') )
 		declared_wlans=0;
-		echo ${#array[@]}
 		for i in "${array[@]}"
 			do
 			if grep --quiet "^iface $i" /etc/network/interfaces; then
 				let declared_wlans+=1
 			fi
 		done
-		if [ $declared_wlans = ${#array[@]} ]; then
-			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nWireless network is in use by if-up service. Remove it from config." 7 57
+		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
+			DIALOG_CANCEL=1
+			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" \
+			--no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
+			exitstatus=$?;
+			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; fi
+			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
+		elif [ $declared_wlans = ${#array[@]} ]; then
+			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse \
+			--msgbox "\nWireless network is in use by if-up service. Remove it from config." 8 57
 		else
 			CURRENT_UUID=$(nmcli -f UUID,TYPE connection show --active | grep wireless | awk '{print $1}')
 			if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-				dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nHostapd service is running. Disable it and try again." 7 57
+				dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse \
+				--msgbox "\nHostapd service is running. Disable it and try again." 7 57
 				exit
 			elif [[ -n $CURRENT_UUID ]]; then
-				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nAlready connected via wireless.\n\nDo you want to disconnect?" 9 57
+				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse \
+				--yesno "\nAlready connected via wireless.\n\nDo you want to disconnect?" 9 57
 				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID
 			else
 			# disable AP mode on certain adapters
