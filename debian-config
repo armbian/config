@@ -19,6 +19,26 @@ if [[ $? -ne 0 ]]; then
 	read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. Press CTRL C to stop to stop or any key to ignore and continue."
 fi
 
+function wlan_edit ()
+{
+source /etc/hostapd.conf
+exec 3>&1
+dialog --title "AP configuration" --backtitle "$backtitle" --form "\nWPA2 enabled, advanced config: edit /etc/hostapd.conf\n " 12 58 0 \
+"SSID:"				1 1 "$ssid"				1 31 22 0 \
+"Password:"			2 1 "$wpa_passphrase"	2 31 22 0 \
+"Channel:"			3 1 "$channel"			3 31 3 0 \
+2>&1 1>&3 | {
+read -r ssid;read -r wpa_passphrase;read -r channel
+if [[ $? = 0 ]]; then
+		sed -i "s/^ssid=.*/ssid=$ssid/" /etc/hostapd.conf
+		sed -i "s/^wpa_passphrase=.*/wpa_passphrase=$wpa_passphrase/" /etc/hostapd.conf
+		sed -i "s/^channel=.*/channel=$channel/" /etc/hostapd.conf
+		wpa_psk=$(wpa_passphrase $ssid $wpa_passphrase | grep '^[[:blank:]]*[^[:blank:]#;]' | grep psk | cut -d= -f2-)
+		sed -i "s/^wpa_psk=.*/wpa_psk=$wpa_psk/" /etc/hostapd.conf
+fi
+}
+}
+
 function wlan_exceptions ()
 {
 [[ -n "$(lsmod | grep -w dhd)" && $1 = "on" ]] && echo 'options dhd op_mode=2' >/etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
@@ -123,8 +143,9 @@ while true; do
 
 	"Hotspot" )
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-			dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --yesno "\nHostapd service is configured and running.\n\nDo you want to stop the service?" 9 57
+			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
 			[[ $? = 0 ]] && service hostapd stop && sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
+			[[ $? = 1 ]] && wlan_edit && service hostapd stop; sleep 1; service hostapd start
 		else
 			# change special adapters to AP mode
 			wlan_exceptions "on"
