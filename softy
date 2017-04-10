@@ -6,6 +6,45 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
+function check_status
+{
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Chech if service is already installed
+#------------------------------------------------------------------------------------------------------------------------------------------
+LIST=()
+LIST_CONST=5
+# Samba
+SAMBA_STATUS="$([[ -f /etc/samba/smb.conf ]] && echo "on" || echo "off" )"
+LIST+=( "Samba" "Windows compatible file sharing" "$SAMBA_STATUS" )
+# cups
+CUPS_STATUS="$([[ -f /etc/cups/cupsd.conf ]] && echo "on" || echo "off" )"
+LIST+=( "CUPS" "Common UNIX Printing System (CUPS)" "$CUPS_STATUS" )
+# tvheadend
+TVHEADEND_STATUS="$([[ -n $(service tvheadend status | grep -w active | grep -w running) ]] && echo "on" || echo "off" )"
+LIST+=( "TV headend" "TV streaming / proxy" "$TVHEADEND_STATUS" )
+# synthing
+SYNCTHING_STATUS="$([[ -f /usr/bin/syncthing ]] && echo "on" || echo "off" )"
+LIST+=( "Syncthing" "Personal cloud @syncthing.net" "$SYNCTHING_STATUS" )
+# vpn server
+VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
+LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
+# OMV
+OMV_STATUS="$([[ -f /etc/default/openmediavault ]] && echo "on" || echo "off" )"
+[[ "$family" == "Debian" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
+# MINIdlna
+MINIDLNA_STATUS="$([[ -f /etc/minidlna.conf ]] && echo "on" || echo "off" )"
+LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "$MINIDLNA_STATUS" )
+# Pi hole
+PI_HOLE_STATUS="$([[ -d /etc/pihole ]] && echo "on" || echo "off" )"
+LIST+=( "Pi hole" "Ad blocker" "$PI_HOLE_STATUS" )
+# Transmission
+TRANSMISSION_STATUS="$([[ -f /etc/transmission-daemon/settings.json ]] && echo "on" || echo "off" )"
+LIST+=( "Transmission" "Torrent downloading" "$TRANSMISSION_STATUS" )
+# ISPconfig
+ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
+LIST+=( "ISPConfig" "Advanced LAMP + SMTP, IMAP, POP3" "$ISPCONFIG_STATUS" )
+}
+
 function choose_webserver
 {
 #------------------------------------------------------------------------------------------------------------------------------------------
@@ -109,8 +148,10 @@ echo "${serverIP} ${HOSTNAMEFQDN} ${HOSTNAMESHORT} #ispconfig " >> /etc/hosts
 echo "$HOSTNAMESHORT" > /etc/hostname
 /etc/init.d/hostname.sh start >/dev/null 2>&1
 if [[ $family == "Ubuntu" ]]; then
+	# set hostname in Ubuntu
+	hostnamectl set-hostname $HOSTNAMESHORT
 	# disable AppArmor
-	service apparmor stop
+	[[ -d /etc/apparmor ]] && service apparmor stop
 	update-rc.d -f apparmor remove
 	apt-get -y -qq remove apparmor apparmor-utils
 else
@@ -256,21 +297,6 @@ install_transmission (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
 install_packet "transmission-cli transmission-common transmission-daemon" "Install torrent server"
-}
-
-
-install_cups (){
-#------------------------------------------------------------------------------------------------------------------------------------------
-# Install printer system
-#------------------------------------------------------------------------------------------------------------------------------------------
-install_packet "cups lpr cups-filters" "Installing CUPS"
-# cups-filters if jessie
-sed -e 's/Listen localhost:631/Listen 631/g' -i /etc/cups/cupsd.conf
-sed -e 's/<Location \/>/<Location \/>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
-sed -e 's/<Location \/admin>/<Location \/admin>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
-sed -e 's/<Location \/admin\/conf>/<Location \/admin\/conf>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
-service cups restart
-service samba restart | service smbd restart >/dev/null 2>&1
 }
 
 
@@ -709,9 +735,9 @@ echo "PHPmyadmin: http://$serverIP:8081/phpmyadmin"
 
 
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 # Main choices
-#----------------------------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------
 
 # check for root
 #
@@ -738,31 +764,17 @@ hostnamefqdn=$(hostname -f)
 mysql_pass=""
 backtitle="Softy - Armbian post deployment scripts, http://www.armbian.com"
 
-
-
-# here we add new items to menu. with condition when needed
-#
-LIST=()
-LIST+=( "Tasksel" "Stock $family $distribution app installer" "off" )
-LIST+=( "Samba" "Windows compatible file sharing" "off" )
-LIST+=( "CUPS" "Common UNIX Printing System (CUPS)" "off" )
-LIST+=( "TV headend" "TV streaming / proxy" "off" )
-LIST+=( "Syncthing" "Personal cloud @syncthing.net" "off" )
-LIST+=( "VPN server" "VPN server" "off" )
-[[ "$family" == "Debian" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "off" )
-LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "off" )
-LIST+=( "Pi hole" "Ad blocker" "off" )
-LIST+=( "Transmission" "Torrent downloading" "off" )
-LIST+=( "ISPConfig" "Advanced LAMP + SMTP, IMAP, POP3" "off" )
-LISTLENGHT="$((5+${#LIST[@]}/2))"
-
-
 # main dialog routine
 #
 DIALOG_CANCEL=1
 DIALOG_ESC=255
 
 while true; do
+
+	# prepare menu items
+	check_status
+	LISTLENGHT="$(($LIST_CONST+${#LIST[@]}/2))"
+
 	exec 3>&1
 	selection=$(dialog --backtitle "$backtitle" --title "Installing to $family $distribution" --clear --cancel-label \
 	"Exit" --checklist "\nChoose what you want to install:\n " $LISTLENGHT 70 15 "${LIST[@]}" 2>&1 1>&3)
@@ -780,69 +792,75 @@ while true; do
 		;;
 	esac
 
-	case $selection in
+	# cycle trought all install options
+	i=0
+	while [ "$i" -lt "$LISTLENGHT" ]; do
 
-	ISPConfig* )
-		server_conf
-		if [[ "$MYSQL_PASS" == "" ]]; then
-			dialog --msgbox "Mysql password can't be blank. Exiting..." 7 70
-			exit
+		if [[ "$selection" == *Samba* && "$SAMBA_STATUS" != "on" ]]; then
+			install_samba
+			check_port 445 "Samba"
+			read -n 1 -s -p "Press any key to continue"
 		fi
-		install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
-		create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
-		install_ISPConfig
-		read -n 1 -s -p "Press any key to continue"
-	;;
 
-	*Tasksel* )
-		tasksel
-	;;
-	*Samba* )
-		install_samba
-		check_port 445 "Samba"
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*CUPS* )
-		install_cups
-		check_port 445 "CUPS"
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*headend* )
-		install_tvheadend
-		check_port 9981 "HTS tvheadend"
-		read -n 1 -s -p "Press any key to continue"
-	;;
+		if [[ "$selection" == *CUPS* && "$CUPS_STATUS" != "on" ]]; then
+			install_cups
+			check_port 445 "CUPS"
+			read -n 1 -s -p "Press any key to continue"
+		fi
 
-	*Syncthing* )
-		install_syncthing
-		check_port 8384 "Syncthing"
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*CUPS* )
-		install_cups
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*VPN* )
-		install_vpn_server
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*OMV* )
-		install_omv
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*hole* )
-		curl -L install.pi-hole.net | bash
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*Minidlna* )
-		install_packet "minidlna" "Install lightweight DLNA/UPnP-AV server"
-		check_port 8200
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	*Transmission* )
-		install_transmission
-		check_port 9091
-		read -n 1 -s -p "Press any key to continue"
-	;;
-	esac
+		if [[ "$selection" == *headend* && "$TVHEADEND_STATUS" != "on" ]]; then
+			install_tvheadend
+			check_port 445 "CUPS"
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *Minidlna* && "$MINIDLNA_STATUS" != "on" ]]; then
+			install_packet "minidlna" "Install lightweight DLNA/UPnP-AV server"
+			check_port 8200
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *ISPConfig* && "$ISPCONFIG_STATUS" != "on" ]]; then
+			server_conf
+			if [[ "$MYSQL_PASS" == "" ]]; then
+				dialog --msgbox "Mysql password can't be blank. Exiting..." 7 70
+				exit
+			fi
+			install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
+			create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
+			install_ISPConfig
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *Syncthing* && "$SYNCTHING_STATUS" != "on" ]]; then
+			install_syncthing
+			check_port 8384 "Syncthing"
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *VPN* && "$VPN_SERVER_STATUS" != "on" ]]; then
+			install_vpn_server
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *OMV* && "$OMV_STATUS" != "on" ]]; then
+			install_omv
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *hole* && "$PI_HOLE_STATUS" != "on" ]]; then
+			curl -L install.pi-hole.net | bash
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
+			install_transmission
+			check_port 9091
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		# reread statuses
+		check_status
+		i=$[$i+1]
+	done
 done
