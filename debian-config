@@ -155,12 +155,16 @@ while true; do
 	;;
 
 	"Hotspot" )
+		CURRENT_UUID=$(nmcli -f UUID,TYPE connection show --active | grep wireless | awk '{print $1}')
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
 			exitstatus=$?;
 			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; fi
 			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
-
+		elif [[ -n $CURRENT_UUID ]]; then
+				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse \
+				--yesno "\nWireless connection is in use.\n\nDo you want to disconnect?" 9 57
+				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID
 		else
 			# change special adapters to AP mode
 			wlan_exceptions "on"
