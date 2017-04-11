@@ -51,7 +51,7 @@ function choose_webserver
 # Target web server selection
 #------------------------------------------------------------------------------------------------------------------------------------------
 dialog --title "Choose a webserver" --backtitle "$backtitle" --yes-label "Apache" --no-label "Nginx" \
---yesno "\nChoose a wenserver which you are familiar with. They both work almost the same." 8 70
+--yesno "\nChoose a web server which you are familiar with. They both work almost the same." 8 70
 response=$?
 case $response in
 	0) server="apache";;
@@ -79,7 +79,6 @@ read -r hostnamefqdn
 read -r mysql_pass
 echo $mysql_pass > /tmp/mysql_pass
 echo $hostnamefqdn > /tmp/hostnamefqdn
-choose_webserver
 # end
 }
 exec 3>&-
@@ -151,9 +150,11 @@ if [[ $family == "Ubuntu" ]]; then
 	# set hostname in Ubuntu
 	hostnamectl set-hostname $HOSTNAMESHORT
 	# disable AppArmor
-	[[ -d /etc/apparmor ]] && service apparmor stop
-	update-rc.d -f apparmor remove
-	apt-get -y -qq remove apparmor apparmor-utils
+	if [[ -n $(service apparmor status | grep -w active | grep -w running) ]]; then
+		service apparmor stop
+		update-rc.d -f apparmor remove
+		apt-get -y -qq remove apparmor apparmor-utils
+	fi
 else
 	grep -q "contrib" /etc/apt/sources.list || sed -i 's|main|main contrib|' /etc/apt/sources.list
 	grep -q "non-free" /etc/apt/sources.list || sed -i 's|contrib|contrib non-free|' /etc/apt/sources.list
@@ -527,7 +528,7 @@ echo "Please enter them where needed."
 echo "========================================================================="
 echo "Press ENTER to continue.."
 read DUMMY
-echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections
+#echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections
 
 #BELOW ARE STILL NOT WORKING
 #echo 'phpmyadmin      phpmyadmin/dbconfig-reinstall   boolean false' | debconf-set-selections
@@ -536,28 +537,33 @@ echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf
 if [[ $family == "Ubuntu" ]]; then
 
 install_packet "apache2 apache2-doc apache2-utils libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql \
-php7.0-imap phpmyadmin php7.0-cli php7.0-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear php-auth php7.0-mcrypt mcrypt \
+php7.0-imap php7.0-cli php7.0-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear php-auth php7.0-mcrypt mcrypt \
 imagemagick libruby libapache2-mod-python php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy php7.0-xmlrpc \
-php7.0-xsl memcached php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring" "apache2, PHP5, phpMyAdmin, FCGI, suExec, pear and mcrypt"
+php7.0-xsl memcached php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring" "apache2, PHP5, FCGI, suExec, pear and mcrypt"
 # PHP Opcode cache
 install_packet "php7.0-opcache php-apcu" "PHP Opcode cache"
 # PHP-FPM
 install_packet "libapache2-mod-fastcgi php7.0-fpm" "PHP-FPM"
 a2enmod actions fastcgi alias
+service apache2 restart
 # Install Let's Encrypt
 install_packet "letsencrypt" "Install Let's Encrypt"
 
 else
 
 install_packet "apache2 apache2.2-common apache2-doc apache2-mpm-prefork apache2-utils libexpat1 ssl-cert libapache2-mod-php5 php5 \
-php5-common php5-gd php5-mysql php5-imap phpmyadmin php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear php-auth php5-mcrypt \
+php5-common php5-gd php5-mysql php5-imap php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear php-auth php5-mcrypt \
 mcrypt php5-imagick imagemagick libruby libapache2-mod-python php5-curl php5-intl php5-memcache php5-memcached php5-pspell php5-recode \
-php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached libapache2-mod-passenger" "apache2, PHP5, phpMyAdmin, FCGI, suExec, pear and mcrypt"
+php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached libapache2-mod-passenger" "apache2, PHP5, CGI, suExec, pear and mcrypt"
+
 #Install XCache
 install_packet "php5-xcache libapache2-mod-fastcgi php5-fpm" "Install XCache PHP Fpm"
 a2enmod actions fastcgi alias >> /dev/null
 
 fi
+
+#phpmyadmin
+debconf-apt-progress -- apt-get install -y phpmyadmin
 
 # fix HTTPOXY vulnerability
 cat <<EOT > /etc/apache2/conf-available/httpoxy.conf
@@ -582,8 +588,8 @@ install_nginx (){
 # Install NginX, PHP5, phpMyAdmin, FCGI, suExec, Pear, And mcrypt
 #------------------------------------------------------------------------------------------------------------------------------------------
 
-echo 'phpmyadmin      phpmyadmin/reconfigure-webserver        multiselect' | debconf-set-selections
-echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
+#echo 'phpmyadmin      phpmyadmin/reconfigure-webserver        multiselect' | debconf-set-selections
+#echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
 
 debconf-apt-progress -- apt-get install -y nginx
 if [ $(dpkg-query -W -f='${Status}' apache2 2>/dev/null | grep -c "ok installed") -eq 1 ];
@@ -826,7 +832,11 @@ while true; do
 				dialog --msgbox "Mysql password can't be blank. Exiting..." 7 70
 				exit
 			fi
-			install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
+			if [[ "$(echo $HOSTNAMEFQDN | grep -P '(?=^.{1,254}$)(^(?>(?!\d+\.)[a-zA-Z0-9_\-]{1,63}\.?)+(?:[a-zA-Z]{2,})$)')" == "" ]]; then
+				dialog --msgbox "Invalid FQDN. Exiting..." 7 70
+				exit
+			fi
+			choose_webserver; install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
 			create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 			install_ISPConfig
 			read -n 1 -s -p "Press any key to continue"
