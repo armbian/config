@@ -152,7 +152,7 @@ while true; do
 
 	"Network" )
 		dialog --backtitle "$BACKTITLE" --title "Edit network configuration" --no-collapse --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
-		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces
+		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart
 	;;
 
 	"Hotspot" )
