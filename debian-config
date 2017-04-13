@@ -298,7 +298,7 @@ while true; do
 			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" \
 			--no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
 			exitstatus=$?;
-			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; fi
+			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; systemctl daemon-reload; fi
 			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
 		elif [ $declared_wlans = ${#array[@]} ]; then
 			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse \
