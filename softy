@@ -85,7 +85,6 @@ exec 3>&-
 # read variables back
 MYSQL_PASS=`cat /tmp/mysql_pass`
 HOSTNAMEFQDN=`cat /tmp/hostnamefqdn`
-server=`cat /tmp/server`
 }
 
 

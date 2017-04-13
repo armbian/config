@@ -89,7 +89,7 @@ LIST=()
 # here we add new items to menu. with condition when needed
 
 [[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
-[[ -n $(ls -1 /sys/class/net/ | grep -vE "eth|lo|enp") ]] && LIST+=( "Wireless" "Connect to your router" )
+[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Wireless" "Connect to your router" )
 [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
 LIST+=( "Hotspot" "Manage wireless access point" )
 LIST+=( "Network" "Edit network settings" )
@@ -229,19 +229,16 @@ while true; do
 				# NAT
 				1)
 					sed -i '/^#/ d' $TEMP_CONF
-					apt-get -qq -y --no-install-recommends install isc-dhcp-server
-					echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static\naddress 192.168.3.10\nnetmask 255.255.255.0\ngateway 192.168.3.1" >> $TEMP_CONF
-					sed -i 's/^option domain-name "example.org";/#option domain-name "example.org";/' /etc/dhcp/dhcpd.conf
-					sed -i 's/^option domain-name-servers ns1.example.org, ns2.example.org;/#option domain-name-servers ns1.example.org, ns2.example.org;/' /etc/dhcp/dhcpd.conf
-					sed -i 's/^#authoritative;/authoritative;/' /etc/dhcp/dhcpd.conf
-					# removes our previous conf
-					sed -i '/# armbian conf/,$d' /etc/dhcp/dhcpd.conf
-					# creates new
-					echo "# armbian conf" >> /etc/dhcp/dhcpd.conf
-					echo -e "subnet 192.168.3.0 netmask 255.255.255.0 {\nrange 192.168.3.10 192.168.3.210;" >> /etc/dhcp/dhcpd.conf
-					echo -e "option broadcast-address 192.168.3.255;\noption routers 192.168.3.1;" >> /etc/dhcp/dhcpd.conf
-					echo -e "default-lease-time 600;\nmax-lease-time 7200;\noption domain-name \"local\";" >> /etc/dhcp/dhcpd.conf
-					echo -e "option domain-name-servers 8.8.8.8, 8.8.4.4;\n}" >> /etc/dhcp/dhcpd.conf
+					apt-get -qq -y --no-install-recommends install dnsmasq iptables
+					echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> $TEMP_CONF
+					# create new configuration
+					echo "interface=$WIRELESS_ADAPTER				# Use interface $WIRELESS_ADAPTER" > /etc/dnsmasq.conf
+					echo "listen-address=172.24.1.1					# Explicitly specify the address to listen on" >> /etc/dnsmasq.conf
+					echo "bind-interfaces							# Bind to the interface to make sure we aren't sending things elsewhere" >> /etc/dnsmasq.conf
+					echo "server=8.8.8.8							# Forward DNS requests to Google DNS" >> /etc/dnsmasq.conf
+					echo "domain-needed								# Don't forward short names" >> /etc/dnsmasq.conf
+					echo "bogus-priv								# Never forward addresses in the non-routed address spaces" >> /etc/dnsmasq.conf
+					echo "dhcp-range=172.24.1.50,172.24.1.150,12h	# Assign IP addresses between 172.24.1.50 and 172.24.1.150 with a 12 hour lease time" >> /etc/dnsmasq.conf
 					# - Enable IPv4 forwarding
 					sed -i "/net.ipv4.ip_forward=/c\net.ipv4.ip_forward=1" /etc/sysctl.conf
 					echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -251,10 +248,11 @@ while true; do
 					iptables -A FORWARD -i $WIRELESS_ADAPTER -o $DEFAULT_ADAPTER -j ACCEPT
 					# - Save IP tables, applied during ifup in /etc/network/interfaces.
 					iptables-save > /etc/iptables.ipv4.nat
-					# change to proper device
-					sed -i 's/^INTERFACES=.*/INTERFACES='$WIRELESS_ADAPTER'/' /etc/default/isc-dhcp-server
-					service isc-dhcp-server restart
-					sed -i 's/^bridge=.*/#bridge=.*/' /etc/hostapd.conf
+					service dnsmasq restart
+					sed -i 's/^bridge=.*/#&/' /etc/hostapd.conf
+					sed -e 's/exit 0//g' -i /etc/rc.local
+					echo "iptables-restore < /etc/iptables.ipv4.nat" >> /etc/rc.local
+					echo "exit 0" >> /etc/rc.local
 				;;
 			3) exit;;
 			255) exit;;
