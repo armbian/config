@@ -261,7 +261,7 @@ deb http://packages.openmediavault.org/public erasmus main
 
 EOF
 debconf-apt-progress -- apt-get update
-apt-get -y install openmediavault postfix
+debconf-apt-progress -- apt-get -y install openmediavault postfix
 URL='http://omv-extras.org/openmediavault-omvextrasorg_latest_all3.deb'; FILE=`mktemp`; wget "$URL" -qO $FILE && dpkg -i $FILE; rm $FILE
 /usr/sbin/omv-update
 apt-get -y install openmediavault-flashmemory
@@ -284,7 +284,7 @@ if !(grep -qs djbenson "/etc/apt/sources.list.d/tvheadend.list");then
 fi
 
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
+debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
 dpkg-reconfigure tvheadend
 service tvheadend restart
 }
