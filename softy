@@ -126,8 +126,7 @@ check_port ()
 # Check if something is running on port $1 and display info
 #------------------------------------------------------------------------------------------------------------------------------------------
 [[ -z $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".$1"') ]] && dialog --backtitle "$backtitle" --title "Checking service" \
---infobox "\nIt looks good.\n\nThere is $2 service on port $1" 7 52
-sleep 3
+--msgbox "\nIt looks good.\n\nThere is $2 service on port $1" 9 52
 }
 
 
@@ -227,12 +226,56 @@ useradd $SMBUSER
 echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER >/dev/null 2>&1
 echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER >/dev/null 2>&1
 service samba stop | service smbd stop >/dev/null 2>&1
-mv $SCRIPTDIR/smb.conf /etc/samba/smb.conf
-sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf
-sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf
-sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf
-install -m 755 -g $SMBUSER -o $SMBUSER -d /ext
-service samba start | service smbd start >/dev/null 2>&1
+cp /etc/samba/smb.conf /etc/samba/smb.conf.stock
+cat > /etc/samba/smb.conf.tmp << EOF
+[global]
+	workgroup = SMBGROUP
+	server string = %h server
+	hosts allow = SUBNET
+	log file = /var/log/samba/log.%m
+	max log size = 1000
+	syslog = 0
+	panic action = /usr/share/samba/panic-action %d
+	load printers = yes
+	printing = cups
+	printcap name = cups
+
+[printers]
+	comment = All Printers
+	path = /var/spool/samba
+	browseable = no
+	public = yes
+	guest ok = yes
+	writable = no
+	printable = yes
+	printer admin = SMBUSER
+
+[print$]
+	comment = Printer Drivers
+	path = /etc/samba/drivers
+	browseable = yes
+	guest ok = no
+	read only = yes
+	write list = SMBUSER
+
+[ext]
+	comment = Storage
+	path = /ext
+	writable = yes
+	public = no
+	valid users = SMBUSER
+	force create mode = 0777
+EOF
+sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf.tmp
+sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf.tmp
+sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf.tmp
+dialog --backtitle "$backtitle" --title "Review samba configuration" --no-collapse --editbox /etc/samba/smb.conf.tmp 30 0 2> /etc/samba/smb.conf.tmp.out
+if [[ $? = 0 ]]; then
+	mv /etc/samba/smb.conf.tmp.out /etc/samba/smb.conf
+	install -m 755 -g $SMBUSER -o $SMBUSER -d /ext
+	service service smbd stop >/dev/null 2>&1
+	sleep 3
+	service service smbd start >/dev/null 2>&1
 }
 
 install_omv (){
@@ -240,7 +283,7 @@ install_omv (){
 # Install high-performance HTTP accelerator
 #------------------------------------------------------------------------------------------------------------------------------------------
 if [[ $family == "Ubuntu" ]]; then
-	dialog --backtitle "$backtitle" --title "Dependencies not met" --infobox "\nOpenmediavault can be installed only on Debian." 5 52
+	dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenmediavault can be installed only on Debian." 7 52
 	sleep 5
 	exit
 fi
@@ -276,8 +319,6 @@ install_tvheadend (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # TVheadend https://tvheadend.org/ unofficial port https://tvheadend.org/boards/5/topics/21528
 #------------------------------------------------------------------------------------------------------------------------------------------
-install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
-
 if !(grep -qs djbenson "/etc/apt/sources.list.d/tvheadend.list");then
 	echo "deb https://dl.bintray.com/djbenson/deb wheezy stable" >> /etc/apt/sources.list.d/tvheadend.list
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1
@@ -285,8 +326,6 @@ fi
 
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
-dpkg-reconfigure tvheadend
-service tvheadend restart
 }
 
 
@@ -296,6 +335,13 @@ install_transmission (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
 install_packet "transmission-cli transmission-common transmission-daemon" "Install torrent server"
+# systemd workaround
+# https://forum.armbian.com/index.php?/topic/4017-programs-does-not-start-automatically-at-boot/
+sed -e 's/exit 0//g' -i /etc/rc.local
+	cat >> /etc/rc.local <<"EOF"
+service transmission-daemon restart
+exit 0
+EOF
 }
 
 
@@ -411,20 +457,6 @@ install_DashNTP (){
 echo "dash dash/sh boolean false" | debconf-set-selections
 dpkg-reconfigure -f noninteractive dash > /dev/null 2>&1
 install_packet "ntp ntpdate" "Install DASH and ntp service"
-}
-
-
-install_MySQL_old (){
-#------------------------------------------------------------------------------------------------------------------------------------------
-# MYSQL
-#------------------------------------------------------------------------------------------------------------------------------------------
-echo "mysql-server-5.5 mysql-server/root_password password $MYSQL_PASS" | debconf-set-selections
-echo "mysql-server-5.5 mysql-server/root_password_again password $MYSQL_PASS" | debconf-set-selections
-install_packet "mysql-client mysql-server" "Install Mysql client / server"
-#Allow MySQL to listen on all interfaces
-cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
-sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/my.cnf
-service mysql restart >> /dev/null
 }
 
 
@@ -753,7 +785,9 @@ fi
 
 # Install basic stuff
 #
-apt-get -qq -y --no-install-recommends install dialog whiptail lsb-release bc expect html2text > /dev/null
+echo "Downloading dependendies"
+apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
+lsb-release bc expect html2text > /dev/null
 
 # gather some info
 #
@@ -804,25 +838,20 @@ while true; do
 		if [[ "$selection" == *Samba* && "$SAMBA_STATUS" != "on" ]]; then
 			install_samba
 			check_port 445 "Samba"
-			read -n 1 -s -p "Press any key to continue"
 		fi
 
 		if [[ "$selection" == *CUPS* && "$CUPS_STATUS" != "on" ]]; then
 			install_cups
 			check_port 445 "CUPS"
-			read -n 1 -s -p "Press any key to continue"
 		fi
 
 		if [[ "$selection" == *headend* && "$TVHEADEND_STATUS" != "on" ]]; then
 			install_tvheadend
-			check_port 445 "CUPS"
-			read -n 1 -s -p "Press any key to continue"
 		fi
 
 		if [[ "$selection" == *Minidlna* && "$MINIDLNA_STATUS" != "on" ]]; then
 			install_packet "minidlna" "Install lightweight DLNA/UPnP-AV server"
-			check_port 8200
-			read -n 1 -s -p "Press any key to continue"
+			check_port 8200 "minidlna"
 		fi
 
 		if [[ "$selection" == *ISPConfig* && "$ISPCONFIG_STATUS" != "on" ]]; then
@@ -865,7 +894,6 @@ while true; do
 		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
 			install_transmission
 			check_port 9091
-			read -n 1 -s -p "Press any key to continue"
 		fi
 
 		# reread statuses
