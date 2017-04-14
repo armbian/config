@@ -227,7 +227,7 @@ useradd $SMBUSER
 echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER >/dev/null 2>&1
 echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER >/dev/null 2>&1
 service samba stop | service smbd stop >/dev/null 2>&1
-cp scripts/smb.conf /etc/samba/smb.conf
+mv $SCRIPTDIR/smb.conf /etc/samba/smb.conf
 sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf
 sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf
 sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf
@@ -274,18 +274,17 @@ check_port 80
 
 install_tvheadend (){
 #------------------------------------------------------------------------------------------------------------------------------------------
-# TVheadend https://tvheadend.org/
+# TVheadend https://tvheadend.org/ unofficial port https://tvheadend.org/boards/5/topics/21528
 #------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
 
-if !(grep -qs tvheadend "/etc/apt/sources.list.d/tvheadend.list");then
-	echo "deb https://dl.bintray.com/tvheadend/deb $distribution stable" >> /etc/apt/sources.list.d/tvheadend.list
+if !(grep -qs djbenson "/etc/apt/sources.list.d/tvheadend.list");then
+	echo "deb https://dl.bintray.com/djbenson/deb wheezy stable" >> /etc/apt/sources.list.d/tvheadend.list
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1
 fi
 
 debconf-apt-progress -- apt-get update
-install_packet "libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util"
-install -m 755 scripts/tv_grab_file /usr/bin/tv_grab_file
+debconf-apt-progress -- apt-get install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
 dpkg-reconfigure tvheadend
 service tvheadend restart
 }
@@ -768,6 +767,7 @@ SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
 mysql_pass=""
 backtitle="Softy - Armbian post deployment scripts, http://www.armbian.com"
+SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # main dialog routine
 #
