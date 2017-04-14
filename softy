@@ -276,6 +276,7 @@ if [[ $? = 0 ]]; then
 	service service smbd stop >/dev/null 2>&1
 	sleep 3
 	service service smbd start >/dev/null 2>&1
+fi
 }
 
 install_omv (){
