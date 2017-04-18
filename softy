@@ -343,6 +343,44 @@ sed -e 's/exit 0//g' -i /etc/rc.local
 service transmission-daemon restart
 exit 0
 EOF
+dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nDo you want to help \
+community and seed armbian torrent files? It will ensure faster download for everyone. We need around 50Gb of your space." 10 44
+if [[ $? = 0 ]]; then
+cat >> /etc/cron.daily/seed-armbian-torrent <<"EOF"
+#!/bin/bash
+#
+# armbian torrents auto update
+#
+
+# download latest torrent pack
+rm -f /tmp/tmp.zip; wget -qO- -O /tmp/tmp.zip https://dl.armbian.com/torrent/all-torrents.zip
+
+# test zip for corruption
+unzip -t /tmp/tmp.zip >/dev/null 2>&1 || echo "Error in zip" && exit
+# extract zip
+unzip -o /tmp/tmp.zip -d /tmp/torrent-tmp >/dev/null 2>&1
+
+# create list of current active torrents
+transmission-remote -n 'transmission:transmission' -l | sed '1d; $d' > /tmp/torrent-tmp/active.torrents
+
+# loop and add/update torrent files
+for f in /tmp/torrent-tmp/*.torrent; do
+        transmission-remote -n 'transmission:transmission' -a $f > /dev/null 2>&1
+        # remove added from the list
+        pattern="${f//.torrent}"; pattern="${pattern//\/tmp\/torrent-tmp\/}";
+        sed -i "/$pattern/d" /tmp/torrent-tmp/active.torrents
+done
+
+# remove old armbian torrents
+while read i; do
+        [[ $i == *Armbian_* ]] && transmission-remote -n 'transmission:transmission' -t $(echo "$i" | awk '{print $1}';) --remove-and-delete
+done < /tmp/torrent-tmp/active.torrents
+
+# remove temporally files and direcotories
+rm -rf /tmp/torrent-tmp
+EOF
+chmod +x /etc/cron.daily/seed-armbian-torrent
+fi
 }
 
 
