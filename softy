@@ -380,6 +380,7 @@ done < /tmp/torrent-tmp/active.torrents
 rm -rf /tmp/torrent-tmp
 EOF
 chmod +x /etc/cron.daily/seed-armbian-torrent
+/etc/cron.daily/seed-armbian-torrent
 fi
 }
 
