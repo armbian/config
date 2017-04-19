@@ -17,6 +17,11 @@ fi
 echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
 	read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. Press CTRL C to stop to stop or any key to ignore and continue."
+	else
+	# Install basic stuff
+	#
+	echo "Downloading dependencies ..."
+	apt-get -qq -y --no-install-recommends install bc expect rcconf  >> /dev/null
 fi
 
 function wlan_edit ()
@@ -69,11 +74,6 @@ function get_wlan_interface ()
 # make a bacup
 cp /etc/network/interfaces /etc/network/interfaces.debian-config.backup
 
-# Install basic stuff
-#
-echo "Downloading dependencies ..."
-apt-get -qq -y --no-install-recommends install bc expect rcconf  >> /dev/null
-
 # gather some info
 #
 [[ -f /etc/armbian-release ]] && source /etc/armbian-release && ARMBIAN="Armbian $VERSION $IMAGE_TYPE";
@@ -88,6 +88,10 @@ LIST=()
 ###########################################################################################################################################
 # here we add new items to menu. with condition when needed
 
+if [[ -f /etc/update-motd.d/41-armbian-config ]]; then
+	[[ -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Remove" "Remove armbian-config from welcome screen" )
+	[[ ! -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Add" "Add armbian-config to welcome screen" )
+fi
 [[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 [[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Wireless" "Connect to your router" )
 [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
@@ -128,6 +132,14 @@ while true; do
 
 	#######################################################################################################################################
 	case $selection in
+
+	"Remove" )
+		chmod -x /etc/update-motd.d/41-armbian-config
+	;;
+
+	"Add" )
+		chmod +x /etc/update-motd.d/41-armbian-config
+	;;
 
 	"Display" )
 		h3disp
