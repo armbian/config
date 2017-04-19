@@ -356,7 +356,8 @@ cat >> /etc/cron.daily/seed-armbian-torrent <<"EOF"
 rm -f /tmp/tmp.zip; wget -qO- -O /tmp/tmp.zip https://dl.armbian.com/torrent/all-torrents.zip
 
 # test zip for corruption
-unzip -t /tmp/tmp.zip >/dev/null 2>&1 || echo "Error in zip" && exit
+unzip -t /tmp/tmp.zip >/dev/null 2>&1
+[[ $? -ne 0 ]] && echo "Error in zip" && exit
 # extract zip
 unzip -o /tmp/tmp.zip -d /tmp/torrent-tmp >/dev/null 2>&1
 
