@@ -346,25 +346,22 @@ EOF
 dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nDo you want to help \
 community and seed armbian torrent files? It will ensure faster download for everyone. We need around 50Gb of your space." 10 44
 if [[ $? = 0 ]]; then
-cat >> /etc/cron.daily/seed-armbian-torrent <<"EOF"
+cat > /etc/cron.daily/seed-armbian-torrent <<"EOF"
 #!/bin/bash
 #
 # armbian torrents auto update
 #
-
 # download latest torrent pack
-TEMP=$(mktemp -d)
+TEMP=$(mktemp -d || exit 1)
+trap "rm -rf \"${TEMP}\" ; exit 0" 0 1 2 3 15
 wget -qO- -O $TEMP/tmp.zip https://dl.armbian.com/torrent/all-torrents.zip
-
 # test zip for corruption
 unzip -t $TEMP/tmp.zip >/dev/null 2>&1
 [[ $? -ne 0 ]] && echo "Error in zip" && exit
 # extract zip
 unzip -o $TEMP/tmp.zip -d $TEMP/torrent-tmp >/dev/null 2>&1
-
 # create list of current active torrents
 transmission-remote -n 'transmission:transmission' -l | sed '1d; $d' > $TEMP/torrent-tmp/active.torrents
-
 # loop and add/update torrent files
 for f in $TEMP/torrent-tmp/*.torrent; do
         transmission-remote -n 'transmission:transmission' -a $f > /dev/null 2>&1
@@ -372,17 +369,14 @@ for f in $TEMP/torrent-tmp/*.torrent; do
         pattern="${f//.torrent}"; pattern="${pattern##*/}";
         sed -i "/$pattern/d" $TEMP/torrent-tmp/active.torrents
 done
-
 # remove old armbian torrents
 while read i; do
         [[ $i == *Armbian_* ]] && transmission-remote -n 'transmission:transmission' -t $(echo "$i" | awk '{print $1}';) --remove-and-delete
 done < $TEMP/torrent-tmp/active.torrents
-
 # remove temporally files and direcotories
-rm -rf $TEMP
 EOF
 chmod +x /etc/cron.daily/seed-armbian-torrent
-/etc/cron.daily/seed-armbian-torrent
+/etc/cron.daily/seed-armbian-torrent &
 fi
 }
 
