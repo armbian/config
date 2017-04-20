@@ -346,6 +346,23 @@ EOF
 dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nDo you want to help \
 community and seed armbian torrent files? It will ensure faster download for everyone. We need around 50Gb of your space." 10 44
 if [[ $? = 0 ]]; then
+# adjust network buffers if necessary
+rmem_recommended=4194304
+wmem_recommended=1048576
+rmem_actual=$(sysctl net.core.rmem_max | awk -F" " '{print $3}')
+if [ ${rmem_actual} -lt ${rmem_recommended} ]; then
+	grep -q net.core.rmem_max /etc/sysctl.conf && \
+		sed -i "s/net.core.rmem_max =.*/net.core.rmem_max = ${rmem_recommended}/" /etc/sysctl.conf || \
+		echo "net.core.rmem_max = ${rmem_recommended}" >> /etc/sysctl.conf
+fi
+wmem_actual=$(sysctl net.core.wmem_max | awk -F" " '{print $3}')
+if [ ${wmem_actual} -lt ${wmem_recommended} ]; then
+	grep -q net.core.wmem_max /etc/sysctl.conf && \
+		sed -i "s/net.core.wmem_max =.*/net.core.wmem_max = ${wmem_recommended}/" /etc/sysctl.conf || \
+		echo "net.core.wmem_max = ${wmem_recommended}" >> /etc/sysctl.conf
+fi
+/sbin/sysctl -p
+# create cron job for daily sync with official Armbian torrents
 cat > /etc/cron.daily/seed-armbian-torrent <<"EOF"
 #!/bin/bash
 #
