@@ -94,7 +94,7 @@ if [[ -f /etc/update-motd.d/41-armbian-config ]]; then
 [[ ! -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Add" "Add armbian-config to welcome screen" )
 fi
 [[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
-
+[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
 [[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 [[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Wireless" "Connect to your router" )
 [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
@@ -159,6 +159,13 @@ while true; do
 	;;
 	"Services" )
 		rcconf
+	;;
+
+	"Lowlevel" )
+		dialog --title "Kernel messages" --backtitle "$BACKTITLE" --help-button --help-label "Yes & reboot" --yes-label "Yes" --no-label "Cancel" --yesno "\nStop low-level messages on console?" 7 64
+		exitstatus=$?;
+		[[ $exitstatus = 0 ]] && sed -i 's/^#kernel.printk\(.*\)/kernel.printk\1/' /etc/sysctl.conf
+		[[ $exitstatus = 2 ]] && sed -i 's/^#kernel.printk\(.*\)/kernel.printk\1/' /etc/sysctl.conf && reboot
 	;;
 
 	"Overlayroot" )
