@@ -1,41 +1,42 @@
-Debian and Ubuntu post-installation tasks
-========================
+# Armbian config
 
-![](https://www.armbian.com/wp-content/uploads/2017/04/serverinstallnew2.png)
+Utility for configuring your board and install various services. 
 
-- Debian or Ubuntu stock post-install options: dekstops, DNS, LAMP, MAIL, SAMBA, SSH, ...
-- [TV headend](https://tvheadend.org/)
-- [Syncthing](https://syncthing.net/)
-- [SoftEther VPN server](https://www.softether.org/)
-- [Transmission](https://transmissionbt.com/)
-- [ISPConfig](https://www.ispconfig.org/)
-- [Openmediavault NAS](http://www.openmediavault.org/)
-- [PI hole](https://pi-hole.net)
-- [MiniDLNA](http://minidlna.sourceforge.net/)
+It comes with Armbian (from 5.27) by default. Login as super user and type:
 
-Project realisation:
-[http://www.igorpecovnik.com/2013/12/10/micro-home-server/](http://www.igorpecovnik.com/2013/12/10/micro-home-server/)
+	armbian-config
 
-Tips:
-- set fixed ip address
-- for those who use ramlog. You can enable ramlog back when installation is finished
-- installation is based on [http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3](http://www.howtoforge.com/perfect-server-debian-wheezy-nginx-bind-dovecot-ispconfig-3)
+![](https://www.armbian.com/wp-content/uploads/2017/05/confsoft.png)
 
-Installation steps
-------------------
-	
+**Configuration**
+
+- wireless network connect,
+- AP (hotspot) in bridged or NAT mode,
+- edit boot environment, network, FEX 
+- switching between kernels and nightly builds,
+- enabling read only root filesystem (Ubuntu only),
+
+**Installation**
+
+- [TV headend](https://tvheadend.org/) *(IPTV server)*
+- [Syncthing](https://syncthing.net/) *(personal cloud)*
+- [SoftEther VPN server](https://www.softether.org/) *(VPN server)*
+- [Transmission](https://transmissionbt.com/) *(torrent server)*
+- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
+- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
+- [PI hole](https://pi-hole.net) *(ad blocker)*
+- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)
+
+
+[Project realisation example](http://www.igorpecovnik.com/2013/12/10/micro-home-server/)
+
+
+----------
+
+**Installation for regular Ubuntu or Debian based distributions**
+
 	sudo apt-get -y install git
 	cd ~
 	git clone https://github.com/igorpecovnik/Debian-micro-home-server
 	cd Debian-micro-home-server
-	sudo ./softy
-
-
-Thank you for your support
-------------------
-
-[![Paypal donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=SNW8N3RCJKREJ)
-
-![My bitcoin address](http://www.igorpecovnik.com/wp-content/uploads/2014/10/bitcoinigor.png)
-
-17vT6hV83EQ6rizbWeasfy1tWEzFpzYqEE
+	sudo ./debian-config
