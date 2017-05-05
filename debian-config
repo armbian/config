@@ -21,8 +21,11 @@ if [[ $? -ne 0 ]]; then
 	# Install basic stuff
 	#
 	echo "Downloading dependencies ..."
-	apt-get -qq -y --no-install-recommends install bc expect rcconf  >> /dev/null
+	apt-get -qq -y --no-install-recommends install bc expect rcconf dialog  >> /dev/null
 fi
+
+#
+command -v nmcli >/dev/null 2>&1 || { echo >&2 "Installing Network manager ... "; apt-get -y --no-install-recommends install network-manager; systemctl start NetworkManager;}
 
 function wlan_edit ()
 {
@@ -127,30 +130,33 @@ ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --tit
 exec 3>&-
 if [[ $ACKNOWLEDGEMENT == "" ]]; then exit; fi
 
+while true; do
 LIST=()
 ###########################################################################################################################################
 # here we add new items to menu. with condition when needed
 
-if [[ -f /etc/update-motd.d/41-armbian-config ]]; then
-[[ -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Remove" "Remove armbian-config from welcome screen" )
-[[ ! -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Add" "Add armbian-config to welcome screen" )
-fi
-[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
-[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
-[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
-[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Wireless" "Connect to your router" )
-[[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
-[[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Stable" "Switch to stable builds" )
-LIST+=( "Hotspot" "Manage wireless access point" )
-LIST+=( "Network" "Edit network settings" )
-[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
-[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
-[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install Armbian to SATA, eMMC, NAND, USB" )
-LIST+=( "Services" "Toggle running services" )
-[[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]] && LIST+=( "Overlayroot" "Toggle virtual read-only root filesystem" )
+[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB target media" )
+[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Connect to wireless access point" )
+[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Create or manage WiFi access point" )
+[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Application installer" )
+LIST+=( "-" "" )
 [[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI monitoring" )
 [[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
-[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Install 3rd party applications" )
+[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
+[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
+[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
+[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
+LIST+=( "Network" "Edit network settings" )
+LIST+=( "Services" "Toggle running services" )
+if [[ -f /etc/update-motd.d/41-armbian-config ]]; then
+	[[ -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Remove" "Remove armbian-config from welcome screen" )
+	[[ ! -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Add" "Add armbian-config to welcome screen" )
+fi
+[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
+[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Stable" "Switch to stable builds" )
+[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
+[[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]] && LIST+=( "Overlayroot" "Toggle virtual read-only root filesystem" )
+
 ###########################################################################################################################################
 LISTLENGHT="$((7+${#LIST[@]}/2))"
 
@@ -159,7 +165,7 @@ LISTLENGHT="$((7+${#LIST[@]}/2))"
 DIALOG_CANCEL=1
 DIALOG_ESC=255
 
-while true; do
+
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "$TITLE" --clear --cancel-label "Exit to shell" --menu "Please select:" $LISTLENGHT 70 15 \
 	"${LIST[@]}" 2>&1 1>&3)
@@ -177,6 +183,7 @@ while true; do
 		;;
 	esac
 
+	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading application ... " 5 27
 	#######################################################################################################################################
 	case $selection in
 
@@ -376,7 +383,7 @@ while true; do
 		nand-sata-install
 	;;
 
-	"Wireless" )
+	"WiFi" )
 		# scan for wifi modules
 		array=( $(nmcli dev | grep "wifi" | awk '{print $1}') )
 		declared_wlans=0;

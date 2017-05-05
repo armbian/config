@@ -873,11 +873,6 @@ while true; do
 	exit_status=$?
 	exec 3>&-
 	case $exit_status in
-	$DIALOG_CANCEL)
-		clear
-		echo -e "\n\e[0;33mThank you for using Armbian configuration tool! Support: \e[1m\e[39mwww.armbian.com\x1B[0m\n"
-		exit
-	;;
 	$DIALOG_ESC)
 		clear
 		exit 1
