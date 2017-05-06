@@ -138,11 +138,13 @@ LIST=()
 [[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB target media" )
 [[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Connect to wireless access point" )
 [[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Create or manage WiFi access point" )
+[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 [[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Application installer" )
 LIST+=( "-" "" )
+[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && LIST+=( "Consumption" "Control board consumption" )
 [[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI monitoring" )
 [[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
-[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
+
 [[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
 [[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
 [[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
@@ -197,6 +199,10 @@ DIALOG_ESC=255
 
 	"Display" )
 		h3disp
+		exit
+	;;
+	"Consumption" )
+		h3consumption
 		exit
 	;;
 	"Fexedit" )
