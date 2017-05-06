@@ -27,6 +27,31 @@ fi
 #
 command -v nmcli >/dev/null 2>&1 || { echo >&2 "Installing Network manager ... "; apt-get -y --no-install-recommends install network-manager; systemctl start NetworkManager;}
 
+function description
+{
+case $1 in
+    *header*)
+        echo "Big board logo and kernel info"
+     ;;
+    *sysinfo*)
+        echo "Sysinfo - load, ip, memory, uptime, ..."
+     ;;
+    *tips*)
+        echo "Shows tip of the day"
+     ;;
+    *updates*)
+        echo "Display number of avaliable updates"
+     ;;
+    *armbian-config*)
+        echo "Show command for system configuration"
+     ;;
+
+    *)
+    echo ""
+    ;;
+esac
+}
+
 function wlan_edit ()
 {
 source /etc/hostapd.conf
@@ -135,12 +160,21 @@ LIST=()
 ###########################################################################################################################################
 # here we add new items to menu. with condition when needed
 
-[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB target media" )
-[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Connect to wireless access point" )
-[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Create or manage WiFi access point" )
+[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
+if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
+		[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Manage WiFi access point" )
+	else
+		[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Connect to wireless access point" )
+		[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
+fi
 [[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 [[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w active | grep -w running) ]] && LIST+=( "Desktop" "Disable desktop" )
 [[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w inactive) ]] && LIST+=( "Desktop" "Enable desktop" )
+if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
+	LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
+	else
+	LIST+=( "Hold" "Freeze kernel and board support packages" )
+fi
 [[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Application installer" )
 [[ ${#LIST[@]} > 0 ]] && LIST+=( "-" "" )
 [[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && LIST+=( "Consumption" "Control board consumption" )
@@ -151,10 +185,7 @@ LIST=()
 [[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
 LIST+=( "Network" "Edit network settings" )
 LIST+=( "Services" "Toggle running services" )
-if [[ -f /etc/update-motd.d/41-armbian-config ]]; then
-	[[ -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Remove" "Remove armbian-config from welcome screen" )
-	[[ ! -x /etc/update-motd.d/41-armbian-config ]] && LIST+=( "Add" "Add armbian-config to welcome screen" )
-fi
+LIST+=( "Welcome" "Toogle welcome screen items" )
 [[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
 [[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Stable" "Switch to stable builds" )
 [[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
@@ -190,12 +221,42 @@ DIALOG_ESC=255
 	#######################################################################################################################################
 	case $selection in
 
-	"Remove" )
-		chmod -x /etc/update-motd.d/41-armbian-config
-	;;
+	"Welcome" )
+		while true; do
+		HOME="/etc/update-motd.d/"
+		MOTD=()
+		LINES=()
+		LIST_CONST=7
+		j=0
+		DIALOG_CANCEL=1
+		DIALOG_ESC=255
 
-	"Add" )
-		chmod +x /etc/update-motd.d/41-armbian-config
+		while read line
+		do
+				STATUS=$([[ -x ${HOME}${line} ]] && echo "on")
+			DESC=$(description "$line")
+			MOTD+=( "$line" "$DESC" "$STATUS")
+			LINES[ $j ]=$line
+			(( j++ ))
+		done < <(ls -1 $HOME)
+
+				LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
+
+				exec 3>&1
+				selection=$(dialog --backtitle "$backtitle" --title "Toogle motd executing scripts" --clear --cancel-label \
+				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " $LISTLENGHT 70 15 "${MOTD[@]}" 2>&1 1>&3)
+				exit_status=$?
+				exec 3>&-
+				case $exit_status in
+				$DIALOG_CANCEL | $DIALOG_ESC)
+						exit 1
+						;;
+				0)
+						chmod -x ${HOME}*
+						chmod +x $(echo "$selection" | sed "s|[^ ]* *|${HOME}&|g")
+				;;
+				esac
+		done
 	;;
 
 	"Display" )
@@ -398,6 +459,15 @@ DIALOG_ESC=255
 		if [[ $? = 0 ]]; then reboot; fi
 	;;
 
+	"Hold" | "Unhold" )
+		dialog --title "Update" --backtitle "$BACKTITLE" --yes-label "$selection" --no-label "Cancel" --yesno "\nDo you want to ${selection,,} kernel updates?" 7 50
+		if [[ $? = 0 ]]; then
+		TARGET_BRANCH=$BRANCH
+		exceptions "$BRANCH"
+		apt-mark ${selection,,} linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD | dialog --backtitle "$BACKTITLE" --title "Package locking" --progressbox 6 64
+		[[ $BRANCH != "default" ]] && apt-mark ${selection,,} linux-dtb$TARGET_BRANCH-$TARGET_FAMILY | dialog --backtitle "$BACKTITLE" --title "Package locking" --progressbox 3 64
+		fi
+	;;
 
 	"Install" )
 		nand-sata-install
