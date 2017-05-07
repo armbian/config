@@ -12,9 +12,11 @@ It comes with Armbian (from 5.27) by default. Login as super user and type:
 
 - wireless network connect,
 - AP (hotspot) in bridged or NAT mode,
-- edit boot environment, network, FEX 
+- edit boot environment, network, FEX, welcome screen items, 
 - switching between kernels and nightly builds,
+- exclude / include kernel and BSP packages from upgrading,
 - enabling read only root filesystem (Ubuntu only),
+- set display resolution (H3 boards with legacy kernel),
 
 **Installation**
 
@@ -25,7 +27,7 @@ It comes with Armbian (from 5.27) by default. Login as super user and type:
 - [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
 - [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
 - [PI hole](https://pi-hole.net) *(ad blocker)*
-- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)
+- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)*
 
 
 [Project realisation example](http://www.igorpecovnik.com/2013/12/10/micro-home-server/)

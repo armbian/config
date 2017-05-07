@@ -186,8 +186,10 @@ fi
 LIST+=( "Network" "Edit network settings" )
 LIST+=( "Services" "Toggle running services" )
 LIST+=( "Welcome" "Toogle welcome screen items" )
-[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
-[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Stable" "Switch to stable builds" )
+if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
+	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
+	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Stable" "Switch to stable builds" )
+fi
 [[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
 [[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]] && LIST+=( "Overlayroot" "Toggle virtual read-only root filesystem" )
 
@@ -442,12 +444,14 @@ DIALOG_ESC=255
 	;;
 
 	"Nightly" )
-		sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
-		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get -y upgrade
-		dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
-		"\nReboot to apply new settings?" 7 34
-		if [[ $? = 0 ]]; then reboot; fi
+		dialog --title "Warning" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno "\nYou are switching to automated daily build which is untested and might break your system. Are you fine with that?" 9 44
+		if [[ $? = 0 ]]; then
+			sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
+			debconf-apt-progress -- apt-get update
+			debconf-apt-progress -- apt-get -y upgrade
+			dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
+			if [[ $? = 0 ]]; then reboot; fi
+		fi
 	;;
 
 	"Stable" )
