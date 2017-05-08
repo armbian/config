@@ -1,6 +1,6 @@
 # Armbian config
 
-Utility for configuring your board and install various services. 
+Utility for configuring your board and install various services.
 
 It comes with Armbian (from 5.27) by default. Login as super user and type:
 
@@ -10,10 +10,10 @@ It comes with Armbian (from 5.27) by default. Login as super user and type:
 
 **Configuration**
 
-- wireless network connect,- 
+- wireless network connect,
 - AP (hotspot) in bridged or NAT mode,
 - freeze and unfreeze kernel and BSP upgrades,
-- edit boot environment, network, FEX, welcome screen items, 
+- edit boot environment, network, FEX, welcome screen items,
 - switching between avaliable kernels and nightly builds,
 - enabling read only root filesystem (Ubuntu only),
 - set display resolution (H3 boards with legacy kernel),
