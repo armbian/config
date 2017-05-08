@@ -6,99 +6,143 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
+
 # check for root
 #
 if [[ $EUID != 0 ]]; then
 	echo "Warning. This script requires root privileges. Exiting ..."
-	sleep 3
+	sleep 2
 	exit
 fi
 
+
+# check if we have internet connection to install dependencies
+#
 echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
-	read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. Press CTRL C to stop to stop or any key to ignore and continue."
+		read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. \
+		Press CTRL C to stop to stop or any key to ignore and continue."
 	else
-	# Install basic stuff
-	#
-	echo "Downloading dependencies ..."
-	apt-get -qq -y --no-install-recommends install bc expect rcconf dialog  >> /dev/null
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' bc 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install expect
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' expect 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install bc
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' rcconf 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install rcconf
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dialog 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install dialog
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' network-manager 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install network-manager
 fi
 
+# gather info about the board
 #
-command -v nmcli >/dev/null 2>&1 || { echo >&2 "Installing Network manager ... "; apt-get -y --no-install-recommends install network-manager; systemctl start NetworkManager;}
+[[ -f /etc/armbian-release ]] && source /etc/armbian-release && ARMBIAN="Armbian $VERSION $IMAGE_TYPE";
+DISTRO=$(lsb_release -is)
+DISTROID=$(lsb_release -rs)
+BACKTITLE="$ARMBIAN $DISTRO $DISTROID configuration utility, http://www.armbian.com"
+TITLE="Configuring $BOARD_NAME"
 
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+#
+# show description for MOTD files
+#
 function description
 {
-case $1 in
-    *header*)
-        echo "Big board logo and kernel info"
-     ;;
-    *sysinfo*)
-        echo "Sysinfo - load, ip, memory, uptime, ..."
-     ;;
-    *tips*)
-        echo "Shows tip of the day"
-     ;;
-    *updates*)
-        echo "Display number of avaliable updates"
-     ;;
-    *armbian-config*)
-        echo "Show command for system configuration"
-     ;;
-
-    *)
-    echo ""
-    ;;
-esac
-}
-
-function wlan_edit ()
-{
-source /etc/hostapd.conf
-exec 3>&1
-dialog --title "AP configuration" --backtitle "$BACKTITLE" --form "\nWPA2 enabled, advanced config: edit /etc/hostapd.conf\n " 12 58 0 \
-"SSID:"				1 1 "$ssid"				1 31 22 0 \
-"Password:"			2 1 "$wpa_passphrase"	2 31 22 0 \
-"Channel:"			3 1 "$channel"			3 31 3 0 \
-2>&1 1>&3 | {
-read -r ssid;read -r wpa_passphrase;read -r channel
-if [[ $? = 0 ]]; then
-		sed -i "s/^ssid=.*/ssid=$ssid/" /etc/hostapd.conf
-		sed -i "s/^wpa_passphrase=.*/wpa_passphrase=$wpa_passphrase/" /etc/hostapd.conf
-		sed -i "s/^channel=.*/channel=$channel/" /etc/hostapd.conf
-		wpa_psk=$(wpa_passphrase $ssid $wpa_passphrase | grep '^[[:blank:]]*[^[:blank:]#;]' | grep psk | cut -d= -f2-)
-		sed -i "s/^wpa_psk=.*/wpa_psk=$wpa_psk/" /etc/hostapd.conf
-fi
-}
-}
-
-function exceptions ()
-{
-TARGET_FAMILY=$LINUXFAMILY
-UBOOT_BRANCH=$TARGET_BRANCH # uboot naming is different
-case $BOARD in
-		cubietruck | cubieboard2 | bananapipro | lamobo-r1 | orangepi | orangepimini | lime | lime2 | micro | lime2emmc | pcduino3 | pcduino3nano)
-		if [[ $TARGET_BRANCH == "default" ]]; then TARGET_FAMILY="sun7i"; TARGET_BRANCH=""; else TARGET_FAMILY="sunxi"; TARGET_BRANCH="-"$TARGET_BRANCH; fi
+	case $1 in
+		*header*)
+			echo "Big board logo and kernel info"
 		;;
-		cubieboard | lime-a10 | pcduino2)
-		if [[ $TARGET_BRANCH == "default" ]]; then TARGET_FAMILY="sun4i"; TARGET_BRANCH=""; else TARGET_FAMILY="sunxi"; TARGET_BRANCH="-"$TARGET_BRANCH; fi
+		*sysinfo*)
+			echo "Sysinfo - load, ip, memory, uptime, ..."
+		;;
+		*tips*)
+			echo "Shows tip of the day"
+		;;
+		*updates*)
+			echo "Display number of avaliable updates"
+		;;
+		*armbian-config*)
+			echo "Show command for system configuration"
+		;;
+		*autoreboot-warn*)
+			echo "Show warning when reboot is needed"
 		;;
 		*)
-		if [[ $TARGET_BRANCH == "default" ]]; then TARGET_BRANCH=""; else TARGET_BRANCH="-"$TARGET_BRANCH; fi
-esac
+		echo ""
+		;;
+	esac
 }
 
+
+# edit hostapd parameters
+#
+function wlan_edit ()
+{
+	source /etc/hostapd.conf
+	exec 3>&1
+	dialog --title "AP configuration" --backtitle "$BACKTITLE" --form "\nWPA2 enabled, \
+	advanced config: edit /etc/hostapd.conf\n " 12 58 0 \
+	"SSID:"				1 1 "$ssid"				1 31 22 0 \
+	"Password:"			2 1 "$wpa_passphrase"	2 31 22 0 \
+	"Channel:"			3 1 "$channel"			3 31 3 0 \
+	2>&1 1>&3 | {
+		read -r ssid;read -r wpa_passphrase;read -r channel
+		if [[ $? = 0 ]]; then
+				sed -i "s/^ssid=.*/ssid=$ssid/" /etc/hostapd.conf
+				sed -i "s/^wpa_passphrase=.*/wpa_passphrase=$wpa_passphrase/" /etc/hostapd.conf
+				sed -i "s/^channel=.*/channel=$channel/" /etc/hostapd.conf
+				wpa_psk=$(wpa_passphrase $ssid $wpa_passphrase | grep '^[[:blank:]]*[^[:blank:]#;]' | grep psk | cut -d= -f2-)
+				sed -i "s/^wpa_psk=.*/wpa_psk=$wpa_psk/" /etc/hostapd.conf
+		fi
+		}
+}
+
+
+# naming exceptions for packages
+#
+function exceptions ()
+{
+	TARGET_FAMILY=$LINUXFAMILY
+	UBOOT_BRANCH=$TARGET_BRANCH # uboot naming is different
+	case $BOARD in
+		cubietruck | cubieboard2 | bananapipro | lamobo-r1 | orangepi | orangepimini | lime* | micro | pcduino3 | pcduino3nano)
+		if [[ $TARGET_BRANCH == "default" ]]; \
+		then TARGET_FAMILY="sun7i"; TARGET_BRANCH=""; else TARGET_FAMILY="sunxi"; TARGET_BRANCH="-"$TARGET_BRANCH; fi
+		;;
+		cubieboard | lime-a10 | pcduino2)
+		if [[ $TARGET_BRANCH == "default" ]]; \
+		then TARGET_FAMILY="sun4i"; TARGET_BRANCH=""; else TARGET_FAMILY="sunxi"; TARGET_BRANCH="-"$TARGET_BRANCH; fi
+		;;
+		*)
+		if [[ $TARGET_BRANCH == "default" ]]; \
+		then TARGET_BRANCH=""; else TARGET_BRANCH="-"$TARGET_BRANCH; fi
+	esac
+}
+
+
+# here we add wifi exceptions
+#
 function wlan_exceptions ()
 {
-[[ -n "$(lsmod | grep -w dhd)" && $1 = "on" ]] && echo 'options dhd op_mode=2' >/etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
-[[ -n "$(lsmod | grep -w dhd)" && $1 = "off" ]] && rm /etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
+	[[ -n "$(lsmod | grep -w dhd)" && $1 = "on" ]] && \
+	echo 'options dhd op_mode=2' >/etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
+	[[ -n "$(lsmod | grep -w dhd)" && $1 = "off" ]] && \
+	rm /etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
 }
 
+
+# check if board has alternative kernels
+#
 function aval_kernel ()
 {
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
-	AVAL_KERNEL=($(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | grep -w "$BOARD " | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | grep -v "$BRANCH" ))
+	AVAL_KERNEL=($(apt-cache search --names-only '^linux-'$(lsb_release	 -cs)'-root.*.'$BOARD'*' \
+	| grep -w "$BOARD " | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | grep -v "$BRANCH" ))
 	local LIST=()
 	for i in "${AVAL_KERNEL[@]}"
 	do
@@ -109,15 +153,17 @@ function aval_kernel ()
 			TARGET_BRANCH=${AVAL_KERNEL[0]}
 	else
 			exec 3>&1
-			TARGET_BRANCH=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Upgrade from $BRANCH to:" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			TARGET_BRANCH=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Upgrade from $BRANCH to:" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 }
 
-function get_wlan_interface ()
-{
+
 # search for wlan interfaces and provide a selection menu if there are more than one
 #
+function get_wlan_interface ()
+{
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
 	WLAN_INTERFACES=($(nmcli dev status | grep wifi |awk '{print $1}'))
@@ -131,79 +177,82 @@ function get_wlan_interface ()
 			WIRELESS_ADAPTER=${WLAN_INTERFACES[0]}
 	else
 			exec 3>&1
-			WIRELESS_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Select interface" --clear --menu "" $((6+${LIST_LENGHT})) 30 15 "${LIST[@]}" 2>&1 1>&3)
+			WIRELESS_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select interface" --clear --menu "" $((6+${LIST_LENGHT})) 30 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 }
-
-# make a bacup
-cp /etc/network/interfaces /etc/network/interfaces.debian-config.backup
-
-# gather some info
 #
-[[ -f /etc/armbian-release ]] && source /etc/armbian-release && ARMBIAN="Armbian $VERSION $IMAGE_TYPE";
+#-----------------------------------------------------------------------------------------------------------------------------------------#
 
-DISTRO=$(lsb_release -is)
-DISTROID=$(lsb_release -rs)
-BACKTITLE="$ARMBIAN $DISTRO $DISTROID configuration utility, http://www.armbian.com"
-TITLE="Configuring $BOARD_NAME"
-WIRELESS_ADAPTER="wlan0"
-NETWORK_CONF="/etc/network/interfaces"
 
+# Show disclaimer where you need to press SPACE to continue. To make sure warning is read.
+#
 exec 3>&1
-ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Warning" --clear --radiolist "\nThis configuration tool runs under superuser rights.\n \n" 10 56 7 "Yes, I understand the risks" "" off  2>&1 1>&3)
+ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Warning" --clear \
+--radiolist "\nThis configuration tool runs under superuser rights.\n \n" 10 56 7 "Yes, I understand the risks" "" off	 2>&1 1>&3)
 exec 3>&-
 if [[ $ACKNOWLEDGEMENT == "" ]]; then exit; fi
 
+
+# Main loop
+#
 while true; do
-LIST=()
-###########################################################################################################################################
-# here we add new items to menu. with condition when needed
 
-[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
-if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-		[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Manage WiFi access point" )
-	else
-		[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Connect to wireless access point" )
-		[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
-fi
-[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && -n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
-[[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w active | grep -w running) ]] && LIST+=( "Desktop" "Disable desktop" )
-[[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w inactive) ]] && LIST+=( "Desktop" "Enable desktop" )
-if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
-	LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
-	else
-	LIST+=( "Hold" "Freeze kernel and board support packages" )
-fi
-[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Application installer" )
-[[ ${#LIST[@]} > 0 ]] && LIST+=( "-" "" )
-[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && LIST+=( "Consumption" "Control board consumption" )
-[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI monitoring" )
-[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
-[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
-[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
-[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
-LIST+=( "Network" "Edit network settings" )
-LIST+=( "Services" "Toggle running services" )
-LIST+=( "Welcome" "Toogle welcome screen items" )
-if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
-	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Nightly" "Switch to daily builds" )
-	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]]  && LIST+=( "Stable" "Switch to stable builds" )
-fi
-[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
-[[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]] && LIST+=( "Overlayroot" "Toggle virtual read-only root filesystem" )
+	LIST=()
+	#
+	# here we add new items to menu. with condition when needed
+	[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
+	if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
+			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Manage WiFi access point" )
+		else
+			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Connect to wireless access point" )
+			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
+	fi
+	[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && \
+	-n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
+	[[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w active | grep -w running) ]] && LIST+=( "Desktop" "Disable desktop" )
+	[[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w inactive) ]] && LIST+=( "Desktop" "Enable desktop" )
+	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
+			LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
+		else
+			LIST+=( "Hold" "Freeze kernel and board support packages" )
+	fi
+	[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "Application installer" )
+	[[ ${#LIST[@]} > 0 ]] && LIST+=( "-" "" )
+	[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && \
+	LIST+=( "Consumption" "Control board consumption" )
+	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI monitoring" )
+	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
+	[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
+	[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
+	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Booting" "Edit boot environment" )
+	LIST+=( "Network" "Edit network settings" )
+	LIST+=( "-" "" )
+	LIST+=( "Services" "Toggle running services" )
+	LIST+=( "Welcome" "Toogle welcome screen items" )
+	if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
+		[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
+		&& LIST+=( "Nightly" "Switch to nightly builds" )
+		[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]] \
+		&& LIST+=( "Stable" "Switch to stable builds" )
+	fi
+	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | sed 's/.*(\(.*\))/\1/' | \
+	awk '{print $1}' | wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
+	[[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]] && \
+	LIST+=( "Overlayroot" "Toggle virtual read-only root filesystem" )
 
-###########################################################################################################################################
-LISTLENGHT="$((7+${#LIST[@]}/2))"
-BOXLENGHT=${#LIST[@]}
+	# count number of menu items to adjust window sizee
+	LISTLENGHT="$((7+${#LIST[@]}/2))"
+	BOXLENGHT=${#LIST[@]}
 
-# main dialog routine
-DIALOG_CANCEL=1
-DIALOG_ESC=255
-
+	# main dialog routine
+	DIALOG_CANCEL=1
+	DIALOG_ESC=255
 
 	exec 3>&1
-	selection=$(dialog --backtitle "$BACKTITLE" --title "$TITLE" --clear --cancel-label "Exit to shell" --menu "Please select:" $LISTLENGHT 70 $BOXLENGHT \
+	selection=$(dialog --backtitle "$BACKTITLE" --title "$TITLE" --clear \
+	--cancel-label "Exit to shell" --menu "Please select:" $LISTLENGHT 70 $BOXLENGHT \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
@@ -219,16 +268,19 @@ DIALOG_ESC=255
 		;;
 	esac
 
-	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading application ... " 5 27
-	#######################################################################################################################################
+	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading submodule ... " 5 26
+
 	case $selection in
 
+
+	# Toogle welcome screen items
+	#
 	"Welcome" )
 		while true; do
 		HOME="/etc/update-motd.d/"
 		MOTD=()
 		LINES=()
-		LIST_CONST=7
+		LIST_CONST=6
 		j=0
 		DIALOG_CANCEL=1
 		DIALOG_ESC=255
@@ -246,7 +298,8 @@ DIALOG_ESC=255
 
 				exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title "Toogle motd executing scripts" --clear --cancel-label \
-				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " $LISTLENGHT 70 15 "${MOTD[@]}" 2>&1 1>&3)
+				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+				$LISTLENGHT 70 15 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 				exec 3>&-
 				case $exit_status in
@@ -261,74 +314,110 @@ DIALOG_ESC=255
 		done
 	;;
 
+
+	# Set the display resolution
+	#
 	"Display" )
 		h3disp
 		exit
 	;;
 
+	# Enable or disable desktop
+	#
 	"Desktop" )
 		if [[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w active | grep -w running) ]]; then
-			dialog --title "Desktop is enabled and running" --backtitle "$BACKTITLE" --yes-label "Stop" --no-label "Cancel" --yesno "\nDo you want to stop and disable this service?" 7 50
+			dialog --title "Desktop is enabled and running" --backtitle "$BACKTITLE" \
+			--yes-label "Stop" --no-label "Cancel" --yesno "\nDo you want to stop and disable this service?" 7 50
 			exitstatus=$?;
 			[[ $exitstatus = 0 ]] && service nodm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
 		else
-			dialog --title "Desktop is disabled" --backtitle "$BACKTITLE" --yes-label "Start" --no-label "Cancel" --yesno "\nDo you want to enable and start this service?" 7 50
+			dialog --title "Desktop is disabled" --backtitle "$BACKTITLE" --yes-label "Start" \
+			--no-label "Cancel" --yesno "\nDo you want to enable and start this service?" 7 50
 			exitstatus=$?;
 			[[ $exitstatus = 0 ]] && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
 		fi
 	;;
 
+
+	# Control board consumption
+	#
 	"Consumption" )
 		h3consumption
 		exit
 	;;
+
+
+	# Board (fex) settings editor
+	#
 	"Fexedit" )
 		TEMP=$(mktemp -d || exit 1)
 		trap "rm -rf \"${TEMP}\" ; exit 0" 0 1 2 3 15
 		bin2fex /boot/script.bin ${TEMP}/tempfex.txt >/dev/null 2>&1
-		dialog --title "Edit u-boot environment" --help-button --help-label "Save & reboot" --ok-label "Save" --no-collapse --editbox ${TEMP}/tempfex.txt  40 0 2> ${TEMP}/tempfex.out
+		dialog --title "Edit u-boot environment" --help-button --help-label "Save & reboot" \
+		--ok-label "Save" --no-collapse --editbox ${TEMP}/tempfex.txt  40 0 2> ${TEMP}/tempfex.out
 		exitstatus=$?;
 		[[ $exitstatus = 0 ]] && fex2bin ${TEMP}/tempfex.out /boot/script.bin
 		[[ $exitstatus = 2 ]] && fex2bin ${TEMP}/tempfex.out /boot/script.bin && reboot
 	;;
+
+
+	# Toggle running services
+	#
 	"Services" )
 		rcconf
 	;;
 
+
+	# Stop low-level messages on console
+	#
 	"Lowlevel" )
-		dialog --title "Kernel messages" --backtitle "$BACKTITLE" --help-button --help-label "Yes & reboot" --yes-label "Yes" --no-label "Cancel" --yesno "\nStop low-level messages on console?" 7 64
+		dialog --title "Kernel messages" --backtitle "$BACKTITLE" --help-button \
+		--help-label "Yes & reboot" --yes-label "Yes" --no-label "Cancel" --yesno "\nStop low-level messages on console?" 7 64
 		exitstatus=$?;
 		[[ $exitstatus = 0 ]] && sed -i 's/^#kernel.printk\(.*\)/kernel.printk\1/' /etc/sysctl.conf
 		[[ $exitstatus = 2 ]] && sed -i 's/^#kernel.printk\(.*\)/kernel.printk\1/' /etc/sysctl.conf && reboot
 	;;
 
+	# Toggle virtual read-only root filesystem
+	#
 	"Overlayroot" )
 		if [[ -n $(mount | grep -w overlay) ]]; then
-			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Disable" --no-label "Cancel" --yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
-			[[ $? = 0 ]] && overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf && rm /etc/update-motd.d/97-overlayroot && reboot
+			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Disable" \
+			--no-label "Cancel" \
+			--yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
+			[[ $? = 0 ]] && overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf && \
+			rm /etc/update-motd.d/97-overlayroot && reboot
 		else
 			debconf-apt-progress -- apt-get -y --no-install-recommends install overlayroot
 			echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
 			echo 'echo -e "[\e[0m \e[1mremember: root is in virtual read only mode\e[0m ]\n"' >> /etc/update-motd.d/97-overlayroot
-			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
+			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" \
+			--no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
 			[[ $? = 0 ]] && sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf && reboot
 		fi
 	;;
 
+	# Edit network settings
+	#
 	"Network" )
-		dialog --backtitle "$BACKTITLE" --title "Edit network configuration" --no-collapse --help-button --help-label "Save & reboot" --ok-label "Save" --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
+		dialog --backtitle "$BACKTITLE" --title "Edit network configuration" --no-collapse --help-button --help-label "Save & reboot" \
+		--ok-label "Save" --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
 		exitstatus=$?;
 		[[ $exitstatus = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart
 		[[ $exitstatus = 2 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && reboot
 	;;
 
+	# Create WiFi access point
+	#
 	"Hotspot" )
 		systemctl daemon-reload
 		CURRENT_UUID=$(nmcli -f UUID,TYPE connection show --active | grep wireless | awk '{print $1}')
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
+			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" \
+			--no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
 			exitstatus=$?;
-			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; fi
+			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; \
+			systemctl daemon-reload; fi
 			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
 		elif [[ -n $CURRENT_UUID ]]; then
 				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse \
@@ -340,7 +429,8 @@ DIALOG_ESC=255
 			# check for WLAN interfaces
 			get_wlan_interface
 			# display dialog
-			dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nProbing nl80211 hostapd driver compatibility." 7 50
+			dialog --backtitle "$BACKTITLE" --title "Please wait" \
+			--infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nProbing nl80211 hostapd driver compatibility." 7 50
 			apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd > /dev/null
 			# change to selected interface
 			sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
@@ -349,7 +439,8 @@ DIALOG_ESC=255
 			# check both options
 			CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
 			if [[ -n "$CHECK" ]]; then
-				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nProbing Realtek hostapd driver compatibility." 7 50
+				dialog --backtitle "$BACKTITLE" --title "Please wait" \
+				--infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nProbing Realtek hostapd driver compatibility." 7 50
 				apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd-realtek > /dev/null
 				# change to selected interface
 				sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
@@ -357,18 +448,21 @@ DIALOG_ESC=255
 			CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
 			# if both fails there is other problem
 			if [[ -n "$CHECK" ]]; then
-				dialog --backtitle "$BACKTITLE" --title "Warning" --infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nNo compatible hostapd driver found." 7 39
+				dialog --backtitle "$BACKTITLE" --title "Warning" \
+				--infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nNo compatible hostapd driver found." 7 39
 				sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 				systemctl daemon-reload;service hostapd restart
 				sleep 3
 				exit
 			fi
 
-			dialog --title "Choose Access Point mode for $WIRELESS_ADAPTER" --backtitle "$BACKTITLE" --help-button --help-label "Manual" --yes-label "Bridge" --no-label "NAT" --yesno "\nBridge: wireless clients will use your routers DHCP server\n\nNAT: with own DHCP server, out of your primary network\n\nManual: edit configuration manually" 11 70
+			dialog --title "Choose Access Point mode for $WIRELESS_ADAPTER" --backtitle "$BACKTITLE" --help-button \
+			--help-label "Manual" --yes-label "Bridge" --no-label "NAT" --yesno "\nBridge: wireless clients will use your routers DHCP \
+			server\n\nNAT: with own DHCP server, out of your primary network\n\nManual: edit configuration manually" 11 70
 			response=$?
 			DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
-
-			TEMP_CONF=/etc/network/interfaces.out
+			NETWORK_CONF="/etc/network/interfaces"
+			TEMP_CONF="/etc/network/interfaces.out"
 			cp $NETWORK_CONF $TEMP_CONF
 
 			case $response in
@@ -398,15 +492,19 @@ DIALOG_ESC=255
 				1)
 					sed -i '/^#/ d' $TEMP_CONF
 					apt-get -qq -y --no-install-recommends install dnsmasq iptables
-					echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> $TEMP_CONF
+					echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER \
+					inet static\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> $TEMP_CONF
 					# create new configuration
 					echo "interface=$WIRELESS_ADAPTER				# Use interface $WIRELESS_ADAPTER" > /etc/dnsmasq.conf
 					echo "listen-address=172.24.1.1					# Explicitly specify the address to listen on" >> /etc/dnsmasq.conf
-					echo "bind-interfaces							# Bind to the interface to make sure we aren't sending things elsewhere" >> /etc/dnsmasq.conf
+					echo "bind-interfaces							# Bind to the interface to make sure we aren't sending \
+					things elsewhere" >> /etc/dnsmasq.conf
 					echo "server=8.8.8.8							# Forward DNS requests to Google DNS" >> /etc/dnsmasq.conf
 					echo "domain-needed								# Don't forward short names" >> /etc/dnsmasq.conf
-					echo "bogus-priv								# Never forward addresses in the non-routed address spaces" >> /etc/dnsmasq.conf
-					echo "dhcp-range=172.24.1.50,172.24.1.150,12h	# Assign IP addresses between 172.24.1.50 and 172.24.1.150 with a 12 hour lease time" >> /etc/dnsmasq.conf
+					echo "bogus-priv								# Never forward addresses in the non-routed address spaces" \
+					>> /etc/dnsmasq.conf
+					echo "dhcp-range=172.24.1.50,172.24.1.150,12h	# Assign IP addresses between 172.24.1.50 and 172.24.1.150 with \
+					a 12 hour lease time" >> /etc/dnsmasq.conf
 					# - Enable IPv4 forwarding
 					sed -i "/net.ipv4.ip_forward=/c\net.ipv4.ip_forward=1" /etc/sysctl.conf
 					echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -436,47 +534,78 @@ DIALOG_ESC=255
 		fi
 	;;
 
+
+	# Edit boot environment
+	#
 	"Booting" )
-		dialog --title "Edit u-boot environment" --help-button --help-label "Save & reboot" --ok-label "Save" --no-collapse --editbox /boot/armbianEnv.txt 30 0 2> /boot/armbianEnv.txt.out
+		dialog --title "Edit u-boot environment" --help-button --help-label "Save & reboot" --ok-label "Save" \
+		--no-collapse --editbox /boot/armbianEnv.txt 30 0 2> /boot/armbianEnv.txt.out
 		exitstatus=$?;
 		[[ $exitstatus = 0 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt
 		[[ $exitstatus = 2 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt && reboot
 	;;
 
+
+	# Switch to daily builds
+	#
 	"Nightly" )
-		dialog --title "Warning" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno "\nYou are switching to automated daily build which is untested and might break your system. Are you fine with that?" 9 44
+		dialog --title "Warning" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+		--yesno "\nYou are switching to automated nightly repository which is untested and might break your system.\
+		Are you fine with that?" 9 48
 		if [[ $? = 0 ]]; then
 			sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
 			debconf-apt-progress -- apt-get update
 			debconf-apt-progress -- apt-get -y upgrade
-			dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
+			dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" \
+			--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
 			if [[ $? = 0 ]]; then reboot; fi
 		fi
 	;;
 
-	"Stable" )
-		sed -i 's/beta.armbian.com/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
-		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get -y upgrade
-		dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
-		"\nReboot to apply new settings?" 7 34
-		if [[ $? = 0 ]]; then reboot; fi
-	;;
 
-	"Hold" | "Unhold" )
-		dialog --title "Update" --backtitle "$BACKTITLE" --yes-label "$selection" --no-label "Cancel" --yesno "\nDo you want to ${selection,,} kernel updates?" 7 50
+	# Switch to stable builds
+	#
+	"Stable" )
+		dialog --title "Warning" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+		--yesno "\nYou are switching back to stable respository where you are going to get future updates.\
+		Are you fine with that?" 9 44
 		if [[ $? = 0 ]]; then
-		TARGET_BRANCH=$BRANCH
-		exceptions "$BRANCH"
-		apt-mark ${selection,,} linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD | dialog --backtitle "$BACKTITLE" --title "Package locking" --progressbox 6 64
-		[[ $BRANCH != "default" ]] && apt-mark ${selection,,} linux-dtb$TARGET_BRANCH-$TARGET_FAMILY | dialog --backtitle "$BACKTITLE" --title "Package locking" --progressbox 3 64
+			sed -i 's/beta.armbian.com/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
+			debconf-apt-progress -- apt-get update
+			debconf-apt-progress -- apt-get -y upgrade
+			dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
+			"\nReboot to apply new settings?" 7 34
+			if [[ $? = 0 ]]; then reboot; fi
 		fi
 	;;
 
+
+	# Freeze and unfreeze kernel and board support packages
+	#
+	"Hold" | "Unhold" )
+		dialog --title "Update" --backtitle "$BACKTITLE" --yes-label "$selection" --no-label "Cancel" \
+		--yesno "\nDo you want to ${selection,,} kernel updates?" 7 50
+		if [[ $? = 0 ]]; then
+		TARGET_BRANCH=$BRANCH
+		exceptions "$BRANCH"
+		apt-mark ${selection,,} linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} \
+		linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD | dialog --backtitle "$BACKTITLE" \
+		--title "Package locking" --progressbox 6 64
+		[[ $BRANCH != "default" ]] && apt-mark ${selection,,} linux-dtb$TARGET_BRANCH-$TARGET_FAMILY | dialog --backtitle "$BACKTITLE" \
+		--title "Package locking" --progressbox 3 64
+		fi
+	;;
+
+
+	# Install to SATA, eMMC, NAND or USB
+	#
 	"Install" )
 		nand-sata-install
 	;;
 
+
+	# Connect to wireless access point
+	#
 	"WiFi" )
 		# scan for wifi modules
 		array=( $(nmcli dev | grep "wifi" | awk '{print $1}') )
@@ -492,7 +621,8 @@ DIALOG_ESC=255
 			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" \
 			--no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
 			exitstatus=$?;
-			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; systemctl daemon-reload; fi
+			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; \
+			systemctl daemon-reload; fi
 			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
 		elif [ $declared_wlans = ${#array[@]} ]; then
 			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse \
@@ -515,6 +645,9 @@ DIALOG_ESC=255
 		fi
 	;;
 
+
+	# Send diagnostics
+	#
 	"Diagnostics" )
 		clear
 		armbianmonitor -u
@@ -522,18 +655,28 @@ DIALOG_ESC=255
 		read -n 1 -s -p "Press any key to continue"
 	;;
 
+
+	# Application installer
+	#
 	"Softy" )
 		softy
 	;;
 
+
+	# Switch to alternative kernels
+	#
 	"Switch" )
 		aval_kernel
 		exceptions "$INSTALL_KERNEL"
-		dialog --title "Install and reboot" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno "\nSwitching to linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \n\nMake sure you know what you are doing! \n\nBoard config will be reverted to defaults." 11 46
+		dialog --title "Install and reboot" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+		--yesno "\nSwitching to linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \n\nMake sure you know what you are doing! \
+		\n\nBoard config will be reverted to defaults." 11 46
 		if [[ $? = 0 ]]; then
 			# remove old
 			dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel." 5 28
-			apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
+			apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+			linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+			linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
 			# if test download is ok, remove old kernel
 			if [[ $? = 0 ]]; then
 				aptitude remove ~nlinux-image --quiet=100 >> /var/log/upgrade.log
@@ -541,16 +684,22 @@ DIALOG_ESC=255
 				aptitude remove ~nlinux-headers --quiet=100 >> /var/log/upgrade.log
 			fi
 			# install new
-			debconf-apt-progress -- apt-get -y  --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD
-			[[ $UBOOT_BRANCH != "default" ]] && debconf-apt-progress -- apt-get -y  --no-install-recommends install linux-dtb$TARGET_BRANCH-$TARGET_FAMILY
+			debconf-apt-progress -- apt-get -y	--no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+			linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+			linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD
+			[[ $UBOOT_BRANCH != "default" ]] && debconf-apt-progress -- apt-get -y --no-install-recommends \
+			install linux-dtb$TARGET_BRANCH-$TARGET_FAMILY
 			reboot
 		fi
 	;;
+
+	# Simple CLI monitoring
+	#
 	"Monitor" )
 		clear
 		armbianmonitor -m | dialog --backtitle "$BACKTITLE" --title "Simple CLI monitoring $BOARD" --progressbox 15 64
 	;;
 
 	esac
-	#######################################################################################################################################
+
 done
