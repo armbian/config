@@ -10,11 +10,11 @@ It comes with Armbian (from 5.27) by default. Login as super user and type:
 
 **Configuration**
 
-- wireless network connect,
+- wireless network connect,- 
 - AP (hotspot) in bridged or NAT mode,
+- freeze and unfreeze kernel and BSP upgrades,
 - edit boot environment, network, FEX, welcome screen items, 
-- switching between kernels and nightly builds,
-- exclude / include kernel and BSP packages from upgrading,
+- switching between avaliable kernels and nightly builds,
 - enabling read only root filesystem (Ubuntu only),
 - set display resolution (H3 boards with legacy kernel),
 
