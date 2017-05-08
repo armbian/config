@@ -42,7 +42,7 @@ TRANSMISSION_STATUS="$([[ -f /etc/transmission-daemon/settings.json ]] && echo "
 LIST+=( "Transmission" "Torrent downloading" "$TRANSMISSION_STATUS" )
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
-LIST+=( "ISPConfig" "Advanced LAMP + SMTP, IMAP, POP3" "$ISPCONFIG_STATUS" )
+LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
 }
 
 function choose_webserver
