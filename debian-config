@@ -33,6 +33,8 @@ if [[ $? -ne 0 ]]; then
 		apt-get -qq -y --no-install-recommends install dialog
 		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' network-manager 2>/dev/null) != *ii* ]] && \
 		apt-get -qq -y --no-install-recommends install network-manager
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' sunxi-tools 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install sunxi-tools
 fi
 
 # gather info about the board
