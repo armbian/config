@@ -239,8 +239,8 @@ while true; do
 		[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]] \
 		&& LIST+=( "Stable" "Switch to stable builds" )
 	fi
-	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'*' | sed 's/.*(\(.*\))/\1/' | \
-	awk '{print $1}' | wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
+	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
+	| wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
 	[[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]] && \
 	LIST+=( "Overlayroot" "Toggle virtual read-only root filesystem" )
 
@@ -355,11 +355,9 @@ while true; do
 		TEMP=$(mktemp -d || exit 1)
 		trap "rm -rf \"${TEMP}\" ; exit 0" 0 1 2 3 15
 		bin2fex /boot/script.bin ${TEMP}/tempfex.txt >/dev/null 2>&1
-		dialog --title "Edit u-boot environment" --help-button --help-label "Save & reboot" \
+		dialog --title "Edit u-boot environment" \
 		--ok-label "Save" --no-collapse --editbox ${TEMP}/tempfex.txt  40 0 2> ${TEMP}/tempfex.out
-		exitstatus=$?;
-		[[ $exitstatus = 0 ]] && fex2bin ${TEMP}/tempfex.out /boot/script.bin
-		[[ $exitstatus = 2 ]] && fex2bin ${TEMP}/tempfex.out /boot/script.bin && reboot
+		[[ $? = 0 ]] && fex2bin ${TEMP}/tempfex.out /boot/script.bin
 	;;
 
 
@@ -402,11 +400,9 @@ while true; do
 	# Edit network settings
 	#
 	"Network" )
-		dialog --backtitle "$BACKTITLE" --title "Edit network configuration" --no-collapse --help-button --help-label "Save & reboot" \
+		dialog --backtitle "$BACKTITLE" --title "Edit network configuration" --no-collapse \
 		--ok-label "Save" --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
-		exitstatus=$?;
-		[[ $exitstatus = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart
-		[[ $exitstatus = 2 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && reboot
+		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart
 	;;
 
 	# Create WiFi access point
@@ -540,11 +536,9 @@ while true; do
 	# Edit boot environment
 	#
 	"Booting" )
-		dialog --title "Edit u-boot environment" --help-button --help-label "Save & reboot" --ok-label "Save" \
+		dialog --title "Edit u-boot environment" --ok-label "Save" \
 		--no-collapse --editbox /boot/armbianEnv.txt 30 0 2> /boot/armbianEnv.txt.out
-		exitstatus=$?;
-		[[ $exitstatus = 0 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt
-		[[ $exitstatus = 2 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt && reboot
+		[[ $? = 0 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt
 	;;
 
 
