@@ -402,7 +402,8 @@ while true; do
 		else
 			debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y --no-install-recommends install overlayroot
 			echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
-			echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then echo -e "[\e[0m \e[1mremember: root is in virtual read only mode\e[0m ]";fi' >> /etc/update-motd.d/97-overlayroot
+			echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then echo -e "\n[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]";fi' >> /etc/update-motd.d/97-overlayroot
+			chmod +x /etc/update-motd.d/97-overlayroot
 			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" \
 			--no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
 			[[ $? = 0 ]] && sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf && reboot
