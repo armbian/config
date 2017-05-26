@@ -205,7 +205,7 @@ while true; do
 	#
 	# here we add new items to menu. with condition when needed
 	LIST+=( "Timezone" "Change your timezone" )
-	[[ -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
+	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent) == mmcblk* && -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
 	if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Manage WiFi access point" )
 		else
