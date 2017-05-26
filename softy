@@ -873,7 +873,7 @@ while true; do
 	exit_status=$?
 	exec 3>&-
 	case $exit_status in
-	$DIALOG_ESC)
+	$DIALOG_ESC | $DIALOG_CANCEL)
 		clear
 		exit 1
 		;;
