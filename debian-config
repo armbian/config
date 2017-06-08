@@ -502,9 +502,9 @@ while true; do
 				# NAT
 				1)
 					sed -i '/^#/ d' $TEMP_CONF
-					apt-get -qq -y --no-install-recommends install dnsmasq iptables
-					echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER \
-					inet static\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> $TEMP_CONF
+					debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq iptables
+					echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " >> $TEMP_CONF
+					echo -e "\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> $TEMP_CONF
 					# create new configuration
 					echo "interface=$WIRELESS_ADAPTER				# Use interface $WIRELESS_ADAPTER" > /etc/dnsmasq.conf
 					echo "listen-address=172.24.1.1					# Explicitly specify the address to listen on" >> /etc/dnsmasq.conf
