@@ -11,6 +11,7 @@ It comes with Armbian (from 5.27) by default. Login as super user and type:
 **Configuration**
 
 - wireless network connect,
+- Bluetooth devices pair and connect,
 - AP (hotspot) in bridged or NAT mode,
 - freeze and unfreeze kernel and BSP upgrades,
 - edit boot environment, network, FEX, welcome screen items,

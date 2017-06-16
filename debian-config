@@ -24,9 +24,9 @@ if [[ $? -ne 0 ]]; then
 		Press CTRL C to stop to stop or any key to ignore and continue."
 	else
 		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' bc 2>/dev/null) != *ii* ]] && \
-		apt-get -qq -y --no-install-recommends install expect
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' expect 2>/dev/null) != *ii* ]] && \
 		apt-get -qq -y --no-install-recommends install bc
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' expect 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install expect
 		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' rcconf 2>/dev/null) != *ii* ]] && \
 		apt-get -qq -y --no-install-recommends install rcconf
 		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dialog 2>/dev/null) != *ii* ]] && \
