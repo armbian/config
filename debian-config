@@ -277,7 +277,7 @@ while true; do
 	LIST+=( "Network" "Edit network settings" )
 	LIST+=( "-" "" )
 	LIST+=( "Services" "Toggle running services" )
-	LIST+=( "Welcome" "Toogle welcome screen items" )
+	LIST+=( "Welcome" "Toggle welcome screen items" )
 	if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
 		[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
 		&& LIST+=( "Nightly" "Switch to nightly builds" )
@@ -324,7 +324,7 @@ while true; do
 	case $selection in
 
 
-	# Toogle welcome screen items
+	# Toggle welcome screen items
 	#
 	"Welcome" )
 		while true; do
@@ -348,7 +348,7 @@ while true; do
 				LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
 
 				exec 3>&1
-				selection=$(dialog --backtitle "$BACKTITLE" --title "Toogle motd executing scripts" --clear --cancel-label \
+				selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle motd executing scripts" --clear --cancel-label \
 				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
 				$LISTLENGHT 70 15 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
