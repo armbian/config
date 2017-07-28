@@ -334,7 +334,7 @@ install_transmission (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # transmission
 #------------------------------------------------------------------------------------------------------------------------------------------
-install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependendies"
+install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependencies"
 install_packet "transmission-cli transmission-common transmission-daemon" "Install torrent server"
 # systemd workaround
 # https://forum.armbian.com/index.php?/topic/4017-programs-does-not-start-automatically-at-boot/
@@ -838,7 +838,7 @@ fi
 
 # Install basic stuff
 #
-echo "Downloading dependendies"
+echo "Downloading dependencies"
 apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
 lsb-release bc expect html2text > /dev/null
 
