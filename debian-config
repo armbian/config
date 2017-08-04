@@ -46,8 +46,6 @@ BACKTITLE="$ARMBIAN $DISTRO $DISTROID configuration utility, http://www.armbian.
 TITLE="Configuring $BOARD_NAME"
 
 
-
-
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 #
 # show description for MOTD files
@@ -232,16 +230,20 @@ function connect_bt_interface ()
 
 # Show disclaimer where you need to press SPACE to continue. To make sure warning is read.
 #
-exec 3>&1
-ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Warning" --clear \
---radiolist "\nThis configuration tool runs under superuser rights.\n \n" 10 56 7 "Yes, I understand the risks" "" off	 2>&1 1>&3)
-exec 3>&-
-if [[ $ACKNOWLEDGEMENT == "" ]]; then exit; fi
-
+#exec 3>&1
+#ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Warning" --clear \--radiolist "\nThis configuration tool runs under superuser rights.\n \n" 10 56 7 "Yes, I understand the risks" "" off	 2>&1 1>&3)
+#exec 3>&-
+#	if [[ $ACKNOWLEDGEMENT == "" ]]; then exit; fi
+dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
 
 # Main loop
 #
 while true; do
+
+	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
+	[[ -n $(service lightdm status | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
+	[[ -n $(service nodm status | grep -w active) ]] && DISPLAY_MANAGER="nodm"
+	[[ -d /etc/lightdm || -f /etc/default/nodm ]] && DESKTOP_INSTALLED="true"
 
 	LIST=()
 	#
@@ -257,8 +259,23 @@ while true; do
 	[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
 	[[ -f /usr/bin/h3disp && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" && \
 	-n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
-	[[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w active | grep -w running) ]] && LIST+=( "Desktop" "Disable desktop" )
-	[[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w inactive) ]] && LIST+=( "Desktop" "Enable desktop" )
+
+	if [[ -n $DISPLAY_MANAGER ]]; then
+			LIST+=( "Desktop" "Disable desktop" )
+			[[ $DISPLAY_MANAGER == 'nodm' ]] && LIST+=( "Lightdm" "Enable standard login manager" )
+			[[ $DISPLAY_MANAGER == 'lightdm' ]] && LIST+=( "Nodm" "Enable simple auto login manager" )
+			else
+			LIST+=( "Desktop" "Enable desktop" )
+	fi
+
+	if [[ $DESKTOP_INSTALLED ]]; then
+			if [[ $(service xrdp status | grep -w active) ]]; then
+				LIST+=( "RDP" "Disable remote desktop from Windows" )
+				else
+				LIST+=( "RDP" "Enable remote desktop from Windows" )
+			fi
+	fi
+
 	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
 			LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
 		else
@@ -373,19 +390,50 @@ while true; do
 		exit
 	;;
 
+	"RDP" )
+		if [[ -n $(service xrdp status | grep -w active) ]]; then
+			systemctl stop xrdp.service >/dev/null 2>&1
+			systemctl disable xrdp.service >/dev/null 2>&1
+		else
+			apt-get -y -qq --no-install-recommends install xrdp vnc4server
+			systemctl enable xrdp.service >/dev/null 2>&1
+			systemctl start xrdp.service >/dev/null 2>&1
+			dialog --title "Info" --backtitle "$BACKTITLE" --nocancel --no-collapse --pause \
+			"\nRemote graphical login to $BOARD_NAME using Microsoft Remote Desktop Protocol (RDP) is enabled." 11 57 3
+		fi
+	;;
+
+
+
+
+	"Nodm" )
+		systemctl disable lightdm.service >/dev/null 2>&1
+		systemctl stop lightdm.service >/dev/null 2>&1
+		sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
+	;;
+
+	"Lightdm" )
+		service nodm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
+		apt-get -o Dpkg::Options::="--force-confold" -y -qq --no-install-recommends install lightdm-gtk-greeter lightdm >/dev/null 2>&1
+		systemctl enable lightdm.service >/dev/null 2>&1
+		systemctl start lightdm.service >/dev/null 2>&1
+	;;
+
+
 	# Enable or disable desktop
 	#
 	"Desktop" )
-		if [[ -f /usr/sbin/nodm && -n $(service nodm status | grep -w active | grep -w running) ]]; then
+		if [[ -n $(service lightdm status | grep -w active | grep -w running) || -n $(service nodm status | grep -w active | grep -w running) ]]; then
 			dialog --title "Desktop is enabled and running" --backtitle "$BACKTITLE" \
 			--yes-label "Stop" --no-label "Cancel" --yesno "\nDo you want to stop and disable this service?" 7 50
 			exitstatus=$?;
-			[[ $exitstatus = 0 ]] && service nodm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
+			[[ $exitstatus = 0 ]] && service nodm stop && service lightdm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
 		else
-			dialog --title "Desktop is disabled" --backtitle "$BACKTITLE" --yes-label "Start" \
-			--no-label "Cancel" --yesno "\nDo you want to enable and start this service?" 7 50
+			dialog --title "Choose a display manager" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Lightdm" \
+			--no-label "Nodm" --yesno "\nLightdm = full featured login display manager\nNodm = autoloading into desktop" 8 70
 			exitstatus=$?;
-			[[ $exitstatus = 0 ]] && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
+			[[ $exitstatus = 0 ]] && systemctl start lightdm.service
+			[[ $exitstatus = 1 ]] && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
 		fi
 	;;
 
@@ -482,6 +530,10 @@ while true; do
 			wlan_exceptions "on"
 			# check for WLAN interfaces
 			get_wlan_interface
+			# add interface to unmanaged list
+			echo "[keyfile]" > /etc/NetworkManager/conf.d/armbian.conf
+			echo "unmanaged-devices=interface-name:$WIRELESS_ADAPTER" >>/etc/NetworkManager/conf.d/armbian.conf
+			service network-manager reload
 			# display dialog
 			dialog --backtitle "$BACKTITLE" --title "Please wait" \
 			--infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nProbing nl80211 hostapd driver compatibility." 7 50
