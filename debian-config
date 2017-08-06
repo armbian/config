@@ -464,7 +464,7 @@ while true; do
 			systemctl stop xrdp.service >/dev/null 2>&1
 			systemctl disable xrdp.service >/dev/null 2>&1
 		else
-			apt-get -y -qq --no-install-recommends install xrdp vnc4server
+			debconf-apt-progress -- apt-get -y install xrdp vnc4server
 			systemctl enable xrdp.service >/dev/null 2>&1
 			systemctl start xrdp.service >/dev/null 2>&1
 			dialog --title "Info" --backtitle "$BACKTITLE" --nocancel --no-collapse --pause \
@@ -550,11 +550,11 @@ while true; do
 			if (( "${array[0]}" == "4" )) && (( "${array[1]}" >= "1" )); then
 				wget -qO- http://www.incentivespro.com/usb-redirector-linux-arm-eabi.tar.gz | tar xz -C /usr/src
 			else
-				wget -qO- https://raw.githubusercontent.com/armbian/build/master/blobs/usb-redirector/usb-redirector-old.tgz | tar xz -C /usr/src
+				wget -qO- https://raw.githubusercontent.com/armbian/build/master/packages/blobs/usb-redirector/usb-redirector-old.tgz | tar xz -C /usr/src
 			fi
 			cd /usr/src/usb-redirector-linux-arm-eabi/
 			./installer.sh install
-			sleep 2
+			sleep 3
 			check_port "32032" "USB Redirector"
 		fi
 	;;
@@ -666,7 +666,7 @@ while true; do
 					sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 					systemctl daemon-reload;service hostapd restart
 					sleep 3
-					exit
+					break
 				fi
 
 				dialog --title "Choose Access Point mode for $WIRELESS_ADAPTER" --backtitle "$BACKTITLE" --help-button \
