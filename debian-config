@@ -292,12 +292,14 @@ while true; do
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI monitoring" )
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
 	[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
+	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else LIST+=( "Headers" "Install kernel headers" ); fi
 	[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
 	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Bootenv" "Edit boot environment" )
 	[[ -f /boot/boot.ini ]] && LIST+=( "Bootscript" "Edit boot script" )
 	LIST+=( "Network" "Edit network settings" )
 	LIST+=( "-" "" )
 	LIST+=( "Services" "Toggle running services" )
+	[[ -d /boot/dtb/overlay && $LINUXFAMILY == sunxi && $BRANCH != default ]] && LIST+=( "Overlay" "Toggle hardware functions: UART, I2C, SPI, W1, ..." )
 	LIST+=( "Welcome" "Toggle welcome screen items" )
 	if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
 		[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
@@ -347,6 +349,55 @@ while true; do
 
 	# Toggle welcome screen items
 	#
+	"Overlay" )
+	# check if user agree to enter this area
+			beta_disclaimer "You are entering beta area. Functions are not yet done - in case of troubles and advanced usage, check https://docs.armbian.com"
+			if [[ -n $ACKNOWLEDGEMENT ]]; then
+				overlay_prefix=$(cat /boot/armbianEnv.txt | grep overlay_prefix | sed 's/overlay_prefix=//g')
+				TARGET_BRANCH=$BRANCH
+				exceptions "$BRANCH"
+				while true; do
+				HOME="/boot/dtb/overlay"
+				MOTD=()
+				LINES=()
+				LIST_CONST=2
+				j=0
+				DIALOG_CANCEL=1
+				DIALOG_ESC=255
+
+				while read line
+				do
+					STATUS=$([[ -n $(cat /boot/armbianEnv.txt | grep overlays | grep -w ${line}) ]] && echo "on")
+					DESC=$(description "$line")
+					MOTD+=( "$line" "$DESC" "$STATUS")
+					LINES[ $j ]=$line
+					(( j++ ))
+				done < <(ls -1 $HOME/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g' )
+
+						LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
+
+						exec 3>&1
+						selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle motd executing scripts" --clear --cancel-label \
+						"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+						$LISTLENGHT 70 22 "${MOTD[@]}" 2>&1 1>&3)
+						exit_status=$?
+						exec 3>&-
+						case $exit_status in
+						$DIALOG_CANCEL | $DIALOG_ESC)
+								break
+								;;
+						0)
+							newoverlays="$(echo "$selection" | sed "s|[^ ]* *|&|g")"
+							sed -i "s/^overlays=.*/overlays=$newoverlays/" /boot/armbianEnv.txt || cat "overlays=$newoverlays" >> /boot/armbianEnv.txt
+						;;
+						esac
+				done
+			fi
+	;;
+
+
+	# Toggle welcome screen items
+	#
 	"Welcome" )
 		while true; do
 		HOME="/etc/update-motd.d/"
@@ -376,7 +427,7 @@ while true; do
 				exec 3>&-
 				case $exit_status in
 				$DIALOG_CANCEL | $DIALOG_ESC)
-						exit 1
+						break
 						;;
 				0)
 						chmod -x ${HOME}*
@@ -406,8 +457,6 @@ while true; do
 			"\nRemote graphical login to $BOARD_NAME using Microsoft Remote Desktop Protocol (RDP) is enabled." 11 57 3
 		fi
 	;;
-
-
 
 
 	"Nodm" )
@@ -474,6 +523,15 @@ while true; do
 		dpkg-reconfigure tzdata
 	;;
 
+	"Headers" )
+		TARGET_BRANCH=$BRANCH
+		exceptions "$BRANCH"
+		if [[ -n $(dpkg -l | grep linux-headers) ]]; then
+			debconf-apt-progress -- apt-get -y remove linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+		else
+			debconf-apt-progress -- apt-get -y install linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+		fi
+	;;
 
 	# Stop low-level messages on console
 	#
@@ -729,11 +787,9 @@ while true; do
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
 		exceptions "$BRANCH"
-		apt-mark ${selection,,} linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} \
-		linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD | dialog --backtitle "$BACKTITLE" \
-		--title "Package locking" --progressbox 6 64
-		[[ $BRANCH != "default" ]] && apt-mark ${selection,,} linux-dtb$TARGET_BRANCH-$TARGET_FAMILY | dialog --backtitle "$BACKTITLE" \
-		--title "Package locking" --progressbox 3 64
+		PACKAGE_LIST="linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD"
+		[[ $BRANCH != "default" ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+		apt-mark ${selection,,} $PACKAGE_LIST | dialog --backtitle "$BACKTITLE" --title "Package locking" --progressbox 7 64
 		fi
 	;;
 
