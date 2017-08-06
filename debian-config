@@ -918,12 +918,15 @@ while true; do
 				aptitude remove ~nlinux-headers --quiet=100 >> /var/log/upgrade.log
 			fi
 			# install new
+			INSTALL_DTB=""
+			[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 			debconf-apt-progress -- apt-get -y	--no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
 			linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-			linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD
-			[[ $UBOOT_BRANCH != "default" ]] && debconf-apt-progress -- apt-get -y --no-install-recommends \
-			install linux-dtb$TARGET_BRANCH-$TARGET_FAMILY
-			reboot
+			linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
+
+			dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nNew kernel was installed. Reboot?" 7 64
+			exitstatus=$?;
+			[[ $exitstatus = 0 ]] &&  reboot
 		fi
 	;;
 
