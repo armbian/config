@@ -125,7 +125,7 @@ check_port ()
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Check if something is running on port $1 and display info
 #------------------------------------------------------------------------------------------------------------------------------------------
-[[ -z $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".$1"') ]] && dialog --backtitle "$backtitle" --title "Checking service" \
+[[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$1'"') ]] && dialog --backtitle "$backtitle" --title "Checking service" \
 --msgbox "\nIt looks good.\n\nThere is $2 service on port $1" 9 52
 }
 

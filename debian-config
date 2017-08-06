@@ -45,6 +45,14 @@ DISTROID=$(lsb_release -rs)
 BACKTITLE="$ARMBIAN $DISTRO $DISTROID configuration utility, http://www.armbian.com"
 TITLE="Configuring $BOARD_NAME"
 
+check_port ()
+{
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Check if something is running on port $1 and display info
+#------------------------------------------------------------------------------------------------------------------------------------------
+[[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$1'"') ]] && dialog --backtitle "$BACKTITLE" --title "Checking service" \
+--msgbox "\nIt looks good.\n\nThere is $2 service on port $1" 9 52
+}
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 #
@@ -280,6 +288,12 @@ while true; do
 			fi
 	fi
 
+
+	if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'32032'"') ]]; then
+		LIST+=( "USB redirector" "Disable USB devices sharing over Ethernet" )
+		else
+		LIST+=( "USB redirector" "Enable USB devices sharing over Ethernet" )
+	fi
 	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
 			LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
 		else
@@ -522,6 +536,29 @@ while true; do
 	"Timezone" )
 		dpkg-reconfigure tzdata
 	;;
+
+	"USB redirector" )
+		if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'32032'"') ]]; then
+			[[ -f /usr/local/usb-redirector/uninstall.sh ]] && /usr/local/usb-redirector/uninstall.sh uninstall
+			rm -f /usr/local/bin/usbclnt
+		else
+			TARGET_BRANCH=$BRANCH
+			exceptions "$BRANCH"
+			IFS='.' read -a array <<< $(uname -r)
+			[[ -z $(dpkg -l | grep linux-headers) ]] && debconf-apt-progress -- apt-get -y install linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+			rm -rf /usr/src/usb-redirector-linux-arm-eabi
+			if (( "${array[0]}" == "4" )) && (( "${array[1]}" >= "1" )); then
+				wget -qO- http://www.incentivespro.com/usb-redirector-linux-arm-eabi.tar.gz | tar xz -C /usr/src
+			else
+				wget -qO- https://raw.githubusercontent.com/armbian/build/master/blobs/usb-redirector/usb-redirector-old.tgz | tar xz -C /usr/src
+			fi
+			cd /usr/src/usb-redirector-linux-arm-eabi/
+			./installer.sh install
+			sleep 2
+			check_port "32032" "USB Redirector"
+		fi
+	;;
+
 
 	"Headers" )
 		TARGET_BRANCH=$BRANCH
