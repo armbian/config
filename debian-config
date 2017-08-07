@@ -746,11 +746,7 @@ while true; do
 				service hostapd stop
 				if [[ $response = 0 ]]; then
 					mv $TEMP_CONF /etc/network/interfaces
-					service networking restart
-					ifdown $DEFAULT_ADAPTER
-					ifup $DEFAULT_ADAPTER
-					service hostapd start
-					#reboot
+					reboot
 				fi
 			fi
 		fi
