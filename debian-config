@@ -82,7 +82,7 @@ function description
 			echo "Shows tip of the day"
 		;;
 		*updates*)
-			echo "Display number of avaliable updates"
+			echo "Display number of available updates"
 		;;
 		*armbian-config*)
 			echo "Show command for system configuration"
