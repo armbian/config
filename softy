@@ -20,7 +20,7 @@ LIST+=( "Samba" "Windows compatible file sharing" "$SAMBA_STATUS" )
 CUPS_STATUS="$([[ -f /etc/cups/cupsd.conf ]] && echo "on" || echo "off" )"
 LIST+=( "CUPS" "Common UNIX Printing System (CUPS)" "$CUPS_STATUS" )
 # tvheadend
-TVHEADEND_STATUS="$([[ -n $(service tvheadend status | grep -w active | grep -w running) ]] && echo "on" || echo "off" )"
+TVHEADEND_STATUS="$([[ -n $(service tvheadend status 2> /dev/null | grep -w active | grep -w running) ]] && echo "on" || echo "off" )"
 LIST+=( "TV headend" "TV streaming / proxy" "$TVHEADEND_STATUS" )
 # synthing
 SYNCTHING_STATUS="$([[ -f /usr/bin/syncthing ]] && echo "on" || echo "off" )"
@@ -838,7 +838,7 @@ fi
 
 # Install basic stuff
 #
-echo "Downloading dependencies"
+#echo "Downloading dependencies"
 apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
 lsb-release bc expect html2text > /dev/null
 
