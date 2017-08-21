@@ -68,7 +68,6 @@ function get_ip_addresses() {
 DISTRO=$(lsb_release -is)
 DISTROID=$(lsb_release -sc)
 KERNELID=$(uname -r)
-WIFICONNECTED=$(nmcli -f NAME connection show --active |  tail -n +2 | tail -1)
 BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
 TITLE="$BOARD_NAME "
 IPADDRESS=$(get_ip_addresses)
@@ -339,7 +338,7 @@ while true; do
 	if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Manage WiFi access point" )
 		else
-			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Connect to wireless access point" )
+			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "WiFi" "Manage wireless networking" )
 			[[ -n $(nmcli -f DEVICE,TYPE device status | grep wifi) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
 	fi
 	[[ $(hcitool dev | sed '1d') != "" && -n $(service bluetooth status | grep -w active | grep -w running) ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
@@ -348,13 +347,21 @@ while true; do
 	# count number of menu items to adjust window sizee
 	LISTLENGHT="$((11+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
+	WIFICONNECTED=$(nmcli -f NAME,TYPE connection show --active | grep wireless | awk 'NF{NF-=1};1')
+
+	disclaimer=""
+	if [[ -n $WIFICONNECTED ]]; then
+		LISTLENGHT=$((LISTLENGHT+1))
+		local connected="Connected to: $WIFICONNECTED\n"
+		local disclaimer=$connected
+	fi
 
 	# display warning only we have wifi
-	if [[ " ${LIST[*]} " == *" Hotspot "* ]]; then
-		local disclaimer="\nNote: wireless networking in Linux is problematic. Our tools make it easy for some cases but can't enable AP on every random WiFi chip. If this tool fail, you are on your own.\n "
-	else
-		LISTLENGHT="$((6+${#LIST[@]}/2))"
-	fi
+	#if [[ " ${LIST[*]} " == *" Hotspot "* ]]; then
+		disclaimer=$disclaimer"\nNote: wireless networking in Linux is problematic. Our tools make it easy for some cases but can't enable AP on every random WiFi chip. If this tool fail, you are on your own.\n "
+	#else
+	#	LISTLENGHT="$((6+${#LIST[@]}/2))"
+	#fi
 
 	DIALOG_CANCEL=1
 	DIALOG_ESC=255

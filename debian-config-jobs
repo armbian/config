@@ -152,8 +152,8 @@ function jobs ()
 				exit
 			elif [[ -n $CURRENT_UUID ]]; then
 				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse \
-				--yesno "\nAlready connected via wireless.\n\nDo you want to disconnect?" 9 57
-				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID
+				--yesno "\nAlready connected to $WIFICONNECTED.\n\nDo you want to disconnect?" 9 57
+				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID > /dev/null 2>&1
 			else
 			# disable AP mode on certain adapters
 			wlan_exceptions "off"
@@ -183,11 +183,8 @@ function jobs ()
 		elif [[ -n $CURRENT_UUID ]]; then
 				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse \
 				--yesno "\nWireless connection is in use.\n\nDo you want to disconnect?" 9 57
-				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID
+				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID 2> /dev/null
 		else
-			# check if user agree to enter this area
-			beta_disclaimer "Wireless networking in Linux is problematic. Our tools make it easy for some cases but can't enable AP on every random WiFi chip. If this tool fail, check manual methods."
-			if [[ -n $ACKNOWLEDGEMENT ]]; then
 				# change special adapters to AP mode
 				wlan_exceptions "on"
 				# check for WLAN interfaces
@@ -303,7 +300,6 @@ function jobs ()
 					mv $TEMP_CONF /etc/network/interfaces
 					reboot
 				fi
-			fi
 		fi
 	;;
 
@@ -351,14 +347,17 @@ function jobs ()
 	# Freeze and unfreeze kernel and board support packages
 	#
 	"Hold" | "Unhold" )
-		dialog --title "Update" --backtitle "$BACKTITLE" --yes-label "$selection" --no-label "Cancel" \
-		--yesno "\nDo you want to ${selection,,} kernel updates?" 7 50
+		dialog --title "Update" --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" \
+		--yesno "\nDo you want to ${1,,} kernel updates?" 7 50
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
 		exceptions "$BRANCH"
 		PACKAGE_LIST="linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD"
+
 		[[ $BRANCH != "default" ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-		apt-mark ${selection,,} $PACKAGE_LIST | dialog --backtitle "$BACKTITLE" --title "Package locking" --progressbox 7 64
+
+		local words=( $PACKAGE_LIST )
+		apt-mark ${1,,} $PACKAGE_LIST | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
 		fi
 	;;
 
