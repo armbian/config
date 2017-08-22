@@ -124,50 +124,16 @@ function jobs ()
 	# Connect to wireless access point
 	#
 	"WiFi" )
-		# scan for wifi modules
-		array=( $(nmcli dev | grep "wifi" | awk '{print $1}') )
-		declared_wlans=0;
-		for i in "${array[@]}"
-			do
-			if grep --quiet "^iface $i" /etc/network/interfaces; then
-				let declared_wlans+=1
-			fi
-		done
-		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-			DIALOG_CANCEL=1
-			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" \
-			--no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
-			exitstatus=$?;
-			if [[ $exitstatus = 0 ]]; then service hostapd stop ; sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd; \
-			systemctl daemon-reload; fi
-			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
-		elif [ $declared_wlans = ${#array[@]} ]; then
-			dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse \
-			--msgbox "\nWireless network is in use by if-up service. Remove it from config." 8 57
-		else
-			CURRENT_UUID=$(nmcli -f UUID,TYPE connection show --active | grep wireless | awk '{print $1}')
-			if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-				dialog --title "Error" --backtitle "$BACKTITLE" --no-collapse \
-				--msgbox "\nHostapd service is running. Disable it and try again." 7 57
-				exit
-			elif [[ -n $CURRENT_UUID ]]; then
-				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse \
-				--yesno "\nAlready connected to $WIFICONNECTED.\n\nDo you want to disconnect?" 9 57
-				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID > /dev/null 2>&1
-			else
 			# disable AP mode on certain adapters
 			wlan_exceptions "off"
 			nmtui-connect
-			fi
-		fi
 	;;
-
 
 	# Create WiFi access point
 	#
 	"Hotspot" )
 		systemctl daemon-reload
-		CURRENT_UUID=$(nmcli -f UUID,TYPE connection show --active | grep wireless | awk '{print $1}')
+		CURRENT_UUID=$(nmcli -f DEVICE,TYPE,STATE device status | grep -w " wifi " | grep -w " disconnected")
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" \
 			--no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
@@ -176,14 +142,16 @@ function jobs ()
 				service hostapd stop
 				sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 				systemctl daemon-reload
+				systemctl disable dnsmasq.service >/dev/null 2>&1
 				rm /etc/NetworkManager/conf.d/armbian.conf
+				rm -f /etc/network/interfaces.d/bridge.conf
+				rm -f /etc/network/interfaces.d/nat.conf
 				service network-manager reload
+				sed -i '/^iptables/ d' /etc/rc.local
 			fi
 			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
-		elif [[ -n $CURRENT_UUID ]]; then
-				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse \
-				--yesno "\nWireless connection is in use.\n\nDo you want to disconnect?" 9 57
-				[[ $? = 0 ]] && nmcli connection down uuid $CURRENT_UUID 2> /dev/null
+		elif [[ -z $CURRENT_UUID ]]; then
+				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nAll wireless connections are in use." 7 40
 		else
 				# change special adapters to AP mode
 				wlan_exceptions "on"
@@ -236,32 +204,20 @@ function jobs ()
 				case $response in
 					# bridge
 					0)
-						sed -i '/^#/ d' $TEMP_CONF
-						apt-get -qq -y --no-install-recommends install bridge-utils >> /dev/null
-						sed -i "s/^auto lo.*/auto lo br0/" $TEMP_CONF
-						# if we have dhcp on default adapter
-						if [[ -n $(grep dhcp $TEMP_CONF | grep "$DEFAULT_ADAPTER" | grep -v br) ]]; then
-							sed -i "s/^iface $DEFAULT_ADAPTER inet dhcp/iface $DEFAULT_ADAPTER inet manual/" $TEMP_CONF
-							echo -e "\niface br0 inet dhcp\nbridge_ports $DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $TEMP_CONF
-							echo -e "\nauto $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual" >> $TEMP_CONF
-						#fi
-						# if we have static on default adapter
-						#if [[ -n $(grep static $TEMP_CONF | grep "$DEFAULT_ADAPTER" | grep -v br) ]]; then
-						else
-							sed -i "s/^iface $DEFAULT_ADAPTER inet static/iface $DEFAULT_ADAPTER inet manual/" $TEMP_CONF
-							sed -i "/^iface $DEFAULT_ADAPTER inet manual/a iface br0 inet static" $TEMP_CONF
-							echo -e "bridge_ports $DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $TEMP_CONF
-							echo -e "\nauto $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual" >> $TEMP_CONF
-						fi
 						sed -i 's/^bridge=.*/bridge=br0/' /etc/hostapd.conf
+						if [[ $DEFAULT_ADAPTER == "br0" ]]; then NEW_DEFAULT_ADAPTER="eth0"; else NEW_DEFAULT_ADAPTER="$DEFAULT_ADAPTER"; fi
+						echo -e "#bridged wireless for hostapd by armbian-config\n" > /etc/network/interfaces.d/bridge.conf
+						echo -e "auto lo br0\niface lo inet loopback" >> /etc/network/interfaces.d/bridge.conf
+						echo -e "\nauto $NEW_DEFAULT_ADAPTER\nallow-hotplug $NEW_DEFAULT_ADAPTER\niface $NEW_DEFAULT_ADAPTER inet manual" >> /etc/network/interfaces.d/bridge.conf
+						echo -e "\nauto $WIRELESS_ADAPTER\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual\n" >> /etc/network/interfaces.d/bridge.conf
+						create_if_config "$DEFAULT_ADAPTER" "br0" >> /etc/network/interfaces.d/bridge.conf
+						echo -e "\nbridge_ports $NEW_DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> /etc/network/interfaces.d/bridge.conf
 					;;
-
 					# NAT
 					1)
-						sed -i '/^#/ d' $TEMP_CONF
 						debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq iptables
-						echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " >> $TEMP_CONF
-						echo -e "\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> $TEMP_CONF
+						echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " > /etc/network/interfaces.d/nat.conf
+						echo -e "\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> /etc/network/interfaces.d/nat.conf
 						# create new configuration
 						echo "interface=$WIRELESS_ADAPTER				# Use interface $WIRELESS_ADAPTER" > /etc/dnsmasq.conf
 						echo "listen-address=172.24.1.1					# Explicitly specify the address to listen on" >> /etc/dnsmasq.conf
@@ -297,8 +253,12 @@ function jobs ()
 				response=$?
 				service hostapd stop
 				if [[ $response = 0 ]]; then
-					mv $TEMP_CONF /etc/network/interfaces
+					echo "source /etc/network/interfaces.d/*" >> /etc/network/interfaces
 					reboot
+				else
+					# remove conf
+					rm -f /etc/network/interfaces.d/bridge.conf
+					rm -f /etc/network/interfaces.d/nat.conf
 				fi
 		fi
 	;;
