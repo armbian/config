@@ -9,7 +9,9 @@
 
 function jobs ()
 {
-	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
+	# Shows box with loading ...
+	#
+	dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
 	case $1 in
 
 	#-------------------------------------------------------------------------------------------------------------------------------------#
@@ -135,24 +137,34 @@ function jobs ()
 		systemctl daemon-reload
 		CURRENT_UUID=$(nmcli -f DEVICE,TYPE,STATE device status | grep -w " wifi " | grep -w " disconnected")
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-			dialog --title "Hostapd service is running" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" \
-			--no-label "Edit" --yesno "\nStop: stop and disable\n\nEdit: change basic parameters: SSID, password and channel" 9 70
+			if [[ -n $HOSTAPDBRIDGE ]]; then
+				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop and reboot" --no-label "Edit" --yesno "\n\Z1Stop:\Z0 stop and reboot\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
+
+			else
+				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label  "Stop" --no-label "Edit" --yesno "\n\Z1Stop:\Z0 stop providing Access Point\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
+			fi
 			exitstatus=$?;
 			if [[ $exitstatus = 0 ]]; then
+				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nDisabling hotstop. Please wait!" 5 35
 				service hostapd stop
 				sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 				systemctl daemon-reload
 				systemctl disable dnsmasq.service >/dev/null 2>&1
 				rm /etc/NetworkManager/conf.d/armbian.conf
-				rm -f /etc/network/interfaces.d/bridge.conf
-				rm -f /etc/network/interfaces.d/nat.conf
-				service network-manager reload
+				ifdown $WIRELESS_ADAPTER 2> /dev/null
+				ln -sf /etc/network/interfaces.default /etc/network/interfaces
 				sed -i '/^iptables/ d' /etc/rc.local
+				iptables -F
+				service network-manager reload
+				[[ -n $HOSTAPDBRIDGE ]] && reboot
 			fi
 			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
 		elif [[ -z $CURRENT_UUID ]]; then
-				dialog --title "Info" --backtitle "$BACKTITLE" --no-collapse --msgbox "\nAll wireless connections are in use." 7 40
+				dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --msgbox "\nAll wireless connections are in use." 7 40
 		else
+				# remove interfaces from managed list
+				rm -f /etc/NetworkManager/conf.d/armbian.conf
+				service network-manager reload
 				# change special adapters to AP mode
 				wlan_exceptions "on"
 				# check for WLAN interfaces
@@ -170,6 +182,12 @@ function jobs ()
 				# add hostapd.conf to services
 				sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=\/etc\/hostapd.conf/" /etc/init.d/hostapd
 				# check both options
+				# add allow cli access if not exists. temporally
+				if ! grep -q "ctrl_interface" /etc/hostapd.conf; then
+					echo "" >> /etc/hostapd.conf
+					echo "ctrl_interface=/var/run/hostapd" >> /etc/hostapd.conf
+					echo "ctrl_interface_group=0" >> /etc/hostapd.conf
+				fi
 				CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
 				if [[ -n "$CHECK" ]]; then
 					dialog --backtitle "$BACKTITLE" --title "Please wait" \
@@ -177,6 +195,11 @@ function jobs ()
 					apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd-realtek > /dev/null
 					# change to selected interface
 					sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
+				fi
+				# add allow cli access if not exists. temporally
+				if ! grep -q "ctrl_interface" /etc/hostapd.conf; then
+					echo "ctrl_interface=/var/run/hostapd" >> /etc/hostapd.conf
+					echo "ctrl_interface_group=0" >> /etc/hostapd.conf
 				fi
 				CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
 				# if both fails there is other problem
@@ -189,35 +212,40 @@ function jobs ()
 					break
 				fi
 
-				dialog --title "Choose Access Point mode for $WIRELESS_ADAPTER" --backtitle "$BACKTITLE" --help-button \
-				--help-label "Manual" --yes-label "Bridge" --no-label "NAT" --yesno "\nBridge: wireless clients will use your routers DHCP \
-				server\n\nNAT: with own DHCP server, out of your primary network\n\nManual: edit configuration manually" 11 70
+				dialog --title " Choose Access Point mode for $WIRELESS_ADAPTER " --colors --backtitle "$BACKTITLE" --no-label "Bridge" \
+				--yes-label "NAT" --yesno "\n\Z1NAT:\Z0 with own DHCP server, out of your primary network\n\n\Z1Bridge:\Z0 wireless clients will use your routers DHCP server" 9 70
 				response=$?
-				DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
-				NETWORK_CONF="/etc/network/interfaces"
-				dialog --title "Network configuration" --backtitle "$BACKTITLE" --yesno "\nStart with clean config?" 7 29
-				[[ $? = 0 ]] && NETWORK_CONF="/etc/network/interfaces.default";
 
-				TEMP_CONF="/etc/network/interfaces.out"
-				cp $NETWORK_CONF $TEMP_CONF
+				# select default interfaces if there is more than one
+				select_default_interface
+
+				NETWORK_CONF="/etc/network/interfaces"
 
 				case $response in
 					# bridge
-					0)
-						sed -i 's/^bridge=.*/bridge=br0/' /etc/hostapd.conf
+					1)
+						TEMP_CONF="/etc/network/interfaces.ap.bridge"
+
+						sed -i 's/.bridge=.*/bridge=br0/' /etc/hostapd.conf
 						if [[ $DEFAULT_ADAPTER == "br0" ]]; then NEW_DEFAULT_ADAPTER="eth0"; else NEW_DEFAULT_ADAPTER="$DEFAULT_ADAPTER"; fi
-						echo -e "#bridged wireless for hostapd by armbian-config\n" > /etc/network/interfaces.d/bridge.conf
-						echo -e "auto lo br0\niface lo inet loopback" >> /etc/network/interfaces.d/bridge.conf
-						echo -e "\nauto $NEW_DEFAULT_ADAPTER\nallow-hotplug $NEW_DEFAULT_ADAPTER\niface $NEW_DEFAULT_ADAPTER inet manual" >> /etc/network/interfaces.d/bridge.conf
-						echo -e "\nauto $WIRELESS_ADAPTER\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual\n" >> /etc/network/interfaces.d/bridge.conf
-						create_if_config "$DEFAULT_ADAPTER" "br0" >> /etc/network/interfaces.d/bridge.conf
-						echo -e "\nbridge_ports $NEW_DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> /etc/network/interfaces.d/bridge.conf
+						echo -e "#bridged wireless for hostapd by armbian-config\n" > $TEMP_CONF
+						echo -e "auto lo br0\niface lo inet loopback" >> $TEMP_CONF
+						echo -e "\nauto $NEW_DEFAULT_ADAPTER\nallow-hotplug $NEW_DEFAULT_ADAPTER\niface $NEW_DEFAULT_ADAPTER inet manual" >> $TEMP_CONF
+						echo -e "\nauto $WIRELESS_ADAPTER\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual\n" >> $TEMP_CONF
+						create_if_config "$DEFAULT_ADAPTER" "br0" >> $TEMP_CONF
+						echo -e "\nbridge_ports $NEW_DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $TEMP_CONF
 					;;
 					# NAT
-					1)
-						debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq iptables
-						echo -e "\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " > /etc/network/interfaces.d/nat.conf
-						echo -e "\naddress 172.24.1.1\nnetmask 255.255.255.0\nnetwork 172.24.1.0\nbroadcast 172.24.1.255" >> /etc/network/interfaces.d/nat.conf
+					0)
+						TEMP_CONF="/etc/network/interfaces.ap.nat"
+						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != *ii* ]]; then
+							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq
+						fi
+						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' iptables 2>/dev/null) != *ii* ]]; then
+							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install iptables
+						fi
+						echo -e "# armbian NAT hostapd\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " > $TEMP_CONF
+						echo -e "\taddress 172.24.1.1\n\tnetmask 255.255.255.0\n\tnetwork 172.24.1.0\n\tbroadcast 172.24.1.255" >> $TEMP_CONF
 						# create new configuration
 						echo "interface=$WIRELESS_ADAPTER				# Use interface $WIRELESS_ADAPTER" > /etc/dnsmasq.conf
 						echo "listen-address=172.24.1.1					# Explicitly specify the address to listen on" >> /etc/dnsmasq.conf
@@ -238,7 +266,6 @@ function jobs ()
 						iptables -A FORWARD -i $WIRELESS_ADAPTER -o $DEFAULT_ADAPTER -j ACCEPT
 						# - Save IP tables, applied during ifup in /etc/network/interfaces.
 						iptables-save > /etc/iptables.ipv4.nat
-						service dnsmasq restart
 						sed -i 's/^bridge=.*/#&/' /etc/hostapd.conf
 						sed -e 's/exit 0//g' -i /etc/rc.local
 						echo "iptables-restore < /etc/iptables.ipv4.nat" >> /etc/rc.local
@@ -248,17 +275,30 @@ function jobs ()
 
 				255) exit;;
 				esac
-				dialog --title "Manually adjust network configuration if needed" --backtitle "$BACKTITLE" \
-				--ok-label "Reboot to apply new settings" --no-collapse --editbox $TEMP_CONF 30 0 2> $TEMP_CONF".tmp"
-				response=$?
-				service hostapd stop
-				if [[ $response = 0 ]]; then
-					echo "source /etc/network/interfaces.d/*" >> /etc/network/interfaces
-					reboot
-				else
-					# remove conf
-					rm -f /etc/network/interfaces.d/bridge.conf
-					rm -f /etc/network/interfaces.d/nat.conf
+
+				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nEnabling hotstop. Please wait!" 5 34
+
+				#
+				# only for bridged connection we need to check and reboot. tdlr check if it can be done on the fly
+				HOSTAPDBRIDGE=$(cat /etc/hostapd.conf 2> /dev/null | grep -w "^bridge=br0")
+				if [[ -n $HOSTAPDBRIDGE ]]; then
+						dialog --title "Manually adjust network configuration if needed" --backtitle "$BACKTITLE" \
+						--ok-label "Reboot to apply new settings" --no-collapse --editbox $TEMP_CONF 30 0 2> $TEMP_CONF".tmp"
+						response=$?
+						if [[ $response = 0 ]]; then
+							mv $TEMP_CONF".tmp" $TEMP_CONF
+							ln -sf $TEMP_CONF /etc/network/interfaces
+							reboot
+						fi
+					else
+						ln -sf $TEMP_CONF /etc/network/interfaces
+						ifdown $WIRELESS_ADAPTER 2> /dev/null
+						ifup $WIRELESS_ADAPTER 2> /dev/null
+						echo "nameserver 8.8.8.8" > /etc/resolvconf/resolv.conf.d/base
+						service network-manager restart
+						service	dnsmasq restart
+						service hostapd restart
+						sleep 2
 				fi
 		fi
 	;;
@@ -267,7 +307,7 @@ function jobs ()
 	# Connect to Bluetooth
 	#
 	"Bluetooth" )
-	dialog --backtitle "$BACKTITLE" --title "Bluetooth" --msgbox "\nMake sure your Bluetooth devices are discoverable!" 7 54
+	dialog --backtitle "$BACKTITLE" --title " Bluetooth " --msgbox "\nMake sure your Bluetooth devices are discoverable!" 7 54
 	connect_bt_interface
 	;;
 
@@ -275,9 +315,9 @@ function jobs ()
 	# Edit network settings
 	#
 	"Network" )
-		dialog --backtitle "$BACKTITLE" --title "Edit network configuration" --no-collapse \
+		dialog --backtitle "$BACKTITLE" --title " Edit ifupdown network configuration /etc/network/interfaces" --no-collapse \
 		--ok-label "Save" --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
-		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart
+		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart && service networking restart
 	;;
 
 
@@ -297,6 +337,13 @@ function jobs ()
 	;;
 
 
+	# Change locales
+	#
+	"Locales" )
+		dpkg-reconfigure locales
+	;;
+
+
 	# Install to SATA, eMMC, NAND or USB
 	#
 	"Install" )
@@ -307,7 +354,7 @@ function jobs ()
 	# Freeze and unfreeze kernel and board support packages
 	#
 	"Hold" | "Unhold" )
-		dialog --title "Update" --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" \
+		dialog --title " Update " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" \
 		--yesno "\nDo you want to ${1,,} kernel updates?" 7 50
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
@@ -326,12 +373,12 @@ function jobs ()
 	#
 	"Desktop" )
 		if [[ -n $(service lightdm status 2> /dev/null | grep -w active | grep -w running) || -n $(service nodm status | grep -w active | grep -w running) ]]; then
-			dialog --title "Desktop is enabled and running" --backtitle "$BACKTITLE" \
+			dialog --title " Desktop is enabled and running " --backtitle "$BACKTITLE" \
 			--yes-label "Stop" --no-label "Cancel" --yesno "\nDo you want to stop and disable this service?" 7 50
 			exitstatus=$?;
 			[[ $exitstatus = 0 ]] && service nodm stop && service lightdm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
 		else
-			dialog --title "Choose a display manager" --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Lightdm" \
+			dialog --title " Choose a display manager " --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Lightdm" \
 			--no-label "Nodm" --yesno "\nLightdm = full featured login display manager\nNodm = autoloading into desktop" 8 70
 			exitstatus=$?;
 			[[ $exitstatus = 0 ]] && [[ -f /etc/X11/default-display-manager ]] && echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager && debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm && systemctl start lightdm.service
@@ -374,7 +421,7 @@ function jobs ()
 	# Stop low-level messages on console
 	#
 	"Lowlevel" )
-		dialog --title "Kernel messages" --backtitle "$BACKTITLE" --help-button \
+		dialog --title " Kernel messages " --backtitle "$BACKTITLE" --help-button \
 		--help-label "Yes & reboot" --yes-label "Yes" --no-label "Cancel" --yesno "\nStop low-level messages on console?" 7 64
 		exitstatus=$?;
 		[[ $exitstatus = 0 ]] && sed -i 's/^#kernel.printk\(.*\)/kernel.printk\1/' /etc/sysctl.conf
@@ -385,7 +432,7 @@ function jobs ()
 	# Edit boot environment
 	#
 	"Bootenv" )
-		dialog --title "Edit u-boot environment" --ok-label "Save" \
+		dialog --title " Edit u-boot environment " --ok-label "Save" \
 		--no-collapse --editbox /boot/armbianEnv.txt 30 0 2> /boot/armbianEnv.txt.out
 		[[ $? = 0 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt
 	;;
@@ -394,7 +441,7 @@ function jobs ()
 	#
 	"Bootscript" )
 		if [[ -f /boot/boot.ini ]]; then
-		dialog --title "Edit boot.ini script" --ok-label "Save" \
+		dialog --title " Edit boot.ini script " --ok-label "Save" \
 		--no-collapse --editbox /boot/boot.ini 30 0 2> /boot/boot.ini.out
 		[[ $? = 0 ]] && mv /boot/boot.ini.out /boot/boot.ini
 		fi
@@ -410,7 +457,7 @@ function jobs ()
 
 	# Toggle welcome screen items
 	#
-	"Overlay" )
+	"Overlays" )
 	# check if user agree to enter this area
 			beta_disclaimer "You are entering beta area. Functions are not yet done - in case of troubles and advanced usage, check https://docs.armbian.com"
 			if [[ -n $ACKNOWLEDGEMENT ]]; then
@@ -502,7 +549,7 @@ function jobs ()
 	# Switch to daily builds
 	#
 	"Nightly" )
-		dialog --title "Warning" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
 		--yesno "\nYou are switching to automated nightly repository which is untested and might break your system.\
 		Are you fine with that?" 9 48
 		if [[ $? = 0 ]]; then
@@ -519,7 +566,7 @@ function jobs ()
 	# Switch to stable builds
 	#
 	"Stable" )
-		dialog --title "Warning" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
 		--yesno "\nYou are switching back to stable respository where you are going to get future updates.\
 		Are you fine with that?" 9 44
 		if [[ $? = 0 ]]; then
@@ -538,7 +585,7 @@ function jobs ()
 	"Switch" )
 		aval_kernel
 		exceptions "$INSTALL_KERNEL"
-		dialog --title "Install and reboot" --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+		dialog --title " Install and reboot " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
 		--yesno "\nSwitching to linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \n\nMake sure you know what you are doing! \
 		\n\nBoard config will be reverted to defaults." 11 46
 		if [[ $? = 0 ]]; then
@@ -571,7 +618,7 @@ function jobs ()
 	#
 	"Overlayroot" )
 		if [[ -n $(mount | grep -w overlay) ]]; then
-			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Disable" \
+			dialog --title " Root overlay " --backtitle "$BACKTITLE" --yes-label "Disable" \
 			--no-label "Cancel" \
 			--yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
 			[[ $? = 0 ]] && overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf && \

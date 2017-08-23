@@ -15,9 +15,10 @@ source "$0""-jobs"
 while true; do
 	LIST=()
 
-	LIST+=( "Software" "System and 3rd party" )
-	LIST+=( "Networking" "WiFI, BT, Hotspot" )
-	LIST+=( "Settings" "Board and system settings" )
+	LIST+=( "Software" "System and 3rd party software install" )
+	LIST+=( "Networking" "Wireless, Bluetooth, Access point" )
+	LIST+=( "System" "General system settings" )
+	LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
 	LIST+=( "About" "Information about this configuration tool" )
 
 	# count number of menu items to adjust window sizee
@@ -29,7 +30,7 @@ while true; do
 	DIALOG_ESC=255
 
 	exec 3>&1
-	selection=$(dialog --backtitle "$BACKTITLE" --title "armbian-config" --clear \
+	selection=$(dialog --backtitle "$BACKTITLE" --title " armbian-config " --clear \
 	--cancel-label "Exit to shell" --menu "\nConfiguration tool for the $BOARD_NAME running $DISTRO $DISTROID \n " $LISTLENGHT 70 $BOXLENGHT \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
@@ -45,8 +46,11 @@ while true; do
 	"Networking" )
 		submenu_networking
 	;;
-	"Settings" )
+	"System" )
 		submenu_settings
+	;;
+	"Armbian" )
+		submenu_hardware
 	;;
 	"About" )
 		show_box "Info" "This tool provides a straightforward way of doing initial configuration of the ${BOARD_NAME}. Although it can be run at any time, some of the options may have difficulties if you have heavily customised your installation.\n\nSources: https://github.com/armbian/config\n\nSupport: https://forum.armbian.com" "15"

@@ -67,8 +67,6 @@ KERNELID=$(uname -r)
 BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
 TITLE="$BOARD_NAME "
 DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
-#IPADDRESS=$(get_ip_addresses "br0" "eth0" > /tmp/x)
-IPADDRESS=$(create_if_config "br0" "eth0" )
 
 dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
 
@@ -90,7 +88,7 @@ check_port ()
 function beta_disclaimer ()
 {
 exec 3>&1
-ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Warning" --clear \--radiolist "\n$1.\n \n" 12 56 7 "Yes, I understand" "" off	 2>&1 1>&3)
+ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title " Warning " --clear \--radiolist "\n$1.\n \n" 12 56 7 "Yes, I understand" "" off	 2>&1 1>&3)
 exec 3>&-
 }
 
@@ -101,7 +99,7 @@ exec 3>&-
 #
 function show_box ()
 {
-dialog --no-shadow --backtitle "$BACKTITLE" --no-collapse --title "$1" --clear --msgbox "\n$2\n \n" $3 56
+dialog --no-shadow --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --msgbox "\n$2\n \n" $3 56
 }
 
 
@@ -230,7 +228,7 @@ function get_wlan_interface ()
 {
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
-	WLAN_INTERFACES=($(nmcli dev status | grep wifi |awk '{print $1}'))
+	WLAN_INTERFACES=($(nmcli dev status | grep wifi | grep disconnected |awk '{print $1}'))
 	local LIST=()
 	for i in "${WLAN_INTERFACES[@]}"
 	do
@@ -243,6 +241,31 @@ function get_wlan_interface ()
 			exec 3>&1
 			WIRELESS_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
 			--title "Select interface" --clear --menu "" $((6+${LIST_LENGHT})) 30 15 "${LIST[@]}" 2>&1 1>&3)
+			exec 3>&-
+	fi
+}
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# select interface if there is more than one
+#
+function select_default_interface ()
+{
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
+	local ADAPTER=($(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)'))
+	local LIST=()
+	for i in "${ADAPTER[@]}"
+	do
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGHT=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGHT" -eq 1 ]; then
+			DEFAULT_ADAPTER=${ADAPTER[0]}
+	else
+			exec 3>&1
+			DEFAULT_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select default interface" --clear --menu "" $((6+${LIST_LENGHT})) 30 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 }
@@ -343,17 +366,20 @@ function submenu_networking ()
 {
 while true; do
 	LIST=()
-	if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
-			HOSTAPDINFO=$(hostapd_cli get_config | grep ^ssid | sed 's/ssid=//g')
-			[[ -n $(nmcli device status | grep wifi | grep connected) ]] && LIST+=( "Hotspot" "Manage active wireless access point" )
+	HOSTAPDBRIDGE=$(cat /etc/hostapd.conf 2> /dev/null | grep -w "^bridge=br0")
+	HOSTAPDSTATUS=$(service hostapd status | grep -w active | grep -w running)
+	if [[ -n "$HOSTAPDSTATUS" ]]; then
+			HOSTAPDINFO=$(hostapd_cli get_config 2> /dev/null | grep ^ssid | sed 's/ssid=//g')
+			HOSTAPDCLIENTS=$(hostapd_cli all_sta 2> /dev/null | grep connected_time | wc -l)
+			LIST+=( "Hotspot" "Manage active wireless access point" )
 		else
-			[[ -n $(nmcli device status | grep wifi | grep disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
+			[[ -n $(nmcli device status | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
 
 	fi
 	[[ -n $(nmcli device status | grep wifi | grep -v unavailable) ]] && LIST+=( "WiFi" "Manage wireless networking" )
 
 	[[ $(hcitool dev | sed '1d') != "" && -n $(service bluetooth status | grep -w active | grep -w running) ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
-	LIST+=( "Network" "Edit network settings" )
+	LIST+=( "Network" "Edit /etc/network/interfaces" )
 
 	# count number of menu items to adjust window sizee
 	LISTLENGHT="$((11+${#LIST[@]}/2))"
@@ -363,19 +389,21 @@ while true; do
 	local disclaimer=""
 	if [[ -n $WIFICONNECTED ]]; then
 		LISTLENGHT=$((LISTLENGHT+2))
-		local connected="\nConnected to SSID: $WIFICONNECTED\n"
-		disclaimer=$connected
+		local connected="\nConnected to SSID: \Z1${WIFICONNECTED}\n\Z0 "
+		disclaimer="$connected"
 	fi
 
-	if [[ -n $HOSTAPDINFO ]]; then
+	if [[ -n $HOSTAPDINFO && -n $HOSTAPDSTATUS ]]; then
 		LISTLENGHT=$((LISTLENGHT+2))
-		disclaimer=$disclaimer$"\nAccess point SSID: $HOSTAPDINFO\n"
+		disclaimer=$disclaimer$"\n\Z0Access point SSID: \Z1$HOSTAPDINFO\Zn ";
+		if [ "$HOSTAPDCLIENTS" -gt "0" ]; then disclaimer=$disclaimer$" Connected clients: \Z1$HOSTAPDCLIENTS\Zn"; fi
+		disclaimer=$disclaimer$"\n";
 	fi
 	#disclaimer=$disclaimer"\n"
 
 	# display warning only we have wifi
 	#if [[ " ${LIST[*]} " == *" Hotspot "* ]]; then
-		disclaimer=$disclaimer"\nNote: wireless networking in Linux is problematic. Our tools make it easy for some cases but can't enable AP on every random WiFi chip. If this tool fail, you are on your own.\n "
+		disclaimer=$disclaimer"\n\Z1Note\Zn: wireless networking in Linux is problematic. Our tools make it easy for some cases but can't enable AP on every random WiFi chip. If this tool fail, you are on your own.\n "
 	#else
 	#	LISTLENGHT="$((6+${#LIST[@]}/2))"
 	#fi
@@ -384,8 +412,8 @@ while true; do
 	DIALOG_ESC=255
 
 	exec 3>&1
-	selection=$(dialog --backtitle "$BACKTITLE" --title "Wireless, Bluetooth, Hotspot" --clear \
-	--cancel-label "Back" --menu "$disclaimer" $LISTLENGHT 70 $BOXLENGHT \
+	selection=$(dialog --backtitle "$BACKTITLE" --colors --title " Wireless, Bluetooth, Hotspot " --clear \
+	--cancel-label "Back" --menu "${disclaimer}" $LISTLENGHT 70 $BOXLENGHT \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
@@ -403,13 +431,8 @@ while true; do
 
 	LIST=()
 	# check for display manager statuses
-	LIST+=( "Timezone" "Change your timezone" )
-	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent) == mmcblk* && -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
-	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
-			LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
-		else
-			LIST+=( "Hold" "Freeze kernel and board support packages" )
-	fi
+	LIST+=( "Timezone" "Change timezone ($(date +%Z))" )
+	LIST+=( "Locales" "Reconfigure language ($(locale | grep LANGUAGE | cut -d= -f2 | cut -d_ -f1)) and character set" )
 	# check for display manager statuses
 	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
 	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
@@ -430,20 +453,7 @@ while true; do
 				LIST+=( "RDP" "Enable remote desktop access from Windows" )
 			fi
 	fi
-	[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
-	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Bootenv" "Edit boot environment" )
-	[[ -f /boot/boot.ini ]] && LIST+=( "Bootscript" "Edit boot script" )
 	LIST+=( "Services" "Toggle running services" )
-	[[ -d /boot/dtb/overlay && $LINUXFAMILY == sunxi && $BRANCH != default ]] && LIST+=( "Overlay" "Toggle board functions: UART, I2C, SPI, ..." )
-	LIST+=( "Welcome" "Toggle welcome screen items" )
-	if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
-	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
-		&& LIST+=( "Nightly" "Switch to nightly builds" )
-	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]] \
-		&& LIST+=( "Stable" "Switch to stable builds" )
-	fi
-	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
-	| wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
 	if [[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]]; then
 		if [ -n "$(mount | grep -w tmpfs-root)" ]; then
 			LIST+=( "Overlayroot" "Disable virtual read-only root filesystem" )
@@ -467,7 +477,60 @@ while true; do
 	DIALOG_ESC=255
 
 	exec 3>&1
-	selection=$(dialog --backtitle "$BACKTITLE" --title "Board and system settings" --clear \
+	selection=$(dialog --backtitle "$BACKTITLE" --title " System settings " --clear \
+	--cancel-label "Back" --menu "$disclaimer" $LISTLENGHT 70 $BOXLENGHT \
+	"${LIST[@]}" 2>&1 1>&3)
+	exit_status=$?
+	exec 3>&-
+	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
+	jobs "$selection"
+done
+}
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# menu for armbian
+#
+function submenu_hardware ()
+{
+while true; do
+
+	LIST=()
+	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent) == mmcblk* && -f /usr/sbin/nand-sata-install ]] && LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
+	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
+			LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
+		else
+			LIST+=( "Hold" "Freeze kernel and board support packages" )
+	fi
+	[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
+	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Bootenv" "Edit boot environment" )
+	[[ -f /boot/boot.ini ]] && LIST+=( "Bootscript" "Edit boot script" )
+	LIST+=( "Welcome" "Toggle welcome screen items" )
+	if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
+	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
+		&& LIST+=( "Nightly" "Switch to nightly builds" )
+	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]] \
+		&& LIST+=( "Stable" "Switch to stable builds" )
+	fi
+	[[ -d /boot/dtb/overlay && $LINUXFAMILY == sunxi && $BRANCH != default ]] && LIST+=( "Overlays" "Toggle board functions: UART, I2C, SPI, ..." )
+	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
+	| wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
+
+	# count number of menu items to adjust window sizee
+	LISTLENGHT="$((11+${#LIST[@]}/2))"
+	BOXLENGHT=${#LIST[@]}
+
+	# display warning only we have wifi
+	if [[ " ${LIST[*]} " == *" Hotspot "* ]]; then
+		local disclaimer="\nNote: wireless networking in Linux is problematic. Our tools make it easy for some cases but can't enable AP on every random WiFi chip. If this tool fail, you are on your own.\n "
+	else
+		LISTLENGHT="$((6+${#LIST[@]}/2))"
+	fi
+
+	DIALOG_CANCEL=1
+	DIALOG_ESC=255
+
+	exec 3>&1
+	selection=$(dialog --backtitle "$BACKTITLE" --title " Armbian specific settings " --clear \
 	--cancel-label "Back" --menu "$disclaimer" $LISTLENGHT 70 $BOXLENGHT \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
