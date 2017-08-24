@@ -45,14 +45,16 @@ fi
 # create interface configuration section
 #
 function create_if_config() {
-		local address=$(ip -4 addr show dev $1 | awk '/inet/ {print $2}' | cut -d'/' -f1)
-		local mask=$(ifconfig $1 | sed -rn '2s/ .*:(.*)$/\1/p')
-		local gateway=$(route -n | grep 'UG[ \t]' | awk '{print $2}' | sed -n '1p')
+		address=$(ip -4 addr show dev $1 | awk '/inet/ {print $2}' | cut -d'/' -f1)
+		netmask=$(ifconfig $1 | sed -rn '2s/ .*:(.*)$/\1/p')
+		gateway=$(route -n | grep 'UG[ \t]' | awk '{print $2}' | sed -n '1p')
+		echo -e "# armbian-config created"
+		echo -e "source /etc/network/interfaces.d/*\n"
 		echo -e "allow-hotplug $2\nno-auto-down $2"
-		if grep -q "iface $1 inet dhcp" /etc/network/interfaces; then
+		if [[ "$3" != "fixed" ]]; then
 			echo -e "iface $2 inet dhcp"
 		else
-			echo -e "iface $2 inet static\n\taddress $address\n\tnetmask $mask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8"
+			echo -e "iface $2 inet static\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8"
 		fi
 } #
 
@@ -133,6 +135,28 @@ function description
 		;;
 	esac
 }
+
+
+function ip_editor ()
+{
+	exec 3>&1
+	dialog --title " Static IP configuration" --backtitle "$BACKTITLE" --form "\nAdapter: $1
+	\n " 12 38 0 \
+	"Address:"				1 1 "$address"				1 15 15 0 \
+	"Netmask:"			2 1 "$netmask"	2 15 15 0 \
+	"Gateway:"			3 1 "$gateway"			3 15 15 0 \
+	2>&1 1>&3 | {
+		read -r address;read -r netmask;read -r gateway
+		if [[ $? = 0 ]]; then
+				echo -e "# armbian-config created\nsource /etc/network/interfaces.d/*\n\nallow-hotplug $2\nno-auto-down $2\niface $2 inet static\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8" > $3
+		fi
+		}
+}
+
+
+
+
+
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -366,6 +390,7 @@ function submenu_networking ()
 {
 while true; do
 	LIST=()
+	LIST+=( "IP" "Select dynamic or edit static IP address" )
 	HOSTAPDBRIDGE=$(cat /etc/hostapd.conf 2> /dev/null | grep -w "^bridge=br0")
 	HOSTAPDSTATUS=$(service hostapd status | grep -w active | grep -w running)
 	if [[ -n "$HOSTAPDSTATUS" ]]; then
@@ -379,7 +404,7 @@ while true; do
 	[[ -n $(nmcli device status | grep wifi | grep -v unavailable) ]] && LIST+=( "WiFi" "Manage wireless networking" )
 
 	[[ $(hcitool dev | sed '1d') != "" && -n $(service bluetooth status | grep -w active | grep -w running) ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
-	LIST+=( "Network" "Edit /etc/network/interfaces" )
+	LIST+=( "Advanced" "Edit /etc/network/interfaces" )
 
 	# count number of menu items to adjust window sizee
 	LISTLENGHT="$((11+${#LIST[@]}/2))"

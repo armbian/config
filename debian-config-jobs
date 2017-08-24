@@ -122,6 +122,20 @@ function jobs ()
 
 
 
+	# Select dynamic or edit static IP address
+	#
+	"IP" )
+			# select default interfaces if there is more than one
+			select_default_interface
+			dialog --title " IP address assignment " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "DHCP" --no-label "Static" --yesno "\n\Z1DHCP:\Z0   automatic IP asignment by your router or DHCP server\n\n\Z1Static:\Z0 manually fixed IP address" 9 70
+			if [[ $? = 0 ]]; then
+				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
+			elif [[ $? = 1 ]]; then
+				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "fixed" > /dev/null
+				ip_editor "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "/etc/network/interfaces"
+			fi
+	;;
+
 
 	# Connect to wireless access point
 	#
@@ -152,7 +166,7 @@ function jobs ()
 				systemctl disable dnsmasq.service >/dev/null 2>&1
 				rm /etc/NetworkManager/conf.d/armbian.conf
 				ifdown $WIRELESS_ADAPTER 2> /dev/null
-				ln -sf /etc/network/interfaces.default /etc/network/interfaces
+				rm -f /etc/network/interfaces.d/armbian*
 				sed -i '/^iptables/ d' /etc/rc.local
 				iptables -F
 				service network-manager reload
@@ -212,9 +226,10 @@ function jobs ()
 					break
 				fi
 
-				dialog --title " Choose Access Point mode for $WIRELESS_ADAPTER " --colors --backtitle "$BACKTITLE" --no-label "Bridge" \
-				--yes-label "NAT" --yesno "\n\Z1NAT:\Z0 with own DHCP server, out of your primary network\n\n\Z1Bridge:\Z0 wireless clients will use your routers DHCP server" 9 70
-				response=$?
+			#	dialog --title " Choose Access Point mode for $WIRELESS_ADAPTER " --colors --backtitle "$BACKTITLE" --no-label "Bridge" --yes-label "NAT" --yesno "\n\Z1NAT:\Z0 with own DHCP server, out of your primary network\n\n\Z1Bridge:\Z0 wireless clients will use your routers DHCP server" 9 70
+			#	response=$?
+			# let's remove bridge for this simple configurator
+			response=0
 
 				# select default interfaces if there is more than one
 				select_default_interface
@@ -224,7 +239,7 @@ function jobs ()
 				case $response in
 					# bridge
 					1)
-						TEMP_CONF="/etc/network/interfaces.ap.bridge"
+						TEMP_CONF="/etc/network/interfaces.d/armbian.ap.bridge"
 
 						sed -i 's/.bridge=.*/bridge=br0/' /etc/hostapd.conf
 						if [[ $DEFAULT_ADAPTER == "br0" ]]; then NEW_DEFAULT_ADAPTER="eth0"; else NEW_DEFAULT_ADAPTER="$DEFAULT_ADAPTER"; fi
@@ -237,7 +252,7 @@ function jobs ()
 					;;
 					# NAT
 					0)
-						TEMP_CONF="/etc/network/interfaces.ap.nat"
+						TEMP_CONF="/etc/network/interfaces.d/armbian.ap.nat"
 						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != *ii* ]]; then
 							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq
 						fi
@@ -287,11 +302,9 @@ function jobs ()
 						response=$?
 						if [[ $response = 0 ]]; then
 							mv $TEMP_CONF".tmp" $TEMP_CONF
-							ln -sf $TEMP_CONF /etc/network/interfaces
-							reboot
+							#reboot
 						fi
 					else
-						ln -sf $TEMP_CONF /etc/network/interfaces
 						ifdown $WIRELESS_ADAPTER 2> /dev/null
 						ifup $WIRELESS_ADAPTER 2> /dev/null
 						echo "nameserver 8.8.8.8" > /etc/resolvconf/resolv.conf.d/base
@@ -314,7 +327,7 @@ function jobs ()
 
 	# Edit network settings
 	#
-	"Network" )
+	"Advanced" )
 		dialog --backtitle "$BACKTITLE" --title " Edit ifupdown network configuration /etc/network/interfaces" --no-collapse \
 		--ok-label "Save" --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
 		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart && service networking restart
@@ -455,7 +468,7 @@ function jobs ()
 	;;
 
 
-	# Toggle welcome screen items
+	# Toggle overlay items
 	#
 	"Overlays" )
 	# check if user agree to enter this area
@@ -485,7 +498,7 @@ function jobs ()
 						LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
 
 						exec 3>&1
-						selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle motd executing scripts" --clear --cancel-label \
+						selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle hardware config" --clear --cancel-label \
 						"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
 						$LISTLENGHT 70 22 "${MOTD[@]}" 2>&1 1>&3)
 						exit_status=$?
