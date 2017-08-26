@@ -403,7 +403,10 @@ while true; do
 	fi
 	[[ -n $(nmcli device status | grep wifi | grep -v unavailable) ]] && LIST+=( "WiFi" "Manage wireless networking" )
 
-	[[ $(hcitool dev | sed '1d') != "" && -n $(service bluetooth status | grep -w active | grep -w running) ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
+	if [[ -n $(service bluetooth status | grep -w active | grep -w running) ]]; then
+		[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
+	fi
+
 	LIST+=( "Advanced" "Edit /etc/network/interfaces" )
 
 	# count number of menu items to adjust window sizee
