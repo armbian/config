@@ -128,9 +128,11 @@ function jobs ()
 			# select default interfaces if there is more than one
 			select_default_interface
 			dialog --title " IP address assignment " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "DHCP" --no-label "Static" --yesno "\n\Z1DHCP:\Z0   automatic IP asignment by your router or DHCP server\n\n\Z1Static:\Z0 manually fixed IP address" 9 70
-			if [[ $? = 0 ]]; then
+			exitstatus=$?;
+			if [[ $exitstatus = 0 ]]; then
 				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
-			elif [[ $? = 1 ]]; then
+			fi
+			if [[ $exitstatus = 1 ]]; then
 				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "fixed" > /dev/null
 				ip_editor "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "/etc/network/interfaces"
 			fi
@@ -160,19 +162,21 @@ function jobs ()
 			exitstatus=$?;
 			if [[ $exitstatus = 0 ]]; then
 				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nDisabling hotstop. Please wait!" 5 35
-				service hostapd stop
 				sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
+				# disable DNS
 				systemctl daemon-reload
 				systemctl disable dnsmasq.service >/dev/null 2>&1
 				rm /etc/NetworkManager/conf.d/armbian.conf
 				ifdown $WIRELESS_ADAPTER 2> /dev/null
-				rm -f /etc/network/interfaces.d/armbian*
+				rm -f /etc/network/interfaces.d/armbian.ap.nat
+				rm -f /etc/network/interfaces.d/armbian.ap.bridge
 				sed -i '/^iptables/ d' /etc/rc.local
 				iptables -F
-				service network-manager reload
+				# reload services
+				reload-nety
 				[[ -n $HOSTAPDBRIDGE ]] && reboot
 			fi
-			if [[ $exitstatus = 1 ]]; then wlan_edit; service hostapd stop; sleep 1; service hostapd start; fi
+			if [[ $exitstatus = 1 ]]; then wlan_edit; reload-nety "reload"; fi
 		elif [[ -z $CURRENT_UUID ]]; then
 				dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --msgbox "\nAll wireless connections are in use." 7 40
 		else
@@ -201,6 +205,28 @@ function jobs ()
 					echo "" >> /etc/hostapd.conf
 					echo "ctrl_interface=/var/run/hostapd" >> /etc/hostapd.conf
 					echo "ctrl_interface_group=0" >> /etc/hostapd.conf
+				fi
+				CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep running)
+				# check n,a and ac modes
+				if [[ -n "$CHECK" ]]; then
+					dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11n \Z1(150-300Mbps)\Z0" 5 43
+					sleep 2
+					sed '/### IEEE 802.11n/,/^### IEEE 802.11n/ s/^# *//' -i /etc/hostapd.conf
+					CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep running)
+					if [[ -n "$CHECK" ]]; then
+						dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11a \Z1(5Ghz)\Z0" 5 36
+						sleep 2
+						sed '/### IEEE 802.11a/,/^### IEEE 802.11a/ s/^# *//' -i /etc/hostapd.conf
+						CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep running)
+						if [[ -n "$CHECK" ]]; then
+							dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0" 5 51
+								sleep 2
+							else
+								sed '/## IEEE 802.11a/,/^## IEEE 802.11a/ s/.*/#&/' -i /etc/hostapd.conf
+						fi
+					else
+						sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf
+					fi
 				fi
 				CHECK=$(systemctl daemon-reload;service hostapd restart;service hostapd status|grep fail)
 				if [[ -n "$CHECK" ]]; then
@@ -306,12 +332,11 @@ function jobs ()
 						fi
 					else
 						ifdown $WIRELESS_ADAPTER 2> /dev/null
+						sleep 2
 						ifup $WIRELESS_ADAPTER 2> /dev/null
 						echo "nameserver 8.8.8.8" > /etc/resolvconf/resolv.conf.d/base
-						service network-manager restart
-						service	dnsmasq restart
-						service hostapd restart
-						sleep 2
+						# reload services
+						reload-nety "reload"
 				fi
 		fi
 	;;
@@ -331,6 +356,12 @@ function jobs ()
 		dialog --backtitle "$BACKTITLE" --title " Edit ifupdown network configuration /etc/network/interfaces" --no-collapse \
 		--ok-label "Save" --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
 		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart && service networking restart
+	;;
+
+	# Remove automatic wifi conections
+	#
+	"Forget" )
+		nmcli --fields UUID,TIMESTAMP-REAL,TYPE con show | grep wireless |  awk '{print $1}' | while read line; do nmcli con delete uuid  $line; done > /dev/null
 	;;
 
 
@@ -354,6 +385,24 @@ function jobs ()
 	#
 	"Locales" )
 		dpkg-reconfigure locales
+	;;
+
+
+	# Change Hostname
+	#
+	"Hostname" )
+		hostname_current=$(cat /etc/hostname)
+		hostname_new=$(\
+		dialog --no-cancel --title " Change hostname " --backtitle "$BACKTITLE" --inputbox "\nType new hostname\n " 10 50 $hostname_current \
+		3>&1 1>&2 2>&3 3>&- \
+		)
+		if [[ $? = 0 && -n $hostname_new ]]; then
+			sed -i "s/$hostname_current/$hostname_new/g" /etc/hosts
+			sed -i "s/$hostname_current/$hostname_new/g" /etc/hostname
+			hostname $hostname_new
+			systemctl restart systemd-logind.service
+			dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --msgbox "\nYou need to logout to make the changes effective." 7 53
+		fi
 	;;
 
 

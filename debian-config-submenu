@@ -58,6 +58,15 @@ function create_if_config() {
 		fi
 } #
 
+function reload-nety() {
+if [[ "$1" == "reload" ]]; then WHATODO="Reloading services"; else WHATODO="Stopping services"; fi
+(service network-manager stop; echo 10; sleep 1;\
+service hostapd stop; echo 20; sleep 1;\
+service dnsmasq stop; echo 30; sleep 1;\
+[[ "$1" == "reload" ]] && service dnsmasq start && echo 60 && sleep 1 && service hostapd start && echo 80 && sleep 1;\
+service network-manager start; echo 90; sleep 5;) | dialog --backtitle "$BACKTITLE" --title " $WHATODO " --gauge "" 6 70 0
+}
+
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # gather info about the board and start with loading menu
@@ -154,15 +163,10 @@ function ip_editor ()
 }
 
 
-
-
-
-
-
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # edit hostapd parameters
 #
-function wlan_edit ()
+function wlan_edit_basic ()
 {
 	source /etc/hostapd.conf
 	exec 3>&1
@@ -181,6 +185,23 @@ function wlan_edit ()
 				sed -i "s/^wpa_psk=.*/wpa_psk=$wpa_psk/" /etc/hostapd.conf
 		fi
 		}
+}
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# edit hostapd parameters
+#
+function wlan_edit ()
+{
+			# select default interfaces if there is more than one
+			select_default_interface
+			dialog --title " Configuration edit " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Basic" --no-label "Advanced" --yesno "\n\Z1Basic:\Z0    Change SSID, password and channel\n\n\Z1Advanced:\Z0 Edit /etc/hostapd.conf file" 9 70
+			if [[ $? = 0 ]]; then
+				wlan_edit_basic
+			elif [[ $? = 1 ]]; then
+				dialog --backtitle "$BACKTITLE" --title " Edit hostapd configuration /etc/hostapd.conf" --no-collapse \
+				--ok-label "Save" --editbox /etc/hostapd.conf 30 0 2> /etc/hostapd.conf.out
+				[[ $? = 0 ]] && mv /etc/hostapd.conf.out /etc/hostapd.conf && service hostapd restart
+			fi
 }
 
 
@@ -344,11 +365,11 @@ while true; do
 
 	LIST=()
 	[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "3rd party applications installer" )
-	if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'32032'"') ]]; then
-		LIST+=( "USB redirector" "Disable USB devices sharing over Ethernet" )
-		else
-		LIST+=( "USB redirector" "Enable USB devices sharing over Ethernet" )
-	fi
+	#if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'32032'"') ]]; then
+	#	LIST+=( "USB redirector" "Disable USB devices sharing over Ethernet" )
+	#	else
+	#	LIST+=( "USB redirector" "Enable USB devices sharing over Ethernet" )
+	#fi
 	[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && \
 	LIST+=( "Consumption" "Control board consumption" )
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI monitoring" )
@@ -388,6 +409,7 @@ done
 #
 function submenu_networking ()
 {
+select_default_interface
 while true; do
 	LIST=()
 	LIST+=( "IP" "Select dynamic or edit static IP address" )
@@ -401,29 +423,48 @@ while true; do
 			[[ -n $(nmcli device status | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
 
 	fi
-	[[ -n $(nmcli device status | grep wifi | grep -v unavailable) ]] && LIST+=( "WiFi" "Manage wireless networking" )
+	[[ -n $(nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]] && LIST+=( "WiFi" "Manage wireless networking" )
 
 	if [[ -n $(service bluetooth status | grep -w active | grep -w running) ]]; then
 		[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
 	fi
 
 	LIST+=( "Advanced" "Edit /etc/network/interfaces" )
+	[[ $(ls -1 /etc/NetworkManager/system-connections 2> /dev/null) ]] && LIST+=( "Forget" "Disconnect and forget all wireless connections" )
 
 	# count number of menu items to adjust window sizee
-	LISTLENGHT="$((11+${#LIST[@]}/2))"
+	LISTLENGHT="$((13+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
 	WIFICONNECTED=$(nmcli -f NAME,TYPE connection show --active | grep wireless | awk 'NF{NF-=1};1')
 
 	local disclaimer=""
+
+
+	local ipadd=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
+
+	if [[ -n $(grep $DEFAULT_ADAPTER /etc/network/interfaces | grep static) ]]; then
+		local ifup="\nStatic IP ($DEFAULT_ADAPTER) via IFUPDOWN: \Z1${ipadd}\n\Z0 "
+	elif [[ -n $(grep $DEFAULT_ADAPTER /etc/network/interfaces | grep dhcp) ]]; then
+		local ifup="\nDynamic IP ($DEFAULT_ADAPTER) via IFUPDOWN: \Z1${ipadd}\n\Z0 "
+	else
+		local ifup="\nDynamic IP ($DEFAULT_ADAPTER) via Network Manager: \Z1${ipadd}\n\Z0 "
+	fi
+	disclaimer="$ifup"
+
+
 	if [[ -n $WIFICONNECTED ]]; then
 		LISTLENGHT=$((LISTLENGHT+2))
-		local connected="\nConnected to SSID: \Z1${WIFICONNECTED}\n\Z0 "
-		disclaimer="$connected"
+		local connected="\n\Z0Connected to SSID: \Z1${WIFICONNECTED}\n\Z0 "
+		disclaimer=$disclaimer"$connected"
 	fi
 
 	if [[ -n $HOSTAPDINFO && -n $HOSTAPDSTATUS ]]; then
 		LISTLENGHT=$((LISTLENGHT+2))
-		disclaimer=$disclaimer$"\n\Z0Access point SSID: \Z1$HOSTAPDINFO\Zn ";
+		disclaimer=$disclaimer$"\n\Z0Hotspot SSID: \Z1$HOSTAPDINFO\Zn Band:";
+		if [[ `grep ^ieee80211a /etc/hostapd.conf` ]]; then local band="5Ghz"; else band="2.4Ghz"; fi
+		if [[ `grep ^ieee80211n /etc/hostapd.conf` ]]; then local type="N"; fi
+		if [[ `grep ^ieee80211ac /etc/hostapd.conf` ]]; then local type="AC"; fi
+		disclaimer=$disclaimer$" \Z1${band} ${type}\Z0 "
 		if [ "$HOSTAPDCLIENTS" -gt "0" ]; then disclaimer=$disclaimer$" Connected clients: \Z1$HOSTAPDCLIENTS\Zn"; fi
 		disclaimer=$disclaimer$"\n";
 	fi
@@ -440,7 +481,7 @@ while true; do
 	DIALOG_ESC=255
 
 	exec 3>&1
-	selection=$(dialog --backtitle "$BACKTITLE" --colors --title " Wireless, Bluetooth, Hotspot " --clear \
+	selection=$(dialog --backtitle "$BACKTITLE" --colors --title " Wired, Wireless, Bluetooth, Hotspot " --clear \
 	--cancel-label "Back" --menu "${disclaimer}" $LISTLENGHT 70 $BOXLENGHT \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
@@ -461,6 +502,7 @@ while true; do
 	# check for display manager statuses
 	LIST+=( "Timezone" "Change timezone ($(date +%Z))" )
 	LIST+=( "Locales" "Reconfigure language ($(locale | grep LANGUAGE | cut -d= -f2 | cut -d_ -f1)) and character set" )
+	LIST+=( "Hostname" "Change your hostname ($(cat /etc/hostname))" )
 	# check for display manager statuses
 	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
 	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"

@@ -16,7 +16,7 @@ while true; do
 	LIST=()
 
 	LIST+=( "Software" "System and 3rd party software install" )
-	LIST+=( "Networking" "Wireless, Bluetooth, Access point" )
+	LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
 	LIST+=( "System" "General system settings" )
 	LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
 	LIST+=( "About" "Information about this configuration tool" )

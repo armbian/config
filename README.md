@@ -10,29 +10,40 @@ It comes with Armbian (from 5.27) by default. Login as super user and type:
 
 **Configuration**
 
-- wireless network connect,
-- Bluetooth devices pair and connect,
-- AP (hotspot) in bridged or NAT mode,
-- freeze and unfreeze kernel and BSP upgrades,
-- edit boot environment, network, FEX, welcome screen items,
-- switching between avaliable kernels and nightly builds,
-- enabling read only root filesystem (Ubuntu only),
-- set display resolution (H3 boards with legacy kernel),
-
-**Installation**
-
-- [TV headend](https://tvheadend.org/) *(IPTV server)*
-- [Syncthing](https://syncthing.net/) *(personal cloud)*
-- [SoftEther VPN server](https://www.softether.org/) *(VPN server)*
-- [Transmission](https://transmissionbt.com/) *(torrent server)*
-- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
-- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
-- [PI hole](https://pi-hole.net) *(ad blocker)*
-- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)*
-
-
-[Project realisation example](http://www.igorpecovnik.com/2013/12/10/micro-home-server/)
-
+- software
+	- softy
+		- [TV headend](https://tvheadend.org/) *(IPTV server)*
+		- [Syncthing](https://syncthing.net/) *(personal cloud)*
+		- [SoftEther VPN server](https://www.softether.org/) *(VPN server)*
+		- [Transmission](https://transmissionbt.com/) *(torrent server)*
+		- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
+		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
+		- [PI hole](https://pi-hole.net) *(ad blocker)*
+		- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)*
+	- monitoring tools
+	- create diagnostics report
+	- install kernel headers
+- networking
+	- select dynamic or static IP address
+	- manage hotspot. Automatic detection of: nl80211, realtek, 802.11n, 802.11a and 802.11ac 
+	- connect to wireless
+	- Bluetooth devices pair and connect,
+	- edit IFUPDOWN interfaces
+- system
+	- change timezone
+	- reconfigure locales, languages and charset
+	- change hostname
+	- toggle desktop (on desktop builds)
+	- toggle RDP (on desktop builds)
+	- toggle running servives (stock Debian app)
+	- enabling read only root filesystem (Ubuntu only)  
+- armbian
+	- install to SATA, eMMC, NAND or USB
+	- freeze and unfreeze kernel and BSP upgrades
+	- edit boot environment, network, FEX, welcome screen items
+	- switching between avaliable kernels and nightly builds
+- about
+	- basic info about tool
 
 ----------
 
