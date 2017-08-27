@@ -581,7 +581,7 @@ while true; do
 	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list) ]] \
 		&& LIST+=( "Stable" "Switch to stable builds" )
 	fi
-	[[ -d /boot/dtb/overlay && $LINUXFAMILY == sunxi && $BRANCH != default ]] && LIST+=( "Overlays" "Toggle board functions: UART, I2C, SPI, ..." )
+	[[ -d /boot/dtb/overlay && $LINUXFAMILY == sun*i && $BRANCH != default ]] && LIST+=( "Overlays" "Toggle board functions: UART, I2C, SPI, ..." )
 	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
 	| wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
 
