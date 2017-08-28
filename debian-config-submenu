@@ -59,6 +59,7 @@ function create_if_config() {
 } #
 
 function reload-nety() {
+systemctl daemon-reload
 if [[ "$1" == "reload" ]]; then WHATODO="Reloading services"; else WHATODO="Stopping services"; fi
 (service network-manager stop; echo 10; sleep 1;\
 service hostapd stop; echo 20; sleep 1;\
@@ -423,7 +424,12 @@ while true; do
 			[[ -n $(nmcli device status | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
 
 	fi
-	[[ -n $(nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]] && LIST+=( "WiFi" "Manage wireless networking" )
+
+	if [[ -n $(nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]]; then
+		LIST+=( "WiFi" "Manage wireless networking" )
+	else
+		LIST+=( "Clear" "Clear possible blocked interfaces" )
+	fi
 
 	if [[ -n $(service bluetooth status | grep -w active | grep -w running) ]]; then
 		[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )

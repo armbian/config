@@ -1,8 +1,6 @@
-# Armbian config
+# Armbian configuration utility
 
-Utility for configuring your board and install various services.
-
-It comes with Armbian (from 5.27) by default. Login as super user and type:
+Utility for configuring your board, adjust services and install applications. It comes with Armbian by default. Login and type:
 
 	armbian-config
 
