@@ -111,8 +111,18 @@ function jobs ()
 	# Set the display resolution
 	#
 	"Display" )
-		h3disp
-		exit
+		# show display modes menu
+		get_h3modes
+		dialog --title " Display output type " --colors --help-button --help-label "Back" --no-label "DVI" --yes-label "HDMI" --backtitle "$BACKTITLE" --yesno "\nIn case you use an HDMI-to-DVI converter choose DVI!" 7 57
+		output_type=$?
+		if [[ $output_type = 0 || $output_type = 1 ]]; then
+			if [[ $output_type = 0 ]]; then display_cmd="h3disp -m $SCREEN_RESOLUTION"; else display_cmd="h3disp -m $SCREEN_RESOLUTION -d";fi
+			dialog --title " Display resolution " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno "\nSetting new screen mode.\n\nExecuting \Z1$display_cmd\Z0 and reboot?   " 9 56
+			if [[ $? = 0 ]]; then
+				eval $display_cmd > /dev/null
+				reboot
+			fi
+		fi
 	;;
 
 
@@ -424,6 +434,24 @@ function jobs ()
 		fi
 	;;
 
+	# Firmware update
+	#
+	"Firmware" )
+		clear
+		exec 3>&1
+		monitor=$(dialog --print-maxsize 2>&1 1>&3)
+		exec 3>&-
+		mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//');mon_x=$(( $mon_x / 2 ))
+		mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//');
+		dialog --title " Update " --backtitle "$BACKTITLE" --no-label "Cancel" --yesno "\nDo you want to update board firmware?" 7 41
+		if [[ $? = 0 ]]; then
+			debconf-apt-progress -- apt-get update
+			debconf-apt-progress -- apt-get -y upgrade
+			dialog --title " Firmware update " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno "\nFirmware has been updated. Reboot?   " 7 39
+			if [[ $? = 0 ]]; then reboot; fi
+		fi
+	;;
+
 
 	# Install to SATA, eMMC, NAND or USB
 	#
@@ -435,8 +463,7 @@ function jobs ()
 	# Freeze and unfreeze kernel and board support packages
 	#
 	"Hold" | "Unhold" )
-		dialog --title " Update " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" \
-		--yesno "\nDo you want to ${1,,} kernel updates?" 7 50
+		dialog --title " Update " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno "\nDo you want to ${1,,} kernel updates?" 7 50
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
 		exceptions "$BRANCH"
