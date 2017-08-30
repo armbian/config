@@ -55,42 +55,35 @@ function jobs ()
 	#
 	"Monitor" )
 		clear
-		exec 3>&1
-		monitor=$(dialog --print-maxsize 2>&1 1>&3)
-		exec 3>&-
-		mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//')
-		mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//')
-		armbianmonitor -m | dialog --no-shadow --backtitle "$BACKTITLE" --title "Simple CLI monitoring $BOARD" --progressbox $mon_x $mon_y
+		armbianmonitor
+		echo -e "\nType \e[92m$0\e[0m to get back\n"
+		exit
 	;;
 
 
 	# Control board consumption
 	#
 	"Consumption" )
-		h3consumption
-		exit
-	;;
-
-
-	# Send diagnostics
-	#
-	"Diagnostics" )
 		clear
-		echo ""
-		armbianmonitor -u
-		echo ""
-		read -n 1 -s -p "Press any key to continue"
+		h3consumption
+		echo -e "\nType \e[92m$0\e[0m to get back\n"
+		exit
 	;;
 
 
 	# Board (fex) settings editor
 	#
 	"Fexedit" )
+		exec 3>&1
+		monitor=$(dialog --print-maxsize 2>&1 1>&3)
+		exec 3>&-
+		mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//')
+		mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//')
 		TEMP=$(mktemp -d || exit 1)
 		trap "rm -rf \"${TEMP}\" ; exit 0" 0 1 2 3 15
 		bin2fex /boot/script.bin ${TEMP}/tempfex.txt >/dev/null 2>&1
 		dialog --title "Edit u-boot environment" \
-		--ok-label "Save" --no-collapse --editbox ${TEMP}/tempfex.txt  40 0 2> ${TEMP}/tempfex.out
+		--ok-label "Save" --no-collapse --editbox ${TEMP}/tempfex.txt $mon_y 0 2> ${TEMP}/tempfex.out
 		[[ $? = 0 ]] && fex2bin ${TEMP}/tempfex.out /boot/script.bin
 	;;
 
@@ -228,18 +221,18 @@ function jobs ()
 					echo "ctrl_interface=/var/run/hostapd" >> /etc/hostapd.conf
 					echo "ctrl_interface_group=0" >> /etc/hostapd.conf
 				fi
-				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
+				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
 				# check n,a and ac modes
 				if [[ -z "$CHECK" ]]; then
 					dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11n \Z1(150-300Mbps)\Z0" 5 43
 					sleep 2
 					sed '/### IEEE 802.11n/,/^### IEEE 802.11n/ s/^# *//' -i /etc/hostapd.conf
-					CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
+					CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
 					if [[ -z "$CHECK" ]]; then
 						dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11a \Z1(5Ghz)\Z0" 5 36
 						sleep 2
 						sed '/### IEEE 802.11a\>/,/^### IEEE 802.11a\>/ s/^# *//' -i /etc/hostapd.conf
-						CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
+						CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
 						if [[ -z "$CHECK" ]]; then
 								dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0" 5 51
 								sleep 2
@@ -258,7 +251,7 @@ function jobs ()
 						sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf
 					fi
 				fi
-				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
+				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
 				if [[ -n "$CHECK" ]]; then
 					dialog --backtitle "$BACKTITLE" --title "Please wait" \
 					--infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nProbing Realtek hostapd driver compatibility." 7 50
