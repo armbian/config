@@ -111,8 +111,22 @@ exec 3>&-
 #
 function show_box ()
 {
-dialog --no-shadow --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --msgbox "\n$2\n \n" $3 56
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --msgbox "\n$2\n \n" $3 56
 }
+
+
+function check_ht_capab ()
+{
+declare -a arr=("[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40][SMPS-STATIC]" "[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]")
+for i in "${arr[@]}"
+do
+	echo "$i"
+	sed -i "s/^ht_capab=.*/ht_capab=$i/" /etc/hostapd.conf
+	CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
+	if [[ -z "$CHECK" ]]; then break; fi
+done
+}
+
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
@@ -260,8 +274,9 @@ function aval_kernel ()
 			TARGET_BRANCH=${AVAL_KERNEL[0]}
 	else
 			exec 3>&1
-			TARGET_BRANCH=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			TARGET_BRANCH=$(dialog --cancel-label "Back" --backtitle "$BACKTITLE" --no-collapse \
 			--title "Upgrade from $BRANCH to:" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			exitstatus=$?;
 			exec 3>&-
 	fi
 }
@@ -493,7 +508,7 @@ while true; do
 	if [[ -n $HOSTAPDINFO && -n $HOSTAPDSTATUS ]]; then
 		LISTLENGHT=$((LISTLENGHT+2))
 		disclaimer=$disclaimer$"\n\Z0Hotspot SSID: \Z1$HOSTAPDINFO\Zn Band:";
-		if [[ `grep ^ieee80211a /etc/hostapd.conf` ]]; then local band="5Ghz"; else band="2.4Ghz"; fi
+		if [[ `grep ^hw_mode=a /etc/hostapd.conf` ]]; then local band="5Ghz"; else band="2.4Ghz"; fi
 		if [[ `grep ^ieee80211n /etc/hostapd.conf` ]]; then local type="N"; fi
 		if [[ `grep ^ieee80211ac /etc/hostapd.conf` ]]; then local type="AC"; fi
 		disclaimer=$disclaimer$" \Z1${band} ${type}\Z0 "
@@ -537,19 +552,24 @@ while true; do
 	LIST+=( "Hostname" "Change your hostname \Z5($(cat /etc/hostname))\Z0" )
 	LIST+=( "Firmware" "Upgrade board firmware" )
 	# check for display manager statuses
+
+	# detect desktop
 	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
+	if [ $(dpkg-query -W -f='${db:Status-Abbrev}\n' nodm 2>/dev/null) <> "*ii*" ]; then DESKTOP_INSTALLED="nodm"; fi
+	if [ $(dpkg-query -W -f='${db:Status-Abbrev}\n' lightdm 2>/dev/null) <> "*ii*" ]; then DESKTOP_INSTALLED="lightdm"; fi
+
 	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
 	[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
-	[[ -d /etc/lightdm || -f /etc/default/nodm ]] && DESKTOP_INSTALLED="true"
+
 	if [[ -n $DISPLAY_MANAGER ]]; then
 			LIST+=( "Desktop" "Disable desktop" )
 			[[ $DISPLAY_MANAGER == 'nodm' ]] && LIST+=( "Lightdm" "Switch to standard login manager" )
 			[[ $DISPLAY_MANAGER == 'lightdm' ]] && LIST+=( "Nodm" "Switch to simple auto login manager" )
-			else
+		elif [[ -n $DESKTOP_INSTALLED ]]; then
 			LIST+=( "Desktop" "Enable desktop" )
 	fi
 
-	if [[ $DESKTOP_INSTALLED ]]; then
+	if [[ -n $DISPLAY_MANAGER ]]; then
 			if [[ $(service xrdp status 2> /dev/null | grep -w active) ]]; then
 				LIST+=( "RDP" "Disable remote desktop access from Windows" )
 				else

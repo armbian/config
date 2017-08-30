@@ -31,7 +31,7 @@ while true; do
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
-	--cancel-label "Exit to shell" --menu "\nConfiguration tool for the \Z5${BOARD_NAME}\Z0 running \Z5$DISTRO $DISTROID\Z0 \n " $LISTLENGHT 70 $BOXLENGHT \
+	--cancel-label "Exit to shell" --menu "\nConfiguration tool for the \Z1${BOARD_NAME}\Z0 running \Z1$DISTRO $DISTROID\Z0 \n " $LISTLENGHT 70 $BOXLENGHT \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
