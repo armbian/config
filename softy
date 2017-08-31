@@ -30,7 +30,7 @@ VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
 LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
 # OMV
 OMV_STATUS="$([[ -f /etc/default/openmediavault ]] && echo "on" || echo "off" )"
-[[ "$family" == "Debian" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
+[[ "$distribution" == "jessie" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
 # MINIdlna
 MINIDLNA_STATUS="$([[ -f /etc/minidlna.conf ]] && echo "on" || echo "off" )"
 LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "$MINIDLNA_STATUS" )
