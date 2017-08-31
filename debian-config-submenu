@@ -40,6 +40,44 @@ if [[ $? -ne 0 ]]; then
 fi
 
 
+function check_advanced_modes ()
+{
+CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
+				# check n,a and ac modes
+				if [[ -z "$CHECK" ]]; then
+					dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11n \Z1(150-300Mbps)\Z0" 5 43
+					sleep 2
+					sed '/### IEEE 802.11n/,/^### IEEE 802.11n/ s/^# *//' -i /etc/hostapd.conf
+					CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
+					if [[ -z "$CHECK" ]]; then
+						# check various HT modes
+						check_ht_capab
+						# than go to check 5Ghz
+						dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11a \Z1(5Ghz)\Z0" 5 36
+						sleep 2
+						sed '/### IEEE 802.11a\>/,/^### IEEE 802.11a\>/ s/^# *//' -i /etc/hostapd.conf
+						CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
+						if [[ -z "$CHECK" ]]; then
+								dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0" 5 51
+								sleep 2
+								sed '/### IEEE 802.11ac\>/,/^### IEEE 802.11ac\>/ s/^# *//' -i /etc/hostapd.conf
+								CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
+								if [[ -n "$CHECK" ]]; then
+									dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nWireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0 is not supported!" 5 60
+									sed '/## IEEE 802.11ac\>/,/^## IEEE 802.11ac\>/ s/.*/#&/' -i /etc/hostapd.conf
+								fi
+							else
+								dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nWireless 802.11a \Z1(5Ghz)\Z0 is not supported!" 5 45
+								sed '/## IEEE 802.11a\>/,/^## IEEE 802.11a\>/ s/.*/#&/' -i /etc/hostapd.conf
+						fi
+					else
+						dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nWireless 802.11n \Z1(150-300Mbps)\Z0 is not supported!" 5 52
+						sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf
+					fi
+				fi
+}
+
+
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 #
 # create interface configuration section
