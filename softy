@@ -30,7 +30,7 @@ VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
 LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
 # OMV
 OMV_STATUS="$([[ -f /etc/default/openmediavault ]] && echo "on" || echo "off" )"
-[[ "$distribution" == "jessie" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
+[[ "$family" == "Debian" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
 # MINIdlna
 MINIDLNA_STATUS="$([[ -f /etc/minidlna.conf ]] && echo "on" || echo "off" )"
 LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "$MINIDLNA_STATUS" )
@@ -286,114 +286,57 @@ fi
 
 install_omv (){
 #------------------------------------------------------------------------------------------------------------------------------------------
-# Install OpenMediaVault 3
-#------------------------------------------------------------------------------------------------------------------------------------------
-if [ $distribution != "jessie" ]; then
-    dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenMediaVault 3 can only be installed on Debian Jessie." 7 52
-    sleep 5
-    exit
-fi
-
-apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73 >/dev/null 2>&1
-
-cat > /etc/apt/sources.list.d/openmediavault.list << EOF
-deb https://openmediavault.github.io/packages/ erasmus main
-
-## Uncomment the following line to add software from the proposed repository.
-deb https://openmediavault.github.io/packages/ erasmus-proposed main
-
-## This software is not part of OpenMediaVault, but is offered by third-party
-## developers as a service to OpenMediaVault users.
-# deb https://openmediavault.github.io/packages/ erasmus partner
-EOF
-
-read HOSTNAME </etc/hostname
-read TZ </etc/timezone
-debconf-apt-progress -- apt-get update
-debconf-set-selections <<< "postfix postfix/mailname string ${HOSTNAME}"
-debconf-apt-progress -- apt-get --yes --force-yes --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault-keyring openmediavault postfix
-URL='https://github.com/OpenMediaVault-Plugin-Developers/packages/raw/master/openmediavault-omvextrasorg_latest_all3.deb'; FILE=`mktemp`; wget "$URL" -qO $FILE && dpkg -i $FILE; rm $FILE
-/usr/sbin/omv-update
-
-# Install flashmemory plugin and netatalk by default, use nice logo for the latter,
-# Disable OMV monitoring by default
-. /usr/share/openmediavault/scripts/helper-functions
-apt-get -y -q install openmediavault-netatalk openmediavault-flashmemory
-AFP_Options="mimic model = Macmini"
-SMB_Options="min receivefile size = 16384\nwrite cache size = 524288\ngetwd cache = yes\nsocket options = TCP_NODELAY IPTOS_LOWDELAY"
-xmlstarlet ed -L -u "/config/services/afp/extraoptions" -v "$(echo -e "${AFP_Options}")" /etc/openmediavault/config.xml
-xmlstarlet ed -L -u "/config/services/smb/extraoptions" -v "$(echo -e "${SMB_Options}")" /etc/openmediavault/config.xml
-xmlstarlet ed -L -u "/config/services/flashmemory/enable" -v "1" /etc/openmediavault/config.xml
-xmlstarlet ed -L -u "/config/services/ssh/enable" -v "1" /etc/openmediavault/config.xml
-xmlstarlet ed -L -u "/config/services/ssh/permitrootlogin" -v "1" /etc/openmediavault/config.xml
-xmlstarlet ed -L -u "/config/system/time/ntp/enable" -v "1" /etc/openmediavault/config.xml
-xmlstarlet ed -L -u "/config/system/time/timezone" -v "${TZ}" /etc/openmediavault/config.xml
-xmlstarlet ed -L -u "/config/system/network/dns/hostname" -v "${HOSTNAME}" /etc/openmediavault/config.xml
-/usr/sbin/omv-rpc -u admin "perfstats" "set" '{"enable":false}'
-/usr/sbin/omv-rpc -u admin "config" "applyChanges" '{ "modules": ["monit","rrdcached","collectd"],"force": true }'
-sed -i 's|-j /var/lib/rrdcached/journal/ ||' /etc/init.d/rrdcached
-for i in netatalk samba flashmemory ssh ntp timezone monit rrdcached collectd ; do
-	/usr/sbin/omv-mkconf $i
-done
-/sbin/folder2ram -enablesystemd
-
-# Prevent accidentally destroying board performance by clicking around in OMV UI
-if [ -f /etc/default/cpufrequtils ]; then
-	. /etc/default/cpufrequtils
-	echo -e "OMV_CPUFREQUTILS_GOVERNOR=${GOVERNOR}" >>/etc/default/openmediavault
-	echo -e "OMV_CPUFREQUTILS_MINSPEED=${MIN_SPEED}" >>/etc/default/openmediavault
-	echo -e "OMV_CPUFREQUTILS_MAXSPEED=${MAX_SPEED}" >>/etc/default/openmediavault
-fi
-
-omv-initsystem
-check_port 80
-}
-
-
-install_omv4 (){
-#------------------------------------------------------------------------------------------------------------------------------------------
-# Install OpenMediaVault 4
+# On Debian install OpenMediaVault 3 (Jessie) or 4 (Stretch)
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Not yet recommended, OMV package repository lacks authentication, no flashmemory plugin available,
 # same with all other OMV-Extras, only for developers and OMV contributors!
 
-if [ $distribution != "stretch" ]; then
-	dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenMediaVault 4 can only be installed on Debian Stretch." 7 52
+if [ "$family" != "Debian" ]; then
+	dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
 	sleep 5
 	exit
 fi
 
-# sed -i "s/^# en_US.UTF-8/en_US.UTF-8/" /etc/locale.gen
-# locale-gen
-# update-locale LANG=en_US:en LC_ALL=en_US.UTF-8
-# export LANG=C LC_ALL="en_US.UTF-8"
+case $distribution in
+	jessie)
+		OMV_Name="erasmus"
+		OMV_EXTRAS_URL="https://github.com/OpenMediaVault-Plugin-Developers/packages/raw/master/openmediavault-omvextrasorg_latest_all3.deb"
+		;;
+	stretch)
+		OMV_Name="arrakis"
+		OMV_EXTRAS_URL="https://github.com/OpenMediaVault-Plugin-Developers/packages/raw/master/openmediavault-omvextrasorg_latest_all4.deb"
+		;;
+esac
+
+sed -i "s/^# en_US.UTF-8/en_US.UTF-8/" /etc/locale.gen
+locale-gen
 	
 wget -qO - packages.openmediavault.org/public/archive.key | apt-key add -
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
 
 cat > /etc/apt/sources.list.d/openmediavault.list << EOF
-deb https://openmediavault.github.io/packages/ arrakis main
+deb https://openmediavault.github.io/packages/ ${OMV_Name} main
 
 ## Uncomment the following line to add software from the proposed repository.
-deb https://openmediavault.github.io/packages/ arrakis-proposed main
+deb https://openmediavault.github.io/packages/ ${OMV_Name}-proposed main
 
 ## This software is not part of OpenMediaVault, but is offered by third-party
 ## developers as a service to OpenMediaVault users.
-# deb https://openmediavault.github.io/packages/ arrakis partner
+# deb https://openmediavault.github.io/packages/ ${OMV_Name} partner
 EOF
 
-debconf-apt-progress -- apt-get update
 read HOSTNAME </etc/hostname
 read TZ </etc/timezone
+debconf-apt-progress -- apt-get update
 debconf-set-selections <<< "postfix postfix/mailname string ${HOSTNAME}"
 debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault postfix
-# URL='https://github.com/OpenMediaVault-Plugin-Developers/packages/raw/master/openmediavault-omvextrasorg_latest_all3.deb'; FILE=`mktemp`; wget "$URL" -qO $FILE && dpkg -i $FILE; rm $FILE
+FILE=`mktemp`; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE; rm $FILE
 /usr/sbin/omv-update
 
 # Install flashmemory plugin and netatalk by default, use nice logo for the latter,
 # disable OMV monitoring by default
 . /usr/share/openmediavault/scripts/helper-functions
-apt-get -y -q --allow-unauthenticated install openmediavault-netatalk
+apt-get -y -q --allow-unauthenticated install openmediavault-flashmemory openmediavault-netatalk
 AFP_Options="mimic model = Macmini"
 SMB_Options="min receivefile size = 16384\nwrite cache size = 524288\ngetwd cache = yes\nsocket options = TCP_NODELAY IPTOS_LOWDELAY"
 xmlstarlet ed -L -u "/config/services/afp/extraoptions" -v "$(echo -e "${AFP_Options}")" ${OMV_CONFIG_FILE}
@@ -407,10 +350,10 @@ xmlstarlet ed -L -u "/config/system/network/dns/hostname" -v "${HOSTNAME}" ${OMV
 /usr/sbin/omv-rpc -u admin "perfstats" "set" '{"enable":false}'
 /usr/sbin/omv-rpc -u admin "config" "applyChanges" '{ "modules": ["monit","rrdcached","collectd"],"force": true }'
 sed -i 's|-j /var/lib/rrdcached/journal/ ||' /etc/init.d/rrdcached
-for i in netatalk samba ssh ntp timezone monit rrdcached collectd ; do
+for i in netatalk samba flashmemory ssh ntp timezone monit rrdcached collectd ; do
 	/usr/sbin/omv-mkconf $i
 done
-# /sbin/folder2ram -enablesystemd
+/sbin/folder2ram -enablesystemd
 
 # Prevent accidentally destroying board performance by clicking around in OMV UI
 if [ -f /etc/default/cpufrequtils ]; then
