@@ -30,7 +30,7 @@ VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
 LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
 # OMV
 OMV_STATUS="$([[ -f /etc/default/openmediavault ]] && echo "on" || echo "off" )"
-[[ "$family" == "Debian" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
+[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
 # MINIdlna
 MINIDLNA_STATUS="$([[ -f /etc/minidlna.conf ]] && echo "on" || echo "off" )"
 LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "$MINIDLNA_STATUS" )
@@ -291,10 +291,10 @@ install_omv (){
 # Not yet recommended, OMV package repository lacks authentication, no flashmemory plugin available,
 # same with all other OMV-Extras, only for developers and OMV contributors!
 
-if [ "$family" != "Debian" ]; then
+if [[ "$family" == "Ubuntu" ]; then
 	dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
 	sleep 5
-	exit
+	exit 1
 fi
 
 case $distribution in
@@ -311,7 +311,7 @@ esac
 sed -i "s/^# en_US.UTF-8/en_US.UTF-8/" /etc/locale.gen
 locale-gen
 	
-wget -qO - packages.openmediavault.org/public/archive.key | apt-key add -
+wget -qO - https://packages.openmediavault.org/public/archive.key | apt-key add -
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
 
 cat > /etc/apt/sources.list.d/openmediavault.list << EOF
