@@ -288,8 +288,7 @@ install_omv (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # On Debian install OpenMediaVault 3 (Jessie) or 4 (Stretch)
 #------------------------------------------------------------------------------------------------------------------------------------------
-# Not yet recommended, OMV package repository lacks authentication, no flashmemory plugin available,
-# same with all other OMV-Extras, only for developers and OMV contributors!
+# TODO: Some OMV packages lack authentication, flashmemory-plugin currently doesn't work as expected
 
 if [[ "$family" == "Ubuntu" ]]; then
 	dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
@@ -326,26 +325,29 @@ deb https://openmediavault.github.io/packages/ ${OMV_Name}-proposed main
 EOF
 
 debconf-apt-progress -- apt-get update
-apt-get --allow-unauthenticated install openmediavault-keyring
-apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
 
 read HOSTNAME </etc/hostname
 read TZ </etc/timezone
 debconf-set-selections <<< "postfix postfix/mailname string ${HOSTNAME}"
-SPACE_NEEDED=$(apt-get --assume-no --fix-missing --no-install-recommends install openmediavault postfix 2>/dev/null | awk -F" " '/additional disk space will be used/ {print $4}')
+SPACE_NEEDED=$(apt-get --assume-no --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault postfix 2>/dev/null | awk -F" " '/additional disk space will be used/ {print $4}')
 SPACE_AVAIL=$(df -k / | awk -F" " '/\/$/ {printf ("%0.0f",$4/1200); }')
 if [ ${SPACE_AVAIL} -lt ${SPACE_NEEDED} ]; then
 	dialog --backtitle "$backtitle" --title "No space left on device" --msgbox "\nOpenMediaVault needs ${SPACE_NEEDED} MB for installation while only ${SPACE_AVAIL} MB are available." 7 52
 	exit 1
 fi
-apt-get -y --fix-missing --no-install-recommends install openmediavault postfix
-FILE=`mktemp`; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE; rm $FILE
-/usr/sbin/omv-update
+apt-get --allow-unauthenticated install openmediavault-keyring
+apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
+debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault postfix
+FILE=`mktemp`; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE ; rm $FILE
+# /usr/sbin/omv-update
+debconf-apt-progress -- apt-get update
+debconf-apt-progress -- apt-get --yes --force-yes --fix-missing --auto-remove --allow-unauthenticated \
+  --show-upgraded --option DPkg::Options::="--force-confold" dist-upgrade
 
 # Install flashmemory plugin and netatalk by default, use nice logo for the latter,
 # disable OMV monitoring by default
 . /usr/share/openmediavault/scripts/helper-functions
-apt-get -y --fix-missing --no-install-recommends --auto-remove install openmediavault-flashmemory openmediavault-netatalk
+debconf-apt-progress -- apt-get -y --fix-missing --no-install-recommends --auto-remove install openmediavault-flashmemory openmediavault-netatalk
 AFP_Options="mimic model = Macmini"
 SMB_Options="min receivefile size = 16384\nwrite cache size = 524288\ngetwd cache = yes\nsocket options = TCP_NODELAY IPTOS_LOWDELAY"
 xmlstarlet ed -L -u "/config/services/afp/extraoptions" -v "$(echo -e "${AFP_Options}")" ${OMV_CONFIG_FILE}
@@ -362,7 +364,7 @@ sed -i 's|-j /var/lib/rrdcached/journal/ ||' /etc/init.d/rrdcached
 for i in netatalk samba flashmemory ssh ntp timezone monit rrdcached collectd ; do
 	/usr/sbin/omv-mkconf $i
 done
-# /sbin/folder2ram -enablesystemd
+/sbin/folder2ram -enablesystemd
 
 # Prevent accidentally destroying board performance by clicking around in OMV UI since
 # OMV sets 'powersave' governor when touching 'Power Management' settings. 
@@ -913,7 +915,6 @@ export LANG=C
 echo -e "\nChecking dependencies. This might take a while."
 apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
 lsb-release bc expect html2text > /dev/null
-export DEBIAN_FRONTEND=noninteractive
 
 # gather some info
 #
