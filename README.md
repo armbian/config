@@ -4,7 +4,7 @@ Utility for configuring your board, adjust services and install applications. It
 
 	armbian-config
 
-![](https://www.armbian.com/wp-content/uploads/2017/05/confsoft.png)
+![](images/armbian-config.png)
 
 **Configuration**
 
