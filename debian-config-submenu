@@ -57,6 +57,10 @@ CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd st
 						sleep 2
 						sed '/### IEEE 802.11a\>/,/^### IEEE 802.11a\>/ s/^# *//' -i /etc/hostapd.conf
 						CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
+						if [[ -n "$CHECK" ]]; then
+							check_channels
+						fi
+						CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
 						if [[ -z "$CHECK" ]]; then
 								dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0" 5 51
 								sleep 2
@@ -68,6 +72,7 @@ CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd st
 								fi
 							else
 								dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nWireless 802.11a \Z1(5Ghz)\Z0 is not supported!" 5 45
+								sed -i "s/^channel=.*/channel=5/" /etc/hostapd.conf
 								sed '/## IEEE 802.11a\>/,/^## IEEE 802.11a\>/ s/.*/#&/' -i /etc/hostapd.conf
 						fi
 					else
@@ -104,6 +109,7 @@ service hostapd stop; echo 20; sleep 1;\
 service dnsmasq stop; echo 30; sleep 1;\
 [[ "$1" == "reload" ]] && service dnsmasq start && echo 60 && sleep 1 && service hostapd start && echo 80 && sleep 1;\
 service network-manager start; echo 90; sleep 5;) | dialog --backtitle "$BACKTITLE" --title " $WHATODO " --gauge "" 6 70 0
+systemctl restart systemd-resolved.service
 }
 
 
@@ -156,10 +162,24 @@ dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --
 function check_ht_capab ()
 {
 declare -a arr=("[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40][SMPS-STATIC]" "[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]")
+local j=0
 for i in "${arr[@]}"
 do
-	echo "$i"
+	j=$((j+1))
+	dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing high throughput capabilities \Z1(${j})\Z0" 5 46
 	sed -i "s/^ht_capab=.*/ht_capab=$i/" /etc/hostapd.conf
+	CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
+	if [[ -z "$CHECK" ]]; then break; fi
+done
+}
+
+function check_channels ()
+{
+declare -a arr=("36" "40")
+for i in "${arr[@]}"
+do
+	dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing channels \Z1(${i})\Z0" 5 26
+	sed -i "s/^channel=.*/channel=$i/" /etc/hostapd.conf
 	CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
 	if [[ -z "$CHECK" ]]; then break; fi
 done
@@ -355,12 +375,14 @@ function get_wlan_interface ()
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
 	WLAN_INTERFACES=($(nmcli dev status | grep wifi | grep disconnected |awk '{print $1}'))
+
 	local LIST=()
 	for i in "${WLAN_INTERFACES[@]}"
 	do
 			LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
 	LIST_LENGHT=$((${#LIST[@]}/2));
+
 	if [ "$LIST_LENGHT" -eq 1 ]; then
 			WIRELESS_ADAPTER=${WLAN_INTERFACES[0]}
 	else
@@ -545,12 +567,15 @@ while true; do
 
 	if [[ -n $HOSTAPDINFO && -n $HOSTAPDSTATUS ]]; then
 		LISTLENGHT=$((LISTLENGHT+2))
+		chipid=$(dmesg | grep $(grep ^interface /etc/hostapd.conf | sed 's/interface=//g') | head -1 | sed 's/\[.*\]//g' |  awk '{print $1}')
 		disclaimer=$disclaimer$"\n\Z0Hotspot SSID: \Z1$HOSTAPDINFO\Zn Band:";
 		if [[ `grep ^hw_mode=a /etc/hostapd.conf` ]]; then local band="5Ghz"; else band="2.4Ghz"; fi
 		if [[ `grep ^ieee80211n /etc/hostapd.conf` ]]; then local type="N"; fi
 		if [[ `grep ^ieee80211ac /etc/hostapd.conf` ]]; then local type="AC"; fi
-		disclaimer=$disclaimer$" \Z1${band} ${type}\Z0 "
+		disclaimer=$disclaimer$" \Z1${band} ${type}\Z0"
+		if [ -n $chipid ]; then disclaimer=$disclaimer$"\n\nChip: \Z1${chipid}\Z0"; fi
 		if [ "$HOSTAPDCLIENTS" -gt "0" ]; then disclaimer=$disclaimer$" Connected clients: \Z1$HOSTAPDCLIENTS\Zn"; fi
+		if [ -n $chip ] || [ "$HOSTAPDCLIENTS" -gt "0" ]; then LISTLENGHT=$((LISTLENGHT+2)); fi
 		disclaimer=$disclaimer$"\n";
 	fi
 	#disclaimer=$disclaimer"\n"

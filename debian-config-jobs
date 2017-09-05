@@ -186,6 +186,7 @@ function jobs ()
 				rm -f /etc/network/interfaces.d/armbian.ap.nat
 				rm -f /etc/network/interfaces.d/armbian.ap.bridge
 				sed -i '/^iptables/ d' /etc/rc.local
+				sed '/keyfile\|unmanaged-devices/ d' -i /etc/NetworkManager/NetworkManager.conf
 				iptables -F
 				# reload services
 				reload-nety
@@ -197,7 +198,14 @@ function jobs ()
 		else
 				# remove interfaces from managed list
 				sed '/keyfile\|unmanaged-devices/ d' -i /etc/NetworkManager/NetworkManager.conf
-				service network-manager restart; sleep 2
+
+				# start with basic config
+				if grep -q "^## IEEE 802.11ac" /etc/hostapd.conf; then sed '/## IEEE 802.11ac\>/,/^## IEEE 802.11ac\>/ s/.*/#&/' -i /etc/hostapd.conf; fi
+				if grep -q "^## IEEE 802.11a" /etc/hostapd.conf; then sed '/## IEEE 802.11a\>/,/^## IEEE 802.11a\>/ s/.*/#&/' -i /etc/hostapd.conf; fi
+				if grep -q "^## IEEE 802.11n" /etc/hostapd.conf; then sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf; fi
+				sed -i "s/^channel=.*/channel=5/" /etc/hostapd.conf
+
+				service network-manager restart; sleep 3
 				# change special adapters to AP mode
 				wlan_exceptions "on"
 				# check for WLAN interfaces
@@ -205,7 +213,7 @@ function jobs ()
 				# add interface to unmanaged list
 				echo "[keyfile]" >> /etc/NetworkManager/NetworkManager.conf
 				echo "unmanaged-devices=interface-name:$WIRELESS_ADAPTER" >> /etc/NetworkManager/NetworkManager.conf
-				service network-manager restart; sleep 2
+				service network-manager restart; sleep 3
 				# display dialog
 				dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing nl80211 hostapd driver compatibility." 7 50
 				apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd > /dev/null
@@ -229,15 +237,16 @@ function jobs ()
 					apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd-realtek > /dev/null
 					# change to selected interface
 					sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
+					# add allow cli access if not exists. temporally
+					if ! grep -q "ctrl_interface" /etc/hostapd.conf; then
+						echo "ctrl_interface=/var/run/hostapd" >> /etc/hostapd.conf
+						echo "ctrl_interface_group=0" >> /etc/hostapd.conf
+					fi
+					#
+					check_advanced_modes
+					#
 				fi
-				# add allow cli access if not exists. temporally
-				if ! grep -q "ctrl_interface" /etc/hostapd.conf; then
-					echo "ctrl_interface=/var/run/hostapd" >> /etc/hostapd.conf
-					echo "ctrl_interface_group=0" >> /etc/hostapd.conf
-				fi
-				#
-				check_advanced_modes
-				#
+
 				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
 				# if both fails there is other problem
 				if [[ -n "$CHECK" ]]; then
