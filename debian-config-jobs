@@ -106,11 +106,19 @@ function jobs ()
 	"Display" )
 		# show display modes menu
 		get_h3modes
-		dialog --title " Display output type " --colors --help-button --help-label "Back" --no-label "DVI" --yes-label "HDMI" --backtitle "$BACKTITLE" --yesno "\nIn case you use an HDMI-to-DVI converter choose DVI!" 7 57
+		dialog --title " Display output type " --colors --help-button --help-label "Back" --no-label "DVI" --yes-label "HDMI" \
+		--backtitle "$BACKTITLE" --yesno "\nIn case you use an HDMI-to-DVI converter choose DVI!" 7 57
 		output_type=$?
 		if [[ $output_type = 0 || $output_type = 1 ]]; then
-			if [[ $output_type = 0 ]]; then display_cmd="h3disp -m $SCREEN_RESOLUTION"; else display_cmd="h3disp -m $SCREEN_RESOLUTION -d";fi
-			dialog --title " Display resolution " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno "\nSetting new screen mode.\n\nExecuting \Z1$display_cmd\Z0 and reboot?   " 9 56
+
+			if [[ $output_type = 0 ]]; then
+				display_cmd="h3disp -m $SCREEN_RESOLUTION";
+				else
+				display_cmd="h3disp -m $SCREEN_RESOLUTION -d";
+			fi
+
+			dialog --title " Display resolution " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno \
+			"\nSetting new screen mode.\n\nExecuting \Z1$display_cmd\Z0 and reboot?   " 9 56
 			if [[ $? = 0 ]]; then
 				eval $display_cmd > /dev/null
 				reboot
@@ -130,7 +138,9 @@ function jobs ()
 	"IP" )
 			# select default interfaces if there is more than one
 			select_default_interface
-			dialog --title " IP address assignment " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "DHCP" --no-label "Static" --yesno "\n\Z1DHCP:\Z0   automatic IP asignment by your router or DHCP server\n\n\Z1Static:\Z0 manually fixed IP address" 9 70
+			dialog --title " IP address assignment " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" \
+			--yes-label "DHCP" --no-label "Static" --yesno \
+			"\n\Z1DHCP:\Z0   automatic IP asignment by your router or DHCP server\n\n\Z1Static:\Z0 manually fixed IP address" 9 70
 			exitstatus=$?;
 			if [[ $exitstatus = 0 ]]; then
 				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
@@ -149,6 +159,7 @@ function jobs ()
 			wlan_exceptions "off"
 			nmtui-connect
 	;;
+
 
 	# Connect to wireless access point
 	#
@@ -169,10 +180,14 @@ function jobs ()
 		CURRENT_UUID=$(nmcli -f DEVICE,TYPE,STATE device status | grep -w " wifi " | grep -w " disconnected")
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			if [[ -n $HOSTAPDBRIDGE ]]; then
-				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop and reboot" --no-label "Edit" --yesno "\n\Z1Stop:\Z0 stop and reboot\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
+				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
+				--help-label "Cancel" --yes-label "Stop and reboot" --no-label "Edit" --yesno \
+				"\n\Z1Stop:\Z0 stop and reboot\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
 
 			else
-				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label  "Stop" --no-label "Edit" --yesno "\n\Z1Stop:\Z0 stop providing Access Point\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
+				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
+				--help-label "Cancel" --yes-label  "Stop" --no-label "Edit" --yesno \
+				"\n\Z1Stop:\Z0 stop providing Access Point\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
 			fi
 			exitstatus=$?;
 			if [[ $exitstatus = 0 ]]; then
@@ -215,7 +230,8 @@ function jobs ()
 				echo "unmanaged-devices=interface-name:$WIRELESS_ADAPTER" >> /etc/NetworkManager/NetworkManager.conf
 				service network-manager restart; sleep 3
 				# display dialog
-				dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing nl80211 hostapd driver compatibility." 7 50
+				dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox \
+				"\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing nl80211 hostapd driver compatibility." 7 50
 				apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd > /dev/null
 				# change to selected interface
 				sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
@@ -233,7 +249,8 @@ function jobs ()
 				#
 				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
 				if [[ -n "$CHECK" ]]; then
-					dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing Realtek hostapd driver compatibility." 7 50
+					dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox \
+					"\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing Realtek hostapd driver compatibility." 7 50
 					apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd-realtek > /dev/null
 					# change to selected interface
 					sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
@@ -260,10 +277,16 @@ function jobs ()
 					break
 				fi
 
-			#	dialog --title " Choose Access Point mode for $WIRELESS_ADAPTER " --colors --backtitle "$BACKTITLE" --no-label "Bridge" --yes-label "NAT" --yesno "\n\Z1NAT:\Z0 with own DHCP server, out of your primary network\n\n\Z1Bridge:\Z0 wireless clients will use your routers DHCP server" 9 70
-			#	response=$?
-			# let's remove bridge for this simple configurator
-			response=0
+				# let's remove bridge out for this simple configurator
+				#
+				# dialog --title " Choose Access Point mode for $WIRELESS_ADAPTER " --colors --backtitle "$BACKTITLE" --no-label "Bridge" \
+				# --yes-label "NAT" --yesno "\n\Z1NAT:\Z0 with own DHCP server, out of your primary network\n\
+				# \n\Z1Bridge:\Z0 wireless clients will use your routers DHCP server" 9 70
+				# response=$?
+				#
+				# let's remove bridge out for this simple configurator
+
+				response=0
 
 				# select default interfaces if there is more than one
 				select_default_interface
@@ -287,8 +310,15 @@ function jobs ()
 					# NAT
 					0)
 						TEMP_CONF="/etc/network/interfaces.d/armbian.ap.nat"
-						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != *ii* ]]; then debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq; fi
-						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' iptables 2>/dev/null) != *ii* ]]; then debconf-apt-progress -- apt-get -qq -y --no-install-recommends install iptables; fi
+
+						# install dnsmas and iptables
+						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != *ii* ]]; then
+							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq;
+						fi
+
+						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' iptables 2>/dev/null) != *ii* ]]; then
+							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install iptables;
+						fi
 
 						echo -e "# armbian NAT hostapd\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " > $TEMP_CONF
 						echo -e "\taddress 172.24.1.1\n\tnetmask 255.255.255.0\n\tnetwork 172.24.1.0\n\tbroadcast 172.24.1.255" >> $TEMP_CONF
@@ -360,13 +390,14 @@ function jobs ()
 	"Advanced" )
 		dialog --backtitle "$BACKTITLE" --title " Edit ifupdown network configuration /etc/network/interfaces" --no-collapse \
 		--ok-label "Save" --editbox /etc/network/interfaces 30 0 2> /etc/network/interfaces.out
-		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && service network-manager restart && service networking restart
+		[[ $? = 0 ]] && mv /etc/network/interfaces.out /etc/network/interfaces && reload-nety "reload"
 	;;
 
 	# Remove automatic wifi conections
 	#
 	"Forget" )
-		nmcli --fields UUID,TIMESTAMP-REAL,TYPE con show | grep wireless |  awk '{print $1}' | while read line; do nmcli con delete uuid  $line; done > /dev/null
+		nmcli --fields UUID,TIMESTAMP-REAL,TYPE con show | grep wireless |  awk '{print $1}' | while read line; \
+		do nmcli con delete uuid  $line; done > /dev/null
 	;;
 
 
@@ -423,7 +454,8 @@ function jobs ()
 		if [[ $? = 0 ]]; then
 			debconf-apt-progress -- apt-get update
 			debconf-apt-progress -- apt-get -y upgrade
-			dialog --title " Firmware update " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno "\nFirmware has been updated. Reboot?   " 7 39
+			dialog --title " Firmware update " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno \
+			"\nFirmware has been updated. Reboot?   " 7 39
 			if [[ $? = 0 ]]; then reboot; fi
 		fi
 	;;
@@ -439,7 +471,8 @@ function jobs ()
 	# Freeze and unfreeze kernel and board support packages
 	#
 	"Hold" | "Unhold" )
-		dialog --title " Update " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno "\nDo you want to ${1,,} kernel updates?" 7 50
+		dialog --title " Update " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
+		"\nDo you want to ${1,,} kernel updates?" 7 50
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
 		exceptions "$BRANCH"
@@ -542,49 +575,60 @@ function jobs ()
 	# Toggle overlay items
 	#
 	"Overlays" )
-	# check if user agree to enter this area
-			beta_disclaimer "You are entering beta area. Functions are not yet done - in case of troubles and advanced usage, check https://docs.armbian.com"
-			if [[ -n $ACKNOWLEDGEMENT ]]; then
-				overlay_prefix=$(cat /boot/armbianEnv.txt | grep overlay_prefix | sed 's/overlay_prefix=//g')
-				TARGET_BRANCH=$BRANCH
-				exceptions "$BRANCH"
-				while true; do
-				HOME="/boot/dtb/overlay"
-				MOTD=()
-				LINES=()
-				LIST_CONST=2
-				j=0
-				DIALOG_CANCEL=1
-				DIALOG_ESC=255
+		# check if user agree to enter this area
+		CHANGES="false"
+		while true; do
+			overlay_prefix=$(cat /boot/armbianEnv.txt | grep overlay_prefix | sed 's/overlay_prefix=//g')
+			TARGET_BRANCH=$BRANCH
+			exceptions "$BRANCH"
+			HOME="/boot/dtb/overlay"
+			MOTD=()
+			LINES=()
+			LIST_CONST=-3
+			j=0
+			DIALOG_CANCEL=1
+			DIALOG_ESC=255
+			while read line
+			do
+				STATUS=$([[ -n $(cat /boot/armbianEnv.txt | grep overlays | grep -w ${line}) ]] && echo "on")
+				DESC=$(description "$line")
+				MOTD+=( "$line" "$DESC" "$STATUS")
+				LINES[ $j ]=$line
+				(( j++ ))
+			done < <(ls -1 ${HOME}/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g' )
 
-				while read line
-				do
-					STATUS=$([[ -n $(cat /boot/armbianEnv.txt | grep overlays | grep -w ${line}) ]] && echo "on")
-					DESC=$(description "$line")
-					MOTD+=( "$line" "$DESC" "$STATUS")
-					LINES[ $j ]=$line
-					(( j++ ))
-				done < <(ls -1 $HOME/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g' )
+			LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
 
-						LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
+			exec 3>&1
+				selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle hardware config" --clear --cancel-label \
+				"Back" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+				$LISTLENGHT 70 $LISTLENGHT "${MOTD[@]}" 2>&1 1>&3)
+				exit_status=$?
+			exec 3>&-
 
-						exec 3>&1
-						selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle hardware config" --clear --cancel-label \
-						"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
-						$LISTLENGHT 70 22 "${MOTD[@]}" 2>&1 1>&3)
-						exit_status=$?
-						exec 3>&-
-						case $exit_status in
-						$DIALOG_CANCEL | $DIALOG_ESC)
-								break
-								;;
-						0)
-							newoverlays="$(echo "$selection" | sed "s|[^ ]* *|&|g")"
-							sed -i "s/^overlays=.*/overlays=$newoverlays/" /boot/armbianEnv.txt || cat "overlays=$newoverlays" >> /boot/armbianEnv.txt
-						;;
-						esac
-				done
-			fi
+			case $exit_status in
+					$DIALOG_ESC)
+					break
+				;;
+				0)
+					CHANGES="true"
+					newoverlays="$(echo "$selection" | sed "s|[^ ]* *|&|g")"
+					sed -i "s/^overlays=.*/overlays=$newoverlays/" /boot/armbianEnv.txt
+					if ! grep -q "overlays" /boot/armbianEnv.txt; then echo "overlays=$newoverlays" >> /boot/armbianEnv.txt; fi
+					if [[ -z $newoverlays ]]; then sed -i "/^overlays/d" /boot/armbianEnv.txt; fi
+				;;
+				1)
+					if [[ "$CHANGES" == "true" ]]; then
+					dialog --title " Applying changes " --backtitle "$BACKTITLE" --yes-label "Reboot" \
+					--no-label "Cancel" --yesno "\nReboot to enable new features?" 7 34
+					if [[ $? = 0 ]]; then reboot; else break; fi
+					else
+						break
+					fi
+				;;
+				esac
+			done
+
 	;;
 
 
@@ -630,6 +674,60 @@ function jobs ()
 	;;
 
 
+	# Toggle sshd options
+	#
+	"SSHd" )
+		while true; do
+
+			DIALOG_CANCEL=1
+			DIALOG_ESC=255
+			LIST_CONST=8
+
+			PermitRootLogin="";
+			PubkeyAuthentication="";
+			X11Forwarding="";
+
+			[[ $(grep "^PermitRootLogin" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && PermitRootLogin="on"
+			[[ $(grep "^PubkeyAuthentication" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && PubkeyAuthentication="on"
+			[[ $(grep "^X11Forwarding" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && X11Forwarding="on"
+
+			MOTD=("X11Forwarding" "X11 forwarding" "$X11Forwarding" \
+			"PermitRootLogin" "Allow root login" "$PermitRootLogin" \
+			"PubkeyAuthentication" "Using public keys for SSH authentication" "$PubkeyAuthentication")
+
+			LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
+
+			exec 3>&1
+				selection=$(dialog --backtitle "$BACKTITLE" --title " Toggle sshd options " --clear --cancel-label \
+				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+				$LISTLENGHT 74 21 "${MOTD[@]}" 2>&1 1>&3)
+				exit_status=$?
+			exec 3>&-
+
+			case $exit_status in
+				$DIALOG_CANCEL | $DIALOG_ESC)
+				break
+				;;
+				0)
+					# read values, adjust config and restart service
+					my_array=($selection)
+					for((n=0;n<${#MOTD[@]};n++)); do
+						if (( $(($n % 3 )) == 0 )); then
+								if [[ " ${my_array[*]} " == *" ${MOTD[$n]} "* ]]; then
+									sed -i "s/#\?${MOTD[$n]}.*/${MOTD[$n]} yes/" /etc/ssh/sshd_config
+									else
+									sed -i "s/#\?${MOTD[$n]}.*/${MOTD[$n]} no/" /etc/ssh/sshd_config
+								fi
+						fi
+					done
+					service sshd restart
+				;;
+				esac
+		done
+	;;
+
+
+
 	# Switch to daily builds
 	#
 	"Nightly" )
@@ -668,33 +766,34 @@ function jobs ()
 	#
 	"Switch" )
 		aval_kernel
-		[[ $exitstatus = 1 ]] && break
-		exceptions "$INSTALL_KERNEL"
-		dialog --title " Install and reboot " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
-		--yesno "\nSwitching to linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \n\nMake sure you know what you are doing! \
-		\n\nBoard config will be reverted to defaults." 11 46
-		if [[ $? = 0 ]]; then
-			# remove old
-			dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel." 5 28
-			apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-			linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-			linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
-			# if test download is ok, remove old kernel
+		if [[ $exitstatus = 0 ]]; then
+			exceptions "$INSTALL_KERNEL"
+			dialog --title " Install and reboot " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+			--yesno "\nSwitching to linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \n\nMake sure you know what you are doing! \
+			\n\nBoard config will be reverted to defaults." 11 46
 			if [[ $? = 0 ]]; then
-				aptitude remove ~nlinux-image --quiet=100 >> /var/log/upgrade.log
-				aptitude remove ~nlinux-dtb --quiet=100 >> /var/log/upgrade.log
-				aptitude remove ~nlinux-headers --quiet=100 >> /var/log/upgrade.log
-			fi
-			# install new
-			INSTALL_DTB=""
-			[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-			debconf-apt-progress -- apt-get -y	--no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-			linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-			linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
+				# remove old
+				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel." 5 28
+				apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
+				# if test download is ok, remove old kernel
+				if [[ $? = 0 ]]; then
+					aptitude remove ~nlinux-image --quiet=100 >> /var/log/upgrade.log
+					aptitude remove ~nlinux-dtb --quiet=100 >> /var/log/upgrade.log
+					aptitude remove ~nlinux-headers --quiet=100 >> /var/log/upgrade.log
+				fi
+				# install new
+				INSTALL_DTB=""
+				[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+				debconf-apt-progress -- apt-get -y	--no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
 
-			dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nNew kernel was installed. Reboot?" 7 64
-			exitstatus=$?;
-			[[ $exitstatus = 0 ]] &&  reboot
+				dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nNew kernel was installed. Reboot?" 7 64
+				exitstatus=$?;
+				[[ $exitstatus = 0 ]] &&  reboot
+			fi
 		fi
 	;;
 

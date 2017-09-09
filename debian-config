@@ -7,23 +7,63 @@
 # warranty of any kind, whether express or implied.
 
 
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# check for root
+#
+if [[ $EUID != 0 ]]; then
+	echo "Warning. This script requires root privileges. Exiting ..."
+	sleep 2
+	exit
+fi
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# check if we have internet connection to install dependencies
+#
+echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
+if [[ $? -ne 0 ]]; then
+		read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. \
+		Press CTRL C to stop to stop or any key to ignore and continue."
+	else
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' bc 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install bc
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' expect 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install expect
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' rcconf 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install rcconf
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dialog 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install dialog
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' network-manager 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install network-manager
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' sunxi-tools 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install sunxi-tools
+fi
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
 # load functions
 source "$0""-submenu"
 source "$0""-jobs"
 
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
 # Main menu
+#
 while true; do
+
+
 	LIST=()
 
-	LIST+=( "Software" "System and 3rd party software install" )
-	LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
-	LIST+=( "System" "General system settings" )
-	LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
-	LIST+=( "Help" "Documentation, support, sources" )
+		LIST+=( "Software" "System and 3rd party software install" )
+		LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
+		LIST+=( "System" "General system settings" )
+		LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
+		LIST+=( "Help" "Documentation, support, sources" )
 
-	# count number of menu items to adjust window sizee
-	LISTLENGHT="$((9+${#LIST[@]}/2))"
+	# count number of menu items to adjust window size
+	LISTLENGHT="$((11+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
+	MENUTITLE="Configuration tool for the \Z1${BOARD_NAME}\Z0 running \Z1$DISTRO $DISTROID\Z0"
 
 	# main dialog routine
 	DIALOG_CANCEL=1
@@ -31,29 +71,36 @@ while true; do
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
-	--cancel-label "Exit to shell" --menu "\nConfiguration tool for the \Z1${BOARD_NAME}\Z0 running \Z1$DISTRO $DISTROID\Z0 \n " $LISTLENGHT 70 $BOXLENGHT \
-	"${LIST[@]}" 2>&1 1>&3)
+	--cancel-label "Exit to shell" --menu "\n$MENUTITLE \n \nSupport: \Z1https://www.armbian.com\Z0\n " \
+	$LISTLENGHT ${#MENUTITLE} $BOXLENGHT "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
+
 	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && exit
 
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
+
 	case $selection in
 
-	"Software" )
-		submenu_software
-	;;
-	"Networking" )
-		submenu_networking
-	;;
-	"System" )
-		submenu_settings
-	;;
-	"Armbian" )
-		submenu_hardware
-	;;
-	"Help" )
-		show_box "Info" "This tool provides a straightforward way of configuring the \Z2${BOARD_NAME}\Z0. \n \nAlthough it can be run at any time, some of the options may have difficulties if you alter system settings manually.\n\n\Z1Documentation:\Z0 https://docs.armbian.com\n\n\Z1Support:\Z0 https://forum.armbian.com\n\n\Z1Sources:\Z0 https://github.com/armbian/config" "18"
-	;;
-	esac
+		"Software" )
+			submenu_software
+		;;
+		"Networking" )
+			submenu_networking
+		;;
+		"System" )
+			submenu_settings
+		;;
+		"Armbian" )
+			submenu_hardware
+		;;
+		"Help" )
+			show_box "Info" "This tool provides a straightforward way of configuring the \Z2${BOARD_NAME}\Z0. \
+			\n \nAlthough it can be run at any time, some of the options may have difficulties if you alter system settings manually.\n\
+			\n\Z1Documentation:\Z0 https://docs.armbian.com\n\n\Z1Support:\Z0 https://forum.armbian.com\n
+			\n\Z1Sources:\Z0 https://github.com/armbian/config" "18"
+		;;
+		esac
+
 done
+#-----------------------------------------------------------------------------------------------------------------------------------------#
