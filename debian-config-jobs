@@ -191,12 +191,12 @@ function jobs ()
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			if [[ -n $HOSTAPDBRIDGE ]]; then
 				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
-				--help-label "Cancel" --yes-label "Stop and reboot" --no-label "Edit" --yesno \
+				--help-label "Back" --yes-label "Stop and reboot" --no-label "Edit" --yesno \
 				"\n\Z1Stop:\Z0 stop and reboot\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
 
 			else
 				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
-				--help-label "Cancel" --yes-label  "Stop" --no-label "Edit" --yesno \
+				--help-label "Back" --yes-label  "Stop" --no-label "Edit" --yesno \
 				"\n\Z1Stop:\Z0 stop providing Access Point\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
 			fi
 			exitstatus=$?;
@@ -477,8 +477,8 @@ function jobs ()
 	# Freeze and unfreeze kernel and board support packages
 	#
 	"Hold" | "Unhold" )
-		dialog --title " Update " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
-		"\nDo you want to ${1,,} kernel updates?" 7 50
+		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Back" --yesno \
+		"\nDo you want to ${1,,} kernel updates?" 7 42
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
 		exceptions "$BRANCH"
@@ -497,15 +497,20 @@ function jobs ()
 	"Desktop" )
 		if [[ -n $(service lightdm status 2> /dev/null | grep -w active | grep -w running) || -n $(service nodm status | grep -w active | grep -w running) ]]; then
 			dialog --title " Desktop is enabled and running " --backtitle "$BACKTITLE" \
-			--yes-label "Stop" --no-label "Cancel" --yesno "\nDo you want to stop and disable this service?" 7 50
+			--yes-label "Stop" --no-label "Back" --yesno "\nDo you want to stop and disable this service?" 7 50
 			exitstatus=$?;
-			[[ $exitstatus = 0 ]] && service nodm stop && service lightdm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
+			[[ $exitstatus = 0 ]] && service nodm stop && service lightdm stop && \
+			sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
 		else
-			dialog --title " Choose a display manager " --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Lightdm" \
-			--no-label "Nodm" --yesno "\nLightdm = full featured login display manager\nNodm = autoloading into desktop" 8 70
+			dialog --colors --title " Choose a display manager " --backtitle "$BACKTITLE" --help-button --help-label "Back" --yes-label "Lightdm" \
+			--no-label "Nodm" --yesno "\n\Z1Lightdm\Z0 = full featured login display manager\n\Z1Nodm\Z0    = autoloading into desktop" 8 70
 			exitstatus=$?;
-			[[ $exitstatus = 0 ]] && [[ -f /etc/X11/default-display-manager ]] && echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager && debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm && systemctl start lightdm.service
-			[[ $exitstatus = 1 ]] && [[ -f /etc/X11/default-display-manager ]] && echo "/usr/sbin/nodm" > /etc/X11/default-display-manager && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
+			[[ $exitstatus = 0 ]] && [[ -f /etc/X11/default-display-manager ]] && \
+			echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager && \
+			debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm && systemctl start lightdm.service
+			[[ $exitstatus = 1 ]] && [[ -f /etc/X11/default-display-manager ]] && \
+			echo "/usr/sbin/nodm" > /etc/X11/default-display-manager && \
+			sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
 		fi
 	;;
 
@@ -682,7 +687,7 @@ function jobs ()
 
 	# Toggle sshd options
 	#
-	"SSHd" )
+	"SSH" )
 		while true; do
 
 			DIALOG_CANCEL=1
@@ -705,7 +710,7 @@ function jobs ()
 
 			exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title " Toggle sshd options " --clear --cancel-label \
-				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+				"Back" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
 				$LISTLENGHT 74 21 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 			exec 3>&-
@@ -737,7 +742,7 @@ function jobs ()
 	# Switch to daily builds
 	#
 	"Nightly" )
-		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
 		--yesno "\nYou are switching to automated nightly repository which is untested and might break your system.\
 		Are you fine with that?" 9 48
 		if [[ $? = 0 ]]; then
@@ -745,7 +750,7 @@ function jobs ()
 			debconf-apt-progress -- apt-get update
 			debconf-apt-progress -- apt-get -y upgrade
 			dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" \
-			--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
+			--no-label "Back" --yesno "\nReboot to apply new settings?" 7 34
 			if [[ $? = 0 ]]; then reboot; fi
 		fi
 	;;
@@ -754,14 +759,13 @@ function jobs ()
 	# Switch to stable builds
 	#
 	"Stable" )
-		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
-		--yesno "\nYou are switching back to stable respository where you are going to get future updates.\
-		Are you fine with that?" 9 44
+		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
+		--yesno "\nYou are switching back to stable respository where you are going to get future updates. Are you fine with that?" 9 44
 		if [[ $? = 0 ]]; then
 			sed -i 's/beta.armbian.com/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
 			debconf-apt-progress -- apt-get update
 			debconf-apt-progress -- apt-get -y upgrade
-			dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
+			dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Back" --yesno \
 			"\nReboot to apply new settings?" 7 34
 			if [[ $? = 0 ]]; then reboot; fi
 		fi
@@ -774,7 +778,7 @@ function jobs ()
 		aval_kernel
 		if [[ $exitstatus = 0 ]]; then
 			exceptions "$INSTALL_KERNEL"
-			dialog --title " Install and reboot " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+			dialog --title " Install and reboot " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
 			--yesno "\nSwitching to linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \n\nMake sure you know what you are doing! \
 			\n\nBoard config will be reverted to defaults." 11 46
 			if [[ $? = 0 ]]; then
@@ -791,12 +795,14 @@ function jobs ()
 				fi
 				# install new
 				INSTALL_DTB=""
-				[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+				[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
+				INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 				debconf-apt-progress -- apt-get -y	--no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
 				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
 				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
 
-				dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nNew kernel was installed. Reboot?" 7 64
+				dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" \
+				--yesno "\nNew kernel was installed. Reboot?" 7 64
 				exitstatus=$?;
 				[[ $exitstatus = 0 ]] &&  reboot
 			fi
@@ -816,13 +822,15 @@ function jobs ()
 		else
 			debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y --no-install-recommends install overlayroot
 			echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
-			echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then echo -e "\n[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]";fi' >> /etc/update-motd.d/97-overlayroot
+			echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then \
+			echo -e "\n[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]";fi' >> /etc/update-motd.d/97-overlayroot
 			chmod +x /etc/update-motd.d/97-overlayroot
 			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" \
 			--no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
 			[[ $? = 0 ]] && sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf && reboot
 		fi
 	;;
+
 
 	esac
 }

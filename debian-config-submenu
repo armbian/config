@@ -148,7 +148,8 @@ dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --
 #
 function check_ht_capab ()
 {
-declare -a arr=("[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40][SMPS-STATIC]" "[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]")
+declare -a arr=("[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40][SMPS-STATIC]" \
+"[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]")
 local j=0
 for i in "${arr[@]}"
 do
@@ -225,7 +226,9 @@ function ip_editor ()
 	2>&1 1>&3 | {
 		read -r address;read -r netmask;read -r gateway
 		if [[ $? = 0 ]]; then
-				echo -e "# armbian-config created\nsource /etc/network/interfaces.d/*\n\nallow-hotplug $2\nno-auto-down $2\niface $2 inet static\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8" > $3
+				echo -e "# armbian-config created\nsource /etc/network/interfaces.d/*\n\nallow-hotplug $2\
+				\nno-auto-down $2\niface $2 inet static\
+				\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8" > $3
 		fi
 		}
 }
@@ -446,7 +449,11 @@ function connect_bt_interface ()
 			exec 3>&-
 			if [[ $BT_ADAPTER != "" ]]; then
 				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nConnecting to $BT_ADAPTER " 5 35
-				BT_EXEC=$(expect -c 'set prompt "#";set address '$BT_ADAPTER';spawn bluetoothctl;expect -re $prompt;send "disconnect $address\r";sleep 1;send "remove $address\r";sleep 1;expect -re $prompt;send "scan on\r";sleep 8;send "scan off\r";expect "Controller";send "trust $address\r";sleep 2;send "pair $address\r";sleep 2;send "connect $address\r";send_user "\nShould be paired now.\r";sleep 2;send "quit\r";expect eof')
+				BT_EXEC=$(
+				expect -c 'set prompt "#";set address '$BT_ADAPTER';spawn bluetoothctl;expect -re $prompt;send "disconnect $address\r";
+				sleep 1;send "remove $address\r";sleep 1;expect -re $prompt;send "scan on\r";sleep 8;send "scan off\r";
+				expect "Controller";send "trust $address\r";sleep 2;send "pair $address\r";sleep 2;send "connect $address\r";
+				send_user "\nShould be paired now.\r";sleep 2;send "quit\r";expect eof')
 				echo "$BT_EXEC" > /tmp/bt-connect-debug.log
 					if [[ $(echo "$BT_EXEC" | grep "Connection successful" ) != "" ]]; then
 						dialog --backtitle "$BACKTITLE" --title "Bluetooth" --msgbox "\nYour device is ready to use!" 7 32
@@ -470,7 +477,7 @@ while true; do
 	LIST+=( "Timezone" "Change timezone \Z5($(date +%Z))\Z0" )
 	LIST+=( "Locales" "Reconfigure language \Z5($(locale | grep LANGUAGE | cut -d= -f2 | cut -d_ -f1))\Z0 and character set" )
 	LIST+=( "Hostname" "Change your hostname \Z5($(cat /etc/hostname))\Z0" )
-	LIST+=( "SSHd" "Reconfigure SSH daemon" )
+	LIST+=( "SSH" "Reconfigure SSH daemon" )
 	LIST+=( "Firmware" "Upgrade board firmware" )
 
 	# detect desktop

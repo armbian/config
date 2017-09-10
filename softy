@@ -367,7 +367,7 @@ done
 /sbin/folder2ram -enablesystemd
 
 # Prevent accidentally destroying board performance by clicking around in OMV UI since
-# OMV sets 'powersave' governor when touching 'Power Management' settings. 
+# OMV sets 'powersave' governor when touching 'Power Management' settings.
 if [ -f /etc/default/cpufrequtils ]; then
 	. /etc/default/cpufrequtils
 else
@@ -911,7 +911,7 @@ fi
 
 # Install basic stuff
 #
-export LANG=C
+#export LANG=C
 echo -e "\nChecking dependencies. This might take a while."
 apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
 lsb-release bc expect html2text > /dev/null
