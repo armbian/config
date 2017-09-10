@@ -6,6 +6,7 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
+[[ -n ${SUDO_USER} ]] && SUDO="sudo "
 
 function jobs ()
 {
@@ -55,9 +56,8 @@ function jobs ()
 	#
 	"Monitor" )
 		clear
-		armbianmonitor
-		echo -e "\nType \e[92m$0\e[0m to get back\n"
-		exit
+		armbianmonitor -m
+		sleep 2
 	;;
 
 
@@ -66,7 +66,7 @@ function jobs ()
 	"Consumption" )
 		clear
 		h3consumption
-		echo -e "\nType \e[92m$0\e[0m to get back\n"
+		echo -e "\nType \e[92m${SUDO}${0##*/}\e[0m to get back\n"
 		exit
 	;;
 

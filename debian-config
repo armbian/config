@@ -6,14 +6,16 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
+# define sane $PATH
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # check for root
 #
 if [[ $EUID != 0 ]]; then
-	echo "Warning. This script requires root privileges. Exiting ..."
+	echo "This tool requires root privileges. Try again with \"sudo \" please ..." >&2
 	sleep 2
-	exit
+	exit 1
 fi
 
 
