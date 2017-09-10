@@ -53,16 +53,15 @@ source "$0""-jobs"
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # Main menu
 #
-while true; do
-
-
+while true
+do
 	LIST=()
 
-		LIST+=( "System" "General system settings" )
-		LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
-		LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
-		LIST+=( "Software" "System and 3rd party software install" )
-		LIST+=( "Help" "Documentation, support, sources" )
+	LIST+=( "System" "General system settings" )
+	LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
+	LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
+	LIST+=( "Software" "System and 3rd party software install" )
+	LIST+=( "Help" "Documentation, support, sources" )
 
 	# count number of menu items to adjust window size
 	LISTLENGHT="$((11+${#LIST[@]}/2))"
@@ -104,7 +103,6 @@ while true; do
 			\n\Z1Documentation:\Z0 https://docs.armbian.com\n\n\Z1Support:\Z0 https://forum.armbian.com\n
 			\n\Z1Sources:\Z0 https://github.com/armbian/config" "18"
 		;;
-		esac
-
+	esac
 done
 #-----------------------------------------------------------------------------------------------------------------------------------------#
