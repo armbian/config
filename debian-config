@@ -39,6 +39,8 @@ if [[ $? -ne 0 ]]; then
 		apt-get -qq -y --no-install-recommends install network-manager
 		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' sunxi-tools 2>/dev/null) != *ii* ]] && \
 		apt-get -qq -y --no-install-recommends install sunxi-tools
+		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' iptables 2>/dev/null) != *ii* ]] && \
+		apt-get -qq -y --no-install-recommends install iptables
 fi
 
 
@@ -56,10 +58,10 @@ while true; do
 
 	LIST=()
 
-		LIST+=( "Software" "System and 3rd party software install" )
-		LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
 		LIST+=( "System" "General system settings" )
+		LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
 		LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
+		LIST+=( "Software" "System and 3rd party software install" )
 		LIST+=( "Help" "Documentation, support, sources" )
 
 	# count number of menu items to adjust window size

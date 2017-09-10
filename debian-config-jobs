@@ -61,6 +61,16 @@ function jobs ()
 	;;
 
 
+	# Send diagnostics
+	#
+	"Diagnostics" )
+		clear
+		armbianmonitor -u
+		echo ""
+		read -n 1 -s -p "Press any key to continue"
+	;;
+
+
 	# Control board consumption
 	#
 	"Consumption" )
@@ -314,10 +324,6 @@ function jobs ()
 						# install dnsmas and iptables
 						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != *ii* ]]; then
 							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq;
-						fi
-
-						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' iptables 2>/dev/null) != *ii* ]]; then
-							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install iptables;
 						fi
 
 						echo -e "# armbian NAT hostapd\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " > $TEMP_CONF
