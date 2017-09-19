@@ -50,15 +50,19 @@ function choose_webserver
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Target web server selection
 #------------------------------------------------------------------------------------------------------------------------------------------
-dialog --title "Choose a webserver" --backtitle "$backtitle" --yes-label "Apache" --no-label "Nginx" \
---yesno "\nChoose a web server which you are familiar with. They both work almost the same." 8 70
-response=$?
-case $response in
-	0) server="apache";;
-	1) server="nginx";;
-	255) exit;;
-esac
-echo $server > /tmp/server
+if [ -f /etc/default/openmediavault ]; then
+	# OMV installed, prevent switching from nginx to apache which would trash OMV installation
+	server="nginx"
+else
+	dialog --title "Choose a webserver" --backtitle "$backtitle" --yes-label "Apache" --no-label "Nginx" \
+	--yesno "\nChoose a web server which you are familiar with. They both work almost the same." 8 70
+	response=$?
+	case $response in
+		0) server="apache";;
+		1) server="nginx";;
+		255) exit;;
+	esac
+fi
 }
 
 
@@ -77,14 +81,14 @@ dialog --title "Server configuration" --separate-widget $'\n' --ok-label "Instal
 
 read -r hostnamefqdn
 read -r mysql_pass
-echo $mysql_pass > /tmp/mysql_pass
-echo $hostnamefqdn > /tmp/hostnamefqdn
+echo $mysql_pass > ${TEMP_DIR}/mysql_pass
+echo $hostnamefqdn > ${TEMP_DIR}/hostnamefqdn
 # end
 }
 exec 3>&-
 # read variables back
-MYSQL_PASS=`cat /tmp/mysql_pass`
-HOSTNAMEFQDN=`cat /tmp/hostnamefqdn`
+read MYSQL_PASS < ${TEMP_DIR}/mysql_pass
+read HOSTNAMEFQDN < ${TEMP_DIR}/hostnamefqdn
 }
 
 
@@ -106,10 +110,10 @@ procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
 			--backtitle "$backtitle" \
 			--title "Installing" \
 			--gauge "\n$2\n\n$x" 10 70
-		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >/tmp/install.log 2>&1 || echo 'Installation failed' \
+		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >${TEMP_DIR}/install.log 2>&1 || echo 'Installation failed' \
 		| grep 'Installation failed')" != "" ]; then
 			echo -e "[\e[0;31m error \x1B[0m] Installation failed"
-			tail /tmp/install.log
+			tail ${TEMP_DIR}/install.log
 			exit
 		fi
 		fi
@@ -165,7 +169,7 @@ create_ispconfig_configuration (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # ISPConfig autoconfiguration
 #------------------------------------------------------------------------------------------------------------------------------------------
-cat > /tmp/isp.conf.php <<EOF
+cat > ${TEMP_DIR}/isp.conf.php <<EOF
 <?php
 \$autoinstall['language'] = 'en'; // de, en (default)
 \$autoinstall['install_mode'] = 'standard'; // standard (default), expert
@@ -338,7 +342,7 @@ fi
 apt-get --allow-unauthenticated install openmediavault-keyring
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
 debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault postfix
-FILE=`mktemp`; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE ; rm $FILE
+FILE="${TEMP_DIR}/omv_extras.deb"; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE ; rm $FILE
 # /usr/sbin/omv-update
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get --yes --force-yes --fix-missing --auto-remove --allow-unauthenticated \
@@ -442,27 +446,25 @@ cat > /etc/cron.daily/seed-armbian-torrent <<"EOF"
 # armbian torrents auto update
 #
 # download latest torrent pack
-TEMP=$(mktemp -d || exit 1)
-trap "rm -rf \"${TEMP}\" ; exit 0" 0 1 2 3 15
-wget -qO- -O $TEMP/tmp.zip https://dl.armbian.com/torrent/all-torrents.zip
+wget -qO- -O ${TEMP_DIR}/armbian-torrents.zip https://dl.armbian.com/torrent/all-torrents.zip
 # test zip for corruption
-unzip -t $TEMP/tmp.zip >/dev/null 2>&1
+unzip -t ${TEMP_DIR}/armbian-torrents.zip >/dev/null 2>&1
 [[ $? -ne 0 ]] && echo "Error in zip" && exit
 # extract zip
-unzip -o $TEMP/tmp.zip -d $TEMP/torrent-tmp >/dev/null 2>&1
+unzip -o ${TEMP_DIR}/armbian-torrents.zip -d ${TEMP_DIR}/torrent-tmp >/dev/null 2>&1
 # create list of current active torrents
-transmission-remote -n 'transmission:transmission' -l | sed '1d; $d' > $TEMP/torrent-tmp/active.torrents
+transmission-remote -n 'transmission:transmission' -l | sed '1d; $d' > ${TEMP_DIR}/torrent-tmp/active.torrents
 # loop and add/update torrent files
-for f in $TEMP/torrent-tmp/*.torrent; do
+for f in ${TEMP_DIR}/torrent-tmp/*.torrent; do
         transmission-remote -n 'transmission:transmission' -a $f > /dev/null 2>&1
         # remove added from the list
         pattern="${f//.torrent}"; pattern="${pattern##*/}";
-        sed -i "/$pattern/d" $TEMP/torrent-tmp/active.torrents
+        sed -i "/$pattern/d" ${TEMP_DIR}/torrent-tmp/active.torrents
 done
 # remove old armbian torrents
 while read i; do
         [[ $i == *Armbian_* ]] && transmission-remote -n 'transmission:transmission' -t $(echo "$i" | awk '{print $1}';) --remove-and-delete
-done < $TEMP/torrent-tmp/active.torrents
+done < ${TEMP_DIR}/torrent-tmp/active.torrents
 # remove temporally files and direcotories
 EOF
 chmod +x /etc/cron.daily/seed-armbian-torrent
@@ -495,7 +497,7 @@ install_vpn_server (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Script downloads latest stable
 #------------------------------------------------------------------------------------------------------------------------------------------
-cd /tmp
+cd ${TEMP_DIR}
 PREFIX="http://www.softether-download.com/files/softether/"
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
@@ -886,11 +888,11 @@ install_ISPConfig (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Install ISPConfig 3
 #------------------------------------------------------------------------------------------------------------------------------------------
-cd /tmp
+cd ${TEMP_DIR}
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
-cd /tmp/ispconfig3_install/install/
+cd ${TEMP_DIR}/ispconfig3_install/install/
 #apt-get -y install php5-cli php5-mysql
-php -q install.php --autoinstall=/tmp/isp.conf.php
+php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php
 echo "Admin panel: https://$serverIP:8080"
 echo "PHPmyadmin: http://$serverIP:8081/phpmyadmin"
 }
@@ -909,9 +911,13 @@ if [[ $EUID != 0 ]]; then
 	exit
 fi
 
+# Create a safe temporary directory
+TEMP_DIR=$(mktemp -d || exit 1)
+chmod 700 ${TEMP_DIR}
+trap "rm -rf \"${TEMP_DIR}\" ; exit 0" 0 1 2 3 15
+
 # Install basic stuff
 #
-#export LANG=C
 echo -e "\nChecking dependencies. This might take a while."
 apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
 lsb-release bc expect html2text > /dev/null
@@ -1009,7 +1015,7 @@ while true; do
 		fi
 
 		if [[ "$selection" == *hole* && "$PI_HOLE_STATUS" != "on" ]]; then
-			curl -L install.pi-hole.net | bash
+			curl -L "https://install.pi-hole.net" | bash
 			read -n 1 -s -p "Press any key to continue"
 		fi
 
