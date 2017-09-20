@@ -285,19 +285,14 @@ function exceptions ()
 {
 	TARGET_FAMILY=$LINUXFAMILY
 	UBOOT_BRANCH=$TARGET_BRANCH # uboot naming is different
-	case $BOARD in
-		cubietruck | cubieboard2 | bananapipro | lamobo-r1 | orangepi | orangepimini | lime* | micro | pcduino3 | pcduino3nano)
-		if [[ $TARGET_BRANCH == "default" ]]; \
-		then TARGET_FAMILY="sun7i"; TARGET_BRANCH=""; else TARGET_FAMILY="sunxi"; TARGET_BRANCH="-"$TARGET_BRANCH; fi
-		;;
-		cubieboard | lime-a10 | pcduino2)
-		if [[ $TARGET_BRANCH == "default" ]]; \
-		then TARGET_FAMILY="sun4i"; TARGET_BRANCH=""; else TARGET_FAMILY="sunxi"; TARGET_BRANCH="-"$TARGET_BRANCH; fi
-		;;
-		*)
-		if [[ $TARGET_BRANCH == "default" ]]; \
-		then TARGET_BRANCH=""; else TARGET_BRANCH="-"$TARGET_BRANCH; fi
-	esac
+
+	if [[ $TARGET_BRANCH == "default" ]]; then TARGET_BRANCH=""; else TARGET_BRANCH="-"$TARGET_BRANCH; fi
+	if [[ $TARGET_FAMILY == sun*i ]]; then
+		TARGET_FAMILY="sunxi"
+		if [[ $UBOOT_BRANCH == "default" ]]; then
+			TARGET_FAMILY=$(cat /proc/cpuinfo | grep "Hardware" | sed 's/^.*Allwinner //' | awk '{print $1;}')
+		fi
+	fi
 }
 
 

@@ -780,8 +780,8 @@ function jobs ()
 		aval_kernel
 		if [[ $exitstatus = 0 ]]; then
 			exceptions "$INSTALL_KERNEL"
-			dialog --title " Install and reboot " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
-			--yesno "\nSwitching to linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \n\nMake sure you know what you are doing! \
+			dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
+			--yesno "\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\nMake sure you know what you are doing! \
 			\n\nBoard config will be reverted to defaults." 11 46
 			if [[ $? = 0 ]]; then
 				# remove old
