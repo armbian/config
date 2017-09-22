@@ -6,6 +6,8 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 function check_status
 {
 #------------------------------------------------------------------------------------------------------------------------------------------
@@ -50,19 +52,23 @@ function choose_webserver
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Target web server selection
 #------------------------------------------------------------------------------------------------------------------------------------------
-if [ -f /etc/default/openmediavault ]; then
-	# OMV installed, prevent switching from nginx to apache which would trash OMV installation
-	server="nginx"
-else
-	dialog --title "Choose a webserver" --backtitle "$backtitle" --yes-label "Apache" --no-label "Nginx" \
-	--yesno "\nChoose a web server which you are familiar with. They both work almost the same." 8 70
-	response=$?
-	case $response in
-		0) server="apache";;
-		1) server="nginx";;
-		255) exit;;
-	esac
-fi
+check_if_installed openmediavault
+case $? in
+	0)
+		# OMV installed, prevent switching from nginx to apache which would trash OMV installation
+		server="nginx"
+		;;
+	*)
+		dialog --title "Choose a webserver" --backtitle "$backtitle" --yes-label "Apache" --no-label "Nginx" \
+		--yesno "\nChoose a web server which you are familiar with. They both work almost the same." 8 70
+		response=$?
+		case $response in
+			0) server="apache";;
+			1) server="nginx";;
+			255) exit;;
+		esac
+		;;
+esac
 }
 
 
@@ -931,6 +937,18 @@ echo "Admin panel: https://$serverIP:8080"
 echo "PHPmyadmin: http://$serverIP:8081/phpmyadmin"
 }
 
+
+check_if_installed (){
+#------------------------------------------------------------------------------------------------------------------------------------------
+# check dpkg status of $1 -- currently only 'not installed at all' case catched
+#------------------------------------------------------------------------------------------------------------------------------------------
+	local DPKG_Status="$(dpkg -s "$1" 2>/dev/null | awk -F": " '/^Status/ {print $2}')"
+	if [ "X${DPKG_Status}" = "X" ]; then
+		return 1
+	else
+		return 0
+	fi
+}
 
 
 #------------------------------------------------------------------------------------------------------------------------------------------
