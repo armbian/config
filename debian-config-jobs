@@ -808,6 +808,8 @@ function jobs ()
 				exitstatus=$?;
 				[[ $exitstatus = 0 ]] &&  reboot
 			fi
+		else
+			dialog --backtitle "$BACKTITLE" --title " Info " --msgbox  "\nNo alternative kernels available!" 7 38
 		fi
 	;;
 
