@@ -322,7 +322,7 @@ function jobs ()
 						TEMP_CONF="/etc/network/interfaces.d/armbian.ap.nat"
 
 						# install dnsmas and iptables
-						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != *ii* ]]; then
+						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != "*ii*" ]]; then
 							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq;
 						fi
 
@@ -487,7 +487,7 @@ function jobs ()
 		[[ $BRANCH != "default" ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 
 		local words=( $PACKAGE_LIST )
-		apt-mark ${1,,} $PACKAGE_LIST | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
+		for word in $PACKAGE_LIST; do apt-mark ${1,,} $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
 		fi
 	;;
 
