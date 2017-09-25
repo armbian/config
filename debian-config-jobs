@@ -24,6 +24,34 @@ function jobs ()
 		softy
 	;;
 
+	# Remove BT
+	#
+	"Remove BT" )
+		debconf-apt-progress -- apt-get -y remove bluetooth bluez bluez-tools
+		check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y remove pulseaudio-module-bluetooth blueman
+		debconf-apt-progress -- apt -y -qq autoremove
+	;;
+
+	# Enabling BT
+	#
+	"Bluetooth" )
+		debconf-apt-progress -- apt-get -y install bluetooth bluez bluez-tools
+		check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y --no-install-recommends install pulseaudio-module-bluetooth blueman
+	;;
+
+	# Removing IR
+	#
+	"Remove IR" )
+		debconf-apt-progress -- apt-get -y remove lirc
+		debconf-apt-progress -- apt -y -qq autoremove
+	;;
+
+	# Enabling IR
+	#
+	"IR" )
+		debconf-apt-progress -- apt-get -y --no-install-recommends install lirc
+	;;
+
 
 	# Sharing USB ports
 	#
@@ -385,7 +413,7 @@ function jobs ()
 
 	# Connect to Bluetooth
 	#
-	"Bluetooth" )
+	"Discover" )
 	dialog --backtitle "$BACKTITLE" --title " Bluetooth " --msgbox "\nMake sure your Bluetooth devices are discoverable!" 7 54
 	connect_bt_interface
 	;;

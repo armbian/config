@@ -25,6 +25,19 @@ dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbi
 sleep 1
 
 
+check_if_installed (){
+#------------------------------------------------------------------------------------------------------------------------------------------
+# check dpkg status of $1 -- currently only 'not installed at all' case catched
+#------------------------------------------------------------------------------------------------------------------------------------------
+	local DPKG_Status="$(dpkg -s "$1" 2>/dev/null | awk -F": " '/^Status/ {print $2}')"
+	if [[ "X${DPKG_Status}" = "X" || "${DPKG_Status}" = *deinstall* ]]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # check all possible wireless modes
 #
@@ -556,7 +569,7 @@ while true; do
 	fi
 
 	if [[ -n $(service bluetooth status | grep -w active | grep -w running) ]]; then
-		[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "Bluetooth" "Connect Bluetooth devices" )
+		[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "Discover" "Discover and connect Bluetooth devices" )
 	fi
 
 	LIST+=( "Advanced" "Edit /etc/network/interfaces" )
@@ -679,6 +692,11 @@ while true; do
 	[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "3rd party applications installer" )
 	[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && \
 	LIST+=( "Consumption" "Control board consumption" )
+
+
+	check_if_installed bluetooth && LIST+=( "Remove BT" "Remove Bluetooth support" ) || LIST+=( "Bluetooth" "Install Bluetooth support" )
+	check_if_installed lirc && LIST+=( "Remove IR" "Remove IR support" ) || LIST+=( "IR" "Install IR support" )
+
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI board monitoring" )
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
 	[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
