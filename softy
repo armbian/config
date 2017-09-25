@@ -16,31 +16,31 @@ function check_status
 LIST=()
 LIST_CONST=5
 # Samba
-SAMBA_STATUS="$([[ -f /etc/samba/smb.conf ]] && echo "on" || echo "off" )"
+SAMBA_STATUS="$(check_if_installed samba && echo "on" || echo "off" )"
 LIST+=( "Samba" "Windows compatible file sharing" "$SAMBA_STATUS" )
 # cups
-CUPS_STATUS="$([[ -f /etc/cups/cupsd.conf ]] && echo "on" || echo "off" )"
+CUPS_STATUS="$(check_if_installed cups && echo "on" || echo "off" )"
 LIST+=( "CUPS" "Common UNIX Printing System (CUPS)" "$CUPS_STATUS" )
 # tvheadend
-TVHEADEND_STATUS="$([[ -n $(service tvheadend status 2> /dev/null | grep -w active | grep -w running) ]] && echo "on" || echo "off" )"
+TVHEADEND_STATUS="$(check_if_installed tvheadend && echo "on" || echo "off" )"
 LIST+=( "TV headend" "TV streaming / proxy" "$TVHEADEND_STATUS" )
 # synthing
-SYNCTHING_STATUS="$([[ -f /usr/bin/syncthing ]] && echo "on" || echo "off" )"
+SYNCTHING_STATUS="$(check_if_installed syncthing && echo "on" || echo "off" )"
 LIST+=( "Syncthing" "Personal cloud @syncthing.net" "$SYNCTHING_STATUS" )
 # vpn server
 VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
 LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
 # OMV
-OMV_STATUS="$([[ -f /etc/default/openmediavault ]] && echo "on" || echo "off" )"
+OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
 [[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
 # MINIdlna
-MINIDLNA_STATUS="$([[ -f /etc/minidlna.conf ]] && echo "on" || echo "off" )"
+MINIDLNA_STATUS="$(check_if_installed minidlna && echo "on" || echo "off" )"
 LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "$MINIDLNA_STATUS" )
 # Pi hole
 PI_HOLE_STATUS="$([[ -d /etc/pihole ]] && echo "on" || echo "off" )"
 LIST+=( "Pi hole" "Ad blocker" "$PI_HOLE_STATUS" )
 # Transmission
-TRANSMISSION_STATUS="$([[ -f /etc/transmission-daemon/settings.json ]] && echo "on" || echo "off" )"
+TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
 LIST+=( "Transmission" "Torrent downloading" "$TRANSMISSION_STATUS" )
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
@@ -374,7 +374,7 @@ sed -i 's|-j /var/lib/rrdcached/journal/ ||' /etc/init.d/rrdcached
 for i in netatalk samba flashmemory ssh ntp timezone monit rrdcached collectd ; do
 	/usr/sbin/omv-mkconf $i
 done
-/sbin/folder2ram -enablesystemd
+/sbin/folder2ram -enablesystemd 2>/dev/null
 
 # Prevent accidentally destroying board performance by clicking around in OMV UI since
 # OMV sets 'powersave' governor when touching 'Power Management' settings.
@@ -395,7 +395,7 @@ echo -e "OMV_CPUFREQUTILS_MINSPEED=${MIN_SPEED}" >>/etc/default/openmediavault
 echo -e "OMV_CPUFREQUTILS_MAXSPEED=${MAX_SPEED}" >>/etc/default/openmediavault
 
 /usr/sbin/omv-initsystem
-check_port 80
+check_port 80 "OMV web"
 }
 
 
@@ -1073,7 +1073,7 @@ while true; do
 
 		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
 			install_transmission
-			check_port 9091
+			check_port 9091 transmission
 		fi
 
 		# reread statuses
