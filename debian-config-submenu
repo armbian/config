@@ -562,6 +562,14 @@ while true; do
 
 	fi
 
+	if pgrep -x "iperf3" > /dev/null
+	then
+		LIST+=( "Iperf3" "Disable network throughput tests daemon" )
+		else
+		LIST+=( "Iperf3" "Enable network throughput tests daemon" )
+	fi
+
+
 	if [[ -n $(nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]]; then
 		LIST+=( "WiFi" "Manage wireless networking" )
 	else
@@ -577,7 +585,7 @@ while true; do
 	LIST+=( "Forget" "Disconnect and forget all wireless connections" )
 
 	# count number of menu items to adjust window sizee
-	LISTLENGHT="$((13+${#LIST[@]}/2))"
+	LISTLENGHT="$((12+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
 	WIFICONNECTED=$(nmcli -f NAME,TYPE connection show --active | grep wireless | awk 'NF{NF-=1};1')
 
@@ -585,13 +593,12 @@ while true; do
 
 	local ipadd=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
 
-	if [[ -n $(grep $DEFAULT_ADAPTER /etc/network/interfaces | grep static) ]]; then
-		local ifup="\nStatic IP ($DEFAULT_ADAPTER) via IFUPDOWN: \Z1${ipadd}\n\Z0 "
-	elif [[ -n $(grep $DEFAULT_ADAPTER /etc/network/interfaces | grep dhcp) ]]; then
-		local ifup="\nDynamic IP ($DEFAULT_ADAPTER) via IFUPDOWN: \Z1${ipadd}\n\Z0 "
+	if [[ -n $(nmcli device status | grep wlan0 | grep connected) ]]; then
+		local ifup="\nIP ($DEFAULT_ADAPTER) via Network Manager: \Z1${ipadd}\n\Z0 "
 	else
-		local ifup="\nDynamic IP ($DEFAULT_ADAPTER) via Network Manager: \Z1${ipadd}\n\Z0 "
+		local ifup="\nIP ($DEFAULT_ADAPTER) via IFUPDOWN: \Z1${ipadd}\n\Z0 "
 	fi
+
 	disclaimer="$ifup"
 
 	if [[ -n $WIFICONNECTED ]]; then
@@ -613,9 +620,7 @@ while true; do
 		if [ -n $chip ] || [ "$HOSTAPDCLIENTS" -gt "0" ]; then LISTLENGHT=$((LISTLENGHT+2)); fi
 		disclaimer=$disclaimer$"\n";
 	fi
-
-	disclaimer=$disclaimer"\n\Z1Note\Zn: wireless networking in Linux is problematic.\
-	Our tools make it easy for some cases but can't enable AP on every random WiFi chip. If this tool fail, you are on your own.\n "
+	disclaimer=$disclaimer"\n\Z1Note\Zn: This tool can be successful only when drivers are in good shape. If autodetection fails, you are on your own.\n "
 
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --colors --title " Wired, Wireless, Bluetooth, Hotspot " --clear \

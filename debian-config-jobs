@@ -189,6 +189,17 @@ function jobs ()
 			fi
 	;;
 
+	# Connect to wireless access point
+	#
+	"Iperf3" )
+			# disable AP mode on certain adapters
+			if pgrep -x "iperf3" > /dev/null
+			then
+				pkill iperf3
+			else
+				iperf3 -s -D
+			fi
+	;;
 
 	# Connect to wireless access point
 	#
