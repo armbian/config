@@ -215,7 +215,8 @@ function jobs ()
 	"Clear" )
 			# remove managed interfaces
 			systemctl daemon-reload
-			sed '/keyfile\|unmanaged-devices/ d' -i /etc/NetworkManager/NetworkManager.conf
+			sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+			sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 			rm -f /etc/network/interfaces.d/armbian.ap.nat
 			rm -f /etc/network/interfaces.d/armbian.ap.bridge
 			reload-nety
@@ -250,7 +251,8 @@ function jobs ()
 				rm -f /etc/network/interfaces.d/armbian.ap.nat
 				rm -f /etc/network/interfaces.d/armbian.ap.bridge
 				sed -i '/^iptables/ d' /etc/rc.local
-				sed '/keyfile\|unmanaged-devices/ d' -i /etc/NetworkManager/NetworkManager.conf
+				sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+				sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 				iptables -F
 				# reload services
 				reload-nety
@@ -261,7 +263,10 @@ function jobs ()
 				dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --msgbox "\nAll wireless connections are in use." 7 40
 		else
 				# remove interfaces from managed list
-				sed '/keyfile\|unmanaged-devices/ d' -i /etc/NetworkManager/NetworkManager.conf
+				if [[ -f /etc/NetworkManager/conf.d/10-ignore-interfaces.conf ]]; then
+					sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+					sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+				fi
 
 				# start with basic config
 				if grep -q "^## IEEE 802.11ac" /etc/hostapd.conf; then sed '/## IEEE 802.11ac\>/,/^## IEEE 802.11ac\>/ s/.*/#&/' -i /etc/hostapd.conf; fi
@@ -275,8 +280,13 @@ function jobs ()
 				# check for WLAN interfaces
 				get_wlan_interface
 				# add interface to unmanaged list
-				echo "[keyfile]" >> /etc/NetworkManager/NetworkManager.conf
-				echo "unmanaged-devices=interface-name:$WIRELESS_ADAPTER" >> /etc/NetworkManager/NetworkManager.conf
+				if [[ -f /etc/NetworkManager/conf.d/10-ignore-interfaces.conf ]]; then
+					[[ -z $(grep -w unmanaged-devices= /etc/NetworkManager/conf.d/10-ignore-interfaces.conf) ]] && sed '$ s/$/,/' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+					sed '$ s/$/'"interface-name:$WIRELESS_ADAPTER"'/' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+				else
+					echo "[keyfile]" > /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+					echo "unmanaged-devices=interface-name:$WIRELESS_ADAPTER" >> /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+				fi
 				service network-manager restart; sleep 3
 				# display dialog
 				dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox \
@@ -320,7 +330,8 @@ function jobs ()
 					--infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nNo compatible hostapd driver found." 7 39
 					sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
 					# remove interfaces from managed list
-					sed '/keyfile\|unmanaged-devices/ d' -i /etc/NetworkManager/NetworkManager.conf
+					sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+					sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 					systemctl daemon-reload;service hostapd restart
 					sleep 3
 					break

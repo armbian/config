@@ -46,8 +46,10 @@ Login as root and type:
 
 **Running this utility on 3rd party Debian based distributions**
 
-	sudo apt-get -y install git
-	cd ~
+	# Install dependencies
+	apt install git bc expect rcconf dialog network-manager sunxi-tools iptables
+
 	git clone https://github.com/armbian/config
 	cd config
 	bash debian-config
+

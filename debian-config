@@ -26,21 +26,6 @@ echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
 		read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. \
 		Press CTRL C to stop to stop or any key to ignore and continue."
-	else
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' bc 2>/dev/null) != "*ii*" ]] && \
-		apt-get -qq -y --no-install-recommends install bc
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' expect 2>/dev/null) != "*ii*" ]] && \
-		apt-get -qq -y --no-install-recommends install expect
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' rcconf 2>/dev/null) != "*ii*" ]] && \
-		apt-get -qq -y --no-install-recommends install rcconf
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dialog 2>/dev/null) != "*ii*" ]] && \
-		apt-get -qq -y --no-install-recommends install dialog
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' network-manager 2>/dev/null) != "*ii*" ]] && \
-		apt-get -qq -y --no-install-recommends install network-manager
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' sunxi-tools 2>/dev/null) != "*ii*" ]] && \
-		apt-get -qq -y --no-install-recommends install sunxi-tools
-		[[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' iptables 2>/dev/null) != "*ii*" ]] && \
-		apt-get -qq -y --no-install-recommends install iptables
 fi
 
 
