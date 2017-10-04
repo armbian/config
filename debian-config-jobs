@@ -526,7 +526,7 @@ function jobs ()
 
 	# Freeze and unfreeze kernel and board support packages
 	#
-	"Hold" | "Unhold" )
+	"Freeze" | "Defreeze" )
 		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Back" --yesno \
 		"\nDo you want to ${1,,} kernel updates?" 7 42
 		if [[ $? = 0 ]]; then

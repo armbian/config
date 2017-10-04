@@ -648,9 +648,9 @@ while true; do
 	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent 2> /dev/null) == mmcblk* && -f /usr/sbin/nand-sata-install ]] \
 	&& LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
 	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
-			LIST+=( "Unhold" "Un-Freeze kernel and board support packages" )
+			LIST+=( "Defreeze" "Defreeze firmware upgrade" )
 		else
-			LIST+=( "Hold" "Freeze kernel and board support packages" )
+			LIST+=( "Freeze" "Freeze firmware upgrade" )
 	fi
 	[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
 	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Bootenv" "Edit boot environment" )
