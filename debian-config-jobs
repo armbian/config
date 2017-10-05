@@ -528,7 +528,7 @@ function jobs ()
 	#
 	"Freeze" | "Defreeze" )
 		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Back" --yesno \
-		"\nDo you want to ${1,,} kernel updates?" 7 42
+		"\nDo you want to ${1,,} kernel updates?" 7 44
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
 		exceptions "$BRANCH"
@@ -537,7 +537,9 @@ function jobs ()
 		[[ $BRANCH != "default" ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 
 		local words=( $PACKAGE_LIST )
-		for word in $PACKAGE_LIST; do apt-mark ${1,,} $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
+		local command="unhold"
+		[[ $1 == "Freeze" ]] && local command="hold"
+		for word in $PACKAGE_LIST; do apt-mark $command $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
 		fi
 	;;
 
