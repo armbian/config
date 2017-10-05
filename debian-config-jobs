@@ -843,9 +843,9 @@ function jobs ()
 				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
 				# if test download is ok, remove old kernel
 				if [[ $? = 0 ]]; then
-					aptitude remove ~nlinux-image --quiet=100 >> /var/log/upgrade.log
-					aptitude remove ~nlinux-dtb --quiet=100 >> /var/log/upgrade.log
-					aptitude remove ~nlinux-headers --quiet=100 >> /var/log/upgrade.log
+					aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log
+					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log
+					aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log
 				fi
 				# install new
 				INSTALL_DTB=""
