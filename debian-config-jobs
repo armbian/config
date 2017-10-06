@@ -143,24 +143,32 @@ function jobs ()
 	#
 	"Display" )
 		# show display modes menu
-		get_h3modes
-		dialog --title " Display output type " --colors --help-button --help-label "Back" --no-label "DVI" --yes-label "HDMI" \
-		--backtitle "$BACKTITLE" --yesno "\nIn case you use an HDMI-to-DVI converter choose DVI!" 7 57
-		output_type=$?
-		if [[ $output_type = 0 || $output_type = 1 ]]; then
+		if [[ -f /usr/bin/h3disp ]]; then
+			# h3 boards
+			get_h3modes
+			dialog --title " Display output type " --colors --help-button --help-label "Back" --no-label "DVI" --yes-label "HDMI" \
+			--backtitle "$BACKTITLE" --yesno "\nIn case you use an HDMI-to-DVI converter choose DVI!" 7 57
+			output_type=$?
+			if [[ $output_type = 0 || $output_type = 1 ]]; then
+				if [[ $output_type = 0 ]]; then
+					display_cmd="h3disp -m $SCREEN_RESOLUTION";
+					else
+					display_cmd="h3disp -m $SCREEN_RESOLUTION -d";
+				fi
 
-			if [[ $output_type = 0 ]]; then
-				display_cmd="h3disp -m $SCREEN_RESOLUTION";
-				else
-				display_cmd="h3disp -m $SCREEN_RESOLUTION -d";
-			fi
 
-			dialog --title " Display resolution " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno \
-			"\nSetting new screen mode.\n\nExecuting \Z1$display_cmd\Z0 and reboot?   " 9 56
-			if [[ $? = 0 ]]; then
-				eval $display_cmd > /dev/null
-				reboot
 			fi
+		else
+			# a20 boards
+			get_a20modes
+			display_cmd="sed -i \"s/^disp_mode=.*/disp_mode=$SCREEN_RESOLUTION/\" /boot/armbianEnv.txt";
+		fi
+
+		dialog --title " Display resolution " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno \
+		"\nSwitching to \Z1$SCREEN_RESOLUTION\Z0 and reboot?" 7 42
+		if [[ $? = 0 ]]; then
+			eval $display_cmd > /dev/null
+			reboot
 		fi
 	;;
 
