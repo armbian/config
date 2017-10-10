@@ -21,6 +21,8 @@ KERNELID=$(uname -r)
 BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
 TITLE="$BOARD_NAME "
 DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
+[[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
+
 dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
 sleep 1
 
@@ -443,7 +445,9 @@ function select_default_interface ()
 			LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
 	LIST_LENGHT=$((${#LIST[@]}/2));
-	if [ "$LIST_LENGHT" -eq 1 ]; then
+	if [ "$LIST_LENGHT" -eq 0 ]; then
+			DEFAULT_ADAPTER="lo"
+	elif [ "$LIST_LENGHT" -eq 1 ]; then
 			DEFAULT_ADAPTER=${ADAPTER[0]}
 	else
 			exec 3>&1
@@ -607,6 +611,8 @@ while true; do
 		[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "Discover" "Discover and connect Bluetooth devices" )
 	fi
 
+	[[ -d /usr/local/vpnclient ]] && LIST+=( "VPN" "Manage Softether VPN client" ) && VPNSERVERIP=$(/usr/local/vpnclient/vpncmd /client localhost /cmd accountlist | grep "VPN Server" |grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' | head -1)
+
 	LIST+=( "Advanced" "Edit /etc/network/interfaces" )
 	[[ $(ls -1 /etc/NetworkManager/system-connections 2> /dev/null) ]] && \
 	LIST+=( "Forget" "Disconnect and forget all wireless connections" )
@@ -632,6 +638,12 @@ while true; do
 		LISTLENGHT=$((LISTLENGHT+2))
 		local connected="\n\Z0Connected to SSID: \Z1${WIFICONNECTED}\n\Z0 "
 		disclaimer=$disclaimer"$connected"
+	fi
+
+	if [[ -n $VPNSERVERIP ]]; then
+		local vpnserverip="\n\Z0Connected to VPN server: \Z1${VPNSERVERIP}\n\Z0 "
+		disclaimer=$disclaimer"$vpnserverip"
+		LISTLENGHT=$((LISTLENGHT+2))
 	fi
 
 	if [[ -n $HOSTAPDINFO && -n $HOSTAPDSTATUS ]]; then

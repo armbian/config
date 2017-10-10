@@ -441,6 +441,105 @@ function jobs ()
 	;;
 
 
+	# Manage Softether VPN
+	#
+	"VPN" )
+	VPNDIR="/usr/local/vpnclient/"
+
+	function vpn_reconfigure ()
+	{
+	if [[ -f /etc/server.vpn ]]; then
+		${VPNDIR}vpnclient stop >/dev/null 2>&1
+		${VPNDIR}vpnclient start >/dev/null 2>&1
+		# purge old settings
+		${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Connection Setting Name" | cut -d "|" -f 2 | sed 's/^/"/;s/$/"/' | xargs /usr/local/vpnclient/vpncmd /client localhost /cmd accountdisconnect >/dev/null 2>&1
+		${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Connection Setting Name" | cut -d "|" -f 2 | sed 's/^/"/;s/$/"/' | xargs /usr/local/vpnclient/vpncmd /client localhost /cmd accountdelete >/dev/null 2>&1
+		# import new
+		${VPNDIR}vpncmd /client localhost /cmd accountimport //etc//server.vpn >/dev/null 2>&1
+		# reload to connect
+		${VPNDIR}vpnclient stop >/dev/null 2>&1
+		${VPNDIR}vpnclient start >/dev/null 2>&1
+		[[ $? = 0 ]] && dialog --backtitle "$BACKTITLE" --title " VPN " --msgbox "\nConfiguration was succesfully imported!" 7 43
+	fi
+	}
+
+	function get_numbers {
+		EXCLUDE=$(ip neigh | grep vpn_se | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.' | head -1)
+		ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | grep -v vpn_se | head -1)
+		IP=$(ip route | grep $ADAPTER | grep default | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' | head -1)
+		VPNSERVERIP=$(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Server" |grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' | head -1)
+		SUBNET=$(ifconfig vpn_se | grep 'inet addr:' | grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print $1}' | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
+		GW=$(ip neigh | grep vpn_se | grep $SUBNET | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' | head -1)
+	}
+
+	function raise_dev {
+			i=0;
+			while [[ -z "$TEMP" && $i<5 ]]; do
+					TEMP=$(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected)
+					sleep 1
+					i=$((i+1))
+			done
+			dhclient vpn_se
+	}
+
+	if pgrep -x "vpnclient" > /dev/null
+	then
+				${VPNDIR}vpnclient stop >/dev/null 2>&1
+				${VPNDIR}vpnclient start >/dev/null 2>&1
+				if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd nicList | grep Enabled) ]]; then
+					${VPNDIR}vpncmd /client localhost /cmd niccreate se >/dev/null 2>&1
+				fi
+				if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Server") ]]; then
+					dialog --backtitle "$BACKTITLE" --no-label " Back " --yes-label " Import " --title " VPN " --yesno "\nVPN configuration was not found.\n\nPlace file to /etc/server.vpn" 9 45
+					if [[ $? = 0 && -f /etc/server.vpn ]]; then
+						${VPNDIR}vpncmd /client localhost /cmd accountimport //etc//server.vpn >/dev/null 2>&1
+						${VPNDIR}vpnclient stop >/dev/null 2>&1
+						${VPNDIR}vpnclient start >/dev/null 2>&1
+						[[ $? = 0 ]] && dialog --backtitle "$BACKTITLE" --title " VPN " --msgbox "\nConfiguration was succesfully imported!" 7 43
+					fi
+				fi
+
+				# raise devices
+				raise_dev
+
+				if [[ -n $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected) ]]; then
+					get_numbers
+					echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
+					echo "ip route del default"
+					echo "ip route add default via $GW dev vpn_se"
+					read
+					dialog --title "VPN client is connected to $VPNSERVERIP" --colors --backtitle "$BACKTITLE" --help-button --help-label "Back" --yes-label "Stop" --no-label " Import " --yesno "\n\Z1Stop:  \Z0 stop\n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+				fi
+				response=$?
+				if [[ $response = 0 ]]; then
+					get_numbers
+					echo "ip route del $VPNSERVERIP"
+					echo "ip route del default"
+					echo "ip route add default via $IP dev $ADAPTER"
+					read
+					dialog --backtitle "$BACKTITLE"  --nocancel --nook --infobox "\nClosing VPN connection" 5 27
+					${VPNDIR}vpnclient stop >/dev/null 2>&1
+				fi
+	else
+				dialog --title "VPN client is disconnected" --colors --backtitle "$BACKTITLE" --help-button --help-label "Back" --yes-label "Connect" --no-label " Import " --yesno "\n\Z1Connect:\Z0 Connect with your VPN server \n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+				response=$?
+				if [[ $response = 0 ]]; then
+					${VPNDIR}vpnclient start >/dev/null 2>&1
+
+					# raise devices
+					raise_dev
+					get_numbers
+					echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
+					echo "ip route del default"
+					echo "ip route add default via $GW dev vpn_se"
+					read
+
+				fi
+				[[ $response = 1 ]] && vpn_reconfigure
+	fi
+	;;
+
+
 	# Connect to Bluetooth
 	#
 	"Discover" )

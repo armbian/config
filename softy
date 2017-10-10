@@ -30,6 +30,9 @@ LIST+=( "Syncthing" "Personal cloud @syncthing.net" "$SYNCTHING_STATUS" )
 # vpn server
 VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
 LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
+# vpn client
+VPN_CLIENT_STATUS="$([[ -d /usr/local/vpnclient ]] && echo "on" || echo "off" )"
+LIST+=( "VPN client" "VPN client" "$VPN_CLIENT_STATUS" )
 # OMV
 OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
 [[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
@@ -618,6 +621,33 @@ fi
 }
 
 
+install_vpn_client (){
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Script downloads latest stable
+#------------------------------------------------------------------------------------------------------------------------------------------
+cd ${TEMP_DIR}
+PREFIX="http://www.softether-download.com/files/softether/"
+install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
+URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
+SUFIX="${URL/-tree/}"
+if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
+DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_ARM_EABI/softether-vpnclient-$SUFIX-linux-arm_eabi-32bit.tar.gz"
+else
+install_packet "gcc-multilib" "Install libraries"
+DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_Intel_x86/softether-vpnclient-$SUFIX-linux-x86-32bit.tar.gz"
+fi
+wget -q $DLURL -O - | tar -xz
+cd vpnclient
+make i_read_and_agree_the_license_agreement | dialog --backtitle "$BACKTITLE" --title "Compiling SoftEther VPN vpnclient" --progressbox $TTY_Y $TTY_X
+cd ..
+cp -R vpnclient /usr/local
+cd /usr/local/vpnclient/
+chmod 600 *
+chmod 700 vpncmd
+chmod 700 vpnclient
+}
+
+
 install_DashNTP (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Install DASH and ntp service
@@ -1056,10 +1086,16 @@ while true; do
 			read -n 1 -s -p "Press any key to continue"
 		fi
 
-		if [[ "$selection" == *VPN* && "$VPN_SERVER_STATUS" != "on" ]]; then
+		if [[ "$selection" == *server* && "$VPN_SERVER_STATUS" != "on" ]]; then
 			install_vpn_server
 			read -n 1 -s -p "Press any key to continue"
 		fi
+
+		if [[ "$selection" == *client* && "$VPN_CLIENT_STATUS" != "on" ]]; then
+			install_vpn_client
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
 
 		if [[ "$selection" == *OMV* && "$OMV_STATUS" != "on" ]]; then
 			install_omv
