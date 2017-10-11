@@ -27,15 +27,20 @@ LIST+=( "TV headend" "TV streaming / proxy" "$TVHEADEND_STATUS" )
 # synthing
 SYNCTHING_STATUS="$(check_if_installed syncthing && echo "on" || echo "off" )"
 LIST+=( "Syncthing" "Personal cloud @syncthing.net" "$SYNCTHING_STATUS" )
-# vpn server
-VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
-LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
-# vpn client
-VPN_CLIENT_STATUS="$([[ -d /usr/local/vpnclient ]] && echo "on" || echo "off" )"
-LIST+=( "VPN client" "VPN client" "$VPN_CLIENT_STATUS" )
+
+if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
+	LIST_CONST=4
+	# vpn server
+	VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
+	LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
+	# vpn client
+	VPN_CLIENT_STATUS="$([[ -d /usr/local/vpnclient ]] && echo "on" || echo "off" )"
+	LIST+=( "VPN client" "VPN client" "$VPN_CLIENT_STATUS" )
+fi
+
 # OMV
 OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
-[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=4
+[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=3
 # MINIdlna
 MINIDLNA_STATUS="$(check_if_installed minidlna && echo "on" || echo "off" )"
 LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "$MINIDLNA_STATUS" )
