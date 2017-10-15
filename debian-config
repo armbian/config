@@ -22,7 +22,7 @@ fi
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # check if we have internet connection to install dependencies
 #
-echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
+echo -e "GET http://github.com HTTP/1.0\n\n" | nc github.com 80 > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
 		read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. \
 		Press CTRL C to stop to stop or any key to ignore and continue."
