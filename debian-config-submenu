@@ -220,6 +220,12 @@ function description
 		*autoreboot-warn*)
 			echo "Show warning when reboot is needed"
 		;;
+		*uk.armbian.com*)
+			echo "United Kingdom"
+		;;
+		*.armbian.com*)
+			echo "Estonia"
+		;;
 		*)
 		echo ""
 		;;
@@ -694,6 +700,7 @@ while true; do
 	[[ -n $(grep -w "#kernel.printk" /etc/sysctl.conf ) ]] && LIST+=( "Lowlevel" "Stop low-level messages on console" )
 	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Bootenv" "Edit boot environment" )
 	[[ -f /boot/boot.ini ]] && LIST+=( "Bootscript" "Edit boot script" )
+	[[ -f /etc/apt/sources.list.d/armbian.list ]] && LIST+=( "Mirror" "Change repository server" )
 	LIST+=( "Welcome" "Toggle welcome screen items" )
 	if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
 	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
