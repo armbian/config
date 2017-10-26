@@ -34,7 +34,6 @@ fi
 source "$0""-submenu"
 source "$0""-jobs"
 
-
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # Main menu
 #
@@ -51,16 +50,21 @@ do
 	# count number of menu items to adjust window size
 	LISTLENGHT="$((11+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
-	MENUTITLE="Configuration tool for the \Z1${BOARD_NAME}\Z0 running \Z1$DISTRO $DISTROID\Z0"
+	MENUTITLE="Configuration tool "
+	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE"for the \Z1${BOARD_NAME}\Z0"
+	MENUTITLE=$MENUTITLE"running \Z1$DISTRO $DISTROID\Z0"
 
 	# main dialog routine
 	DIALOG_CANCEL=1
 	DIALOG_ESC=255
+	TITLELENGHT=${#MENUTITLE}
+
+	[[ "$TITLELENGHT" -lt 50 ]] && TITLELENGHT="70"
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
 	--cancel-label "Cancel" --menu "\n$MENUTITLE \n \nSupport: \Z1https://www.armbian.com\Z0\n " \
-	$LISTLENGHT ${#MENUTITLE} $BOXLENGHT "${LIST[@]}" 2>&1 1>&3)
+	$LISTLENGHT ${TITLELENGHT} $BOXLENGHT "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 
