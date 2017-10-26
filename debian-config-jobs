@@ -26,7 +26,7 @@ function jobs ()
 
 	# Remove BT
 	#
-	"Remove BT" )
+	"BT remove" )
 		debconf-apt-progress -- apt-get -y remove bluetooth bluez bluez-tools
 		check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y remove pulseaudio-module-bluetooth blueman
 		debconf-apt-progress -- apt -y -qq autoremove
@@ -34,7 +34,7 @@ function jobs ()
 
 	# Enabling BT
 	#
-	"Bluetooth" )
+	"BT install" )
 		debconf-apt-progress -- apt-get -y install bluetooth bluez bluez-tools
 		check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y --no-install-recommends install pulseaudio-module-bluetooth blueman
 	;;
@@ -146,7 +146,7 @@ function jobs ()
 		if [[ -f /usr/bin/h3disp ]]; then
 			# h3 boards
 			get_h3modes
-			dialog --title " Display output type " --colors --help-button --help-label "Back" --no-label "DVI" --yes-label "HDMI" \
+			dialog --title " Display output type " --colors --help-button --help-label "Cancel" --no-label "DVI" --yes-label "HDMI" \
 			--backtitle "$BACKTITLE" --yesno "\nIn case you use an HDMI-to-DVI converter choose DVI!" 7 57
 			output_type=$?
 			if [[ $output_type = 0 || $output_type = 1 ]]; then
@@ -164,7 +164,7 @@ function jobs ()
 			display_cmd="sed -i \"s/^disp_mode=.*/disp_mode=$SCREEN_RESOLUTION/\" /boot/armbianEnv.txt";
 		fi
 
-		dialog --title " Display resolution " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno \
+		dialog --title " Display resolution " --colors --no-label "Cancel" --backtitle "$BACKTITLE" --yesno \
 		"\nSwitching to \Z1$SCREEN_RESOLUTION\Z0 and reboot?" 7 42
 		if [[ $? = 0 ]]; then
 			eval $display_cmd > /dev/null
@@ -239,12 +239,12 @@ function jobs ()
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			if [[ -n $HOSTAPDBRIDGE ]]; then
 				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
-				--help-label "Back" --yes-label "Stop and reboot" --no-label "Edit" --yesno \
+				--help-label "Cancel" --yes-label "Stop and reboot" --no-label "Edit" --yesno \
 				"\n\Z1Stop:\Z0 stop and reboot\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
 
 			else
 				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
-				--help-label "Back" --yes-label  "Stop" --no-label "Edit" --yesno \
+				--help-label "Cancel" --yes-label  "Stop" --no-label "Edit" --yesno \
 				"\n\Z1Stop:\Z0 stop providing Access Point\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
 			fi
 			exitstatus=$?;
@@ -282,7 +282,7 @@ function jobs ()
 				if grep -q "^## IEEE 802.11n" /etc/hostapd.conf; then sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf; fi
 				sed -i "s/^channel=.*/channel=5/" /etc/hostapd.conf
 
-				service network-manager restart; sleep 3
+				service network-manager reload
 				# change special adapters to AP mode
 				wlan_exceptions "on"
 				# check for WLAN interfaces
@@ -295,7 +295,7 @@ function jobs ()
 					echo "[keyfile]" > /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 					echo "unmanaged-devices=interface-name:$WIRELESS_ADAPTER" >> /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 				fi
-				service network-manager restart; sleep 3
+				service network-manager reload
 				# display dialog
 				dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox \
 				"\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing nl80211 hostapd driver compatibility." 7 50
@@ -490,7 +490,7 @@ function jobs ()
 					${VPNDIR}vpncmd /client localhost /cmd niccreate se >/dev/null 2>&1
 				fi
 				if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Server") ]]; then
-					dialog --backtitle "$BACKTITLE" --no-label " Back " --yes-label " Import " --title " VPN " --yesno "\nVPN configuration was not found.\n\nPlace file to /etc/server.vpn" 9 45
+					dialog --backtitle "$BACKTITLE" --no-label " Cancel " --yes-label " Import " --title " VPN " --yesno "\nVPN configuration was not found.\n\nPlace file to /etc/server.vpn" 9 45
 					if [[ $? = 0 && -f /etc/server.vpn ]]; then
 						${VPNDIR}vpncmd /client localhost /cmd accountimport //etc//server.vpn >/dev/null 2>&1
 						${VPNDIR}vpnclient stop >/dev/null 2>&1
@@ -508,7 +508,7 @@ function jobs ()
 					echo "ip route del default"
 					echo "ip route add default via $GW dev vpn_se"
 					read
-					dialog --title "VPN client is connected to $VPNSERVERIP" --colors --backtitle "$BACKTITLE" --help-button --help-label "Back" --yes-label "Stop" --no-label " Import " --yesno "\n\Z1Stop:  \Z0 stop\n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+					dialog --title "VPN client is connected to $VPNSERVERIP" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label " Import " --yesno "\n\Z1Stop:  \Z0 stop\n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
 				fi
 				response=$?
 				if [[ $response = 0 ]]; then
@@ -521,7 +521,7 @@ function jobs ()
 					${VPNDIR}vpnclient stop >/dev/null 2>&1
 				fi
 	else
-				dialog --title "VPN client is disconnected" --colors --backtitle "$BACKTITLE" --help-button --help-label "Back" --yes-label "Connect" --no-label " Import " --yesno "\n\Z1Connect:\Z0 Connect with your VPN server \n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+				dialog --title "VPN client is disconnected" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Connect" --no-label " Import " --yesno "\n\Z1Connect:\Z0 Connect with your VPN server \n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
 				response=$?
 				if [[ $response = 0 ]]; then
 					${VPNDIR}vpnclient start >/dev/null 2>&1
@@ -542,7 +542,7 @@ function jobs ()
 
 	# Connect to Bluetooth
 	#
-	"Discover" )
+	"BT discover" )
 	dialog --backtitle "$BACKTITLE" --title " Bluetooth " --msgbox "\nMake sure your Bluetooth devices are discoverable!" 7 54
 	connect_bt_interface
 	;;
@@ -617,7 +617,7 @@ function jobs ()
 		if [[ $? = 0 ]]; then
 			debconf-apt-progress -- apt-get update
 			debconf-apt-progress -- apt-get -y upgrade
-			dialog --title " Firmware update " --colors --no-label "Back" --backtitle "$BACKTITLE" --yesno \
+			dialog --title " Firmware update " --colors --no-label "Cancel" --backtitle "$BACKTITLE" --yesno \
 			"\nFirmware has been updated. Reboot?   " 7 39
 			if [[ $? = 0 ]]; then reboot; fi
 		fi
@@ -634,7 +634,7 @@ function jobs ()
 	# Freeze and unfreeze kernel and board support packages
 	#
 	"Freeze" | "Defreeze" )
-		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Back" --yesno \
+		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
 		"\nDo you want to ${1,,} kernel updates?" 7 44
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
@@ -656,12 +656,12 @@ function jobs ()
 	"Desktop" )
 		if [[ -n $(service lightdm status 2> /dev/null | grep -w active | grep -w running) || -n $(service nodm status | grep -w active | grep -w running) ]]; then
 			dialog --title " Desktop is enabled and running " --backtitle "$BACKTITLE" \
-			--yes-label "Stop" --no-label "Back" --yesno "\nDo you want to stop and disable this service?" 7 50
+			--yes-label "Stop" --no-label "Cancel" --yesno "\nDo you want to stop and disable this service?" 7 50
 			exitstatus=$?;
 			[[ $exitstatus = 0 ]] && service nodm stop && service lightdm stop && \
 			sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
 		else
-			dialog --colors --title " Choose a display manager " --backtitle "$BACKTITLE" --help-button --help-label "Back" --yes-label "Lightdm" \
+			dialog --colors --title " Choose a display manager " --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Lightdm" \
 			--no-label "Nodm" --yesno "\n\Z1Lightdm\Z0 = full featured login display manager\n\Z1Nodm\Z0    = autoloading into desktop" 8 70
 			exitstatus=$?;
 			[[ $exitstatus = 0 ]] && [[ -f /etc/X11/default-display-manager ]] && \
@@ -746,7 +746,7 @@ function jobs ()
 
 	# Toggle overlay items
 	#
-	"Overlays" )
+	"Hardware" )
 		# check if user agree to enter this area
 		CHANGES="false"
 		while true; do
@@ -773,7 +773,7 @@ function jobs ()
 
 			exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle hardware config" --clear --cancel-label \
-				"Back" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+				"Cancel" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
 				$LISTLENGHT 70 $LISTLENGHT "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 			exec 3>&-
@@ -825,7 +825,7 @@ function jobs ()
 			dialog --backtitle "$BACKTITLE" --title "Please wait" --colors --msgbox "\nThere are no mirrors available!" 7 35
 		else
 			exec 3>&1
-			TARGET_MIRROR=$(dialog --cancel-label "Back" --backtitle "$BACKTITLE" --no-collapse \
+			TARGET_MIRROR=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
 			--title "Change repository location" --colors --clear --menu "\nfrom \Z1$BEFORE\Z0 to:\n " $((6+${LIST_LENGHT})) 60 15 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
@@ -904,7 +904,7 @@ function jobs ()
 
 			exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title " Toggle sshd options " --clear --cancel-label \
-				"Back" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+				"Cancel" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
 				$LISTLENGHT 74 21 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 			exec 3>&-
@@ -936,7 +936,7 @@ function jobs ()
 	# Switch to daily builds
 	#
 	"Nightly" )
-		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
+		dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
 		--yesno "\nYou are switching to automated nightly repository which is untested and might break your system.\
 		Are you fine with that?" 9 48
 		if [[ $? = 0 ]]; then
@@ -944,7 +944,7 @@ function jobs ()
 			debconf-apt-progress -- apt-get update
 			debconf-apt-progress -- apt-get -y upgrade
 			dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" \
-			--no-label "Back" --yesno "\nReboot to apply new settings?" 7 34
+			--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
 			if [[ $? = 0 ]]; then reboot; fi
 		fi
 	;;
@@ -953,13 +953,13 @@ function jobs ()
 	# Switch to stable builds
 	#
 	"Stable" )
-		dialog --title " Warning " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
+		dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
 		--yesno "\nYou are switching back to stable respository where you are going to get future updates. Are you fine with that?" 9 44
 		if [[ $? = 0 ]]; then
 			sed -i 's/beta.armbian.com/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
 			debconf-apt-progress -- apt-get update
 			debconf-apt-progress -- apt-get -y upgrade
-			dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Back" --yesno \
+			dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
 			"\nReboot to apply new settings?" 7 34
 			if [[ $? = 0 ]]; then reboot; fi
 		fi
@@ -972,7 +972,7 @@ function jobs ()
 		aval_kernel
 		if [[ $exitstatus = 0 ]]; then
 			exceptions "$INSTALL_KERNEL"
-			dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Back" \
+			dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
 			--yesno "\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\nMake sure you know what you are doing! \
 			\n\nBoard config will be reverted to defaults." 11 46
 			if [[ $? = 0 ]]; then

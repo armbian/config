@@ -34,6 +34,8 @@ fi
 source "$0""-submenu"
 source "$0""-jobs"
 
+
+
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # Main menu
 #
@@ -41,25 +43,24 @@ while true
 do
 	LIST=()
 
-	LIST+=( "System" "General system settings" )
-	LIST+=( "Networking" "Wired, Wireless, Bluetooth, Access point" )
-	LIST+=( "Armbian" "Armbian specific: overlays, MOTD, loglevel" )
+	LIST+=( "System" "System and security settings" )
+	LIST+=( "Network" "Wired, wireless, Bluetooth, access point" )
+	LIST+=( "Personal" "Timezone, language, hostname" )
 	LIST+=( "Software" "System and 3rd party software install" )
 	LIST+=( "Help" "Documentation, support, sources" )
 
 	# count number of menu items to adjust window size
 	LISTLENGHT="$((11+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
-	MENUTITLE="Configuration tool "
-	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE"for the \Z1${BOARD_NAME}\Z0"
-	MENUTITLE=$MENUTITLE"running \Z1$DISTRO $DISTROID\Z0"
+	MENUTITLE="Configure $DISTRO $DISTROID based \Z1Armbian\Z0 "
+	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE"for the \Z1${BOARD_NAME}\Z0 "
 
 	# main dialog routine
 	DIALOG_CANCEL=1
 	DIALOG_ESC=255
 	TITLELENGHT=${#MENUTITLE}
 
-	[[ "$TITLELENGHT" -lt 50 ]] && TITLELENGHT="70"
+	[[ "$TITLELENGHT" -lt 50 ]] && TITLELENGHT="50"
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
@@ -74,18 +75,22 @@ do
 
 	case $selection in
 
-		"Software" )
-			submenu_software
-		;;
-		"Networking" )
-			submenu_networking
-		;;
 		"System" )
 			submenu_settings
 		;;
-		"Armbian" )
-			submenu_hardware
+
+		"Network" )
+			submenu_networking
 		;;
+
+		"Personal" )
+			submenu_personal
+		;;
+
+		"Software" )
+			submenu_software
+		;;
+
 		"Help" )
 			show_box "Info" "This tool provides a straightforward way of configuring the \Z4${BOARD_NAME}\Z0. \
 			\n \nAlthough it can be run at any time, some of the options may have difficulties if you alter system settings manually.\n\
