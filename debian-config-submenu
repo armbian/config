@@ -522,7 +522,7 @@ while true; do
 	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Bootenv" "Edit boot environment" )
 	[[ -f /boot/boot.ini ]] && LIST+=( "Bootscript" "Edit boot script" )
 
-	[[ -d /boot/dtb/allwinner/overlay ]] && \
+	[[ -d ${OVERLAYDIR} ]] && \
 	LIST+=( "Hardware" "Toggle hardware configuration: UART, I2C, etc." )
 	[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
 	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
@@ -785,6 +785,7 @@ check_if_installed bluetooth nodm && DESKTOP_INSTALLED="nodm";
 check_if_installed bluetooth lightdm && DESKTOP_INSTALLED="lightdm";
 [[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
 [[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
-
+OVERLAYDIR="/boot/dtb/overlay";
+[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
 dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
 sleep 1

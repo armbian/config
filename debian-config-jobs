@@ -753,7 +753,6 @@ function jobs ()
 			overlay_prefix=$(cat /boot/armbianEnv.txt | grep overlay_prefix | sed 's/overlay_prefix=//g')
 			TARGET_BRANCH=$BRANCH
 			exceptions "$BRANCH"
-			HOME="/boot/dtb/allwinner/overlay"
 			MOTD=()
 			LINES=()
 			LIST_CONST=-3
@@ -767,7 +766,7 @@ function jobs ()
 				MOTD+=( "$line" "$DESC" "$STATUS")
 				LINES[ $j ]=$line
 				(( j++ ))
-			done < <(ls -1 ${HOME}/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g' )
+			done < <(ls -1 ${OVERLAYDIR}/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g' )
 
 			LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
 
