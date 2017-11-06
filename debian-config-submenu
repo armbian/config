@@ -530,7 +530,7 @@ while true; do
 
 
 	LIST+=( "SSH" "Reconfigure SSH daemon" )
-	LIST+=( "Firmware" "Upgrade board firmware" )
+	LIST+=( "Firmware" "Run apt update & apt upgrade" )
 	[[ "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" && \
 	-n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 
