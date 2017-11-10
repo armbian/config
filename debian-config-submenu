@@ -51,6 +51,9 @@ if [[ -z "$CHECK" ]]; then
 			sed '/### IEEE 802.11ac\>/,/^### IEEE 802.11ac\>/ s/^# *//' -i /etc/hostapd.conf
 			CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
 			if [[ -n "$CHECK" ]]; then
+				check_channels
+			fi
+			if [[ -n "$CHECK" ]]; then
 				dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors \
 				--infobox "\nWireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0 is not supported!" 5 60
 				sed '/## IEEE 802.11ac\>/,/^## IEEE 802.11ac\>/ s/.*/#&/' -i /etc/hostapd.conf
@@ -144,7 +147,7 @@ dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --
 function check_ht_capab ()
 {
 declare -a arr=("[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40][SMPS-STATIC]" \
-"[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]")
+"[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]" "[DSSS_CK-40][HT20+]")
 local j=0
 for i in "${arr[@]}"
 do
