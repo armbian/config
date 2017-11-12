@@ -31,8 +31,8 @@ fi
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # load functions
-source "$0""-submenu"
-source "$0""-jobs"
+[[ -f /usr/lib/armbian-config/jobs.sh ]] && source /usr/lib/armbian-config/jobs.sh || source ${BASH_SOURCE}-jobs
+[[ -f /usr/lib/armbian-config/submenu.sh ]] && source /usr/lib/armbian-config/submenu.sh || source ${BASH_SOURCE}-submenu
 
 
 
