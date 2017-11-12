@@ -27,15 +27,19 @@ LIST+=( "TV headend" "TV streaming / proxy" "$TVHEADEND_STATUS" )
 # synthing
 SYNCTHING_STATUS="$(check_if_installed syncthing && echo "on" || echo "off" )"
 LIST+=( "Syncthing" "Personal cloud @syncthing.net" "$SYNCTHING_STATUS" )
-
+# Exagear
+if [[ "$(check_if_installed xserver-xorg && echo "on")" == "on" && "$family" == "Ubuntu" ]]; then
+	EXAGEAR_STATUS="$(check_if_installed exagear-armbian && echo "on" || echo "off" )"
+	LIST+=( "ExaGear" "32bit x86 Linux/Windows emulator trial" "$EXAGEAR_STATUS" )
+fi
 if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
 	LIST_CONST=4
 	# vpn server
 	VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
-	LIST+=( "VPN server" "VPN server" "$VPN_SERVER_STATUS" )
+	LIST+=( "VPN server" "Softether VPN server" "$VPN_SERVER_STATUS" )
 	# vpn client
 	VPN_CLIENT_STATUS="$([[ -d /usr/local/vpnclient ]] && echo "on" || echo "off" )"
-	LIST+=( "VPN client" "VPN client" "$VPN_CLIENT_STATUS" )
+	LIST+=( "VPN client" "Softether VPN client" "$VPN_CLIENT_STATUS" )
 fi
 
 # OMV
@@ -411,8 +415,8 @@ install_tvheadend (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # TVheadend https://tvheadend.org/ unofficial port https://tvheadend.org/boards/5/topics/21528
 #------------------------------------------------------------------------------------------------------------------------------------------
-if !(grep -qs djbenson "/etc/apt/sources.list.d/tvheadend.list");then
-	echo "deb https://dl.bintray.com/djbenson/deb wheezy stable" >> /etc/apt/sources.list.d/tvheadend.list
+if [ ! -f /etc/apt/sources.list.d/tvheadend.list ]; then
+	echo "deb https://dl.bintray.com/tvheadend/deb xenial stable-4.2" >> /etc/apt/sources.list.d/tvheadend.list
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1
 fi
 
@@ -1088,6 +1092,12 @@ while true; do
 		if [[ "$selection" == *Syncthing* && "$SYNCTHING_STATUS" != "on" ]]; then
 			install_syncthing
 			check_port 8384 "Syncthing"
+			read -n 1 -s -p "Press any key to continue"
+		fi
+
+		if [[ "$selection" == *ExaGear* && "$EXAGEAR_STATUS" != "on" ]]; then
+			debconf-apt-progress -- apt-get update
+			debconf-apt-progress -- apt-get -y install exagear-armbian
 			read -n 1 -s -p "Press any key to continue"
 		fi
 
