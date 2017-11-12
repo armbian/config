@@ -34,6 +34,7 @@ Login as root and type:
 		- [TV headend](https://tvheadend.org/) *(IPTV server)*
 		- [Syncthing](https://syncthing.net/) *(personal cloud)*
 		- [SoftEther VPN server](https://www.softether.org/) *(VPN server)*
+		- [ExaGear desktop](https://eltechs.com/product/exagear-desktop) *(x86 emulator)*
 		- [Transmission](https://transmissionbt.com/) *(torrent server)*
 		- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
 		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
