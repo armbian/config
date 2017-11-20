@@ -330,9 +330,16 @@ case $distribution in
 esac
 
 export APT_LISTCHANGES_FRONTEND=none
-if [ ! -f /etc/armbian-release ]; then
+if [ -f /etc/armbian-release ]; then
+	. /etc/armbian-release
+else
 	sed -i "s/^# en_US.UTF-8/en_US.UTF-8/" /etc/locale.gen
 	locale-gen
+fi
+
+# preserve cpufrequtils settings:
+if [ -f /etc/default/cpufrequtils ]; then
+	. /etc/default/cpufrequtils
 fi
 
 cat > /etc/apt/sources.list.d/openmediavault.list << EOF
@@ -386,13 +393,13 @@ sed -i 's|-j /var/lib/rrdcached/journal/ ||' /etc/init.d/rrdcached
 for i in netatalk samba flashmemory ssh ntp timezone monit rrdcached collectd ; do
 	/usr/sbin/omv-mkconf $i
 done
+systemctl disable log2ram
+rm /etc/cron.daily/log2ram
 /sbin/folder2ram -enablesystemd 2>/dev/null
 
 # Prevent accidentally destroying board performance by clicking around in OMV UI since
 # OMV sets 'powersave' governor when touching 'Power Management' settings.
-if [ -f /etc/default/cpufrequtils ]; then
-	. /etc/default/cpufrequtils
-else
+if [ ! -f /etc/default/cpufrequtils ]; then
 	DEFAULT_GOV="$(zgrep "^CONFIG_CPU_FREQ_DEFAULT_GOV_" /proc/config.gz 2>/dev/null | sed 's/CONFIG_CPU_FREQ_DEFAULT_GOV_//')"
 	if [ -n "${DEFAULT_GOV}" ]; then
 		GOVERNOR=$(cut -f1 -d= <<<"${DEFAULT_GOV}" | tr '[:upper:]' '[:lower:]')
@@ -405,6 +412,33 @@ fi
 echo -e "OMV_CPUFREQUTILS_GOVERNOR=${GOVERNOR}" >>/etc/default/openmediavault
 echo -e "OMV_CPUFREQUTILS_MINSPEED=${MIN_SPEED}" >>/etc/default/openmediavault
 echo -e "OMV_CPUFREQUTILS_MAXSPEED=${MAX_SPEED}" >>/etc/default/openmediavault
+
+# Hardkernel Cloudshell 1 and 2 fixes, read the whole thread for details:
+# https://forum.openmediavault.org/index.php/Thread/17855
+lsusb | grep -q -i "05e3:0735" && sed -i "/exit 0/i echo 20 > /sys/class/block/sda/queue/max_sectors_kb" /etc/rc.local
+if [ "X${BOARD}" = "Xodroidxu4" ]; then
+	HMP_Fix='; taskset -c -p 4-7 $i '
+	apt install -y i2c-tools
+	/usr/sbin/i2cdetect -y 1 | grep -q "60: 60"
+	if [ $? - eq 0 ]; then
+		add-apt-repository -y ppa:kyle1117/ppa
+		sed -i 's/jessie/xenial/' /etc/apt/sources.list.d/kyle1117-ppa-jessie.list
+		apt install -y -q cloudshell-lcd odroid-cloudshell cloudshell2-fan &
+		lsusb -v | awk -F"__" '/RANDOM_/ {print $2}' | head -n1 | while read ; do
+			echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"disk\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}\"" >> /etc/udev/rules.d/99-cloudshell2.rules
+			echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"partition\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}-part%n\"" >> /etc/udev/rules.d/99-cloudshell2.rules
+		done
+	fi
+fi
+
+# Add a cron job to make NAS processes more snappy
+service rsyslog status >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+	echo ':msg, contains, "do ionice -c1" ~' >/etc/rsyslog.d/omv-armbian.conf
+	service rsyslog restart
+fi
+echo "* * * * * root for i in \`pgrep \"ftpd|nfsiod|smbd|afpd|cnid\"\` ; do ionice -c1 -p \$i ${HMP_Fix}; done >/dev/null 2>&1" >/etc/cron.d/make_nas_processes_faster
+chmod 600 /etc/cron.d/make_nas_processes_faster
 
 /usr/sbin/omv-initsystem
 check_port 80 "OMV web"
