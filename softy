@@ -11,7 +11,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 function check_status
 {
 #------------------------------------------------------------------------------------------------------------------------------------------
-# Chech if service is already installed
+# Check if service is already installed
 #------------------------------------------------------------------------------------------------------------------------------------------
 LIST=()
 LIST_CONST=5
@@ -358,6 +358,7 @@ debconf-apt-progress -- apt-get update
 read HOSTNAME </etc/hostname
 read TZ </etc/timezone
 debconf-set-selections <<< "postfix postfix/mailname string ${HOSTNAME}"
+debconf-set-selections <<< "postfix postfix/main_mailer_type string 'No configuration'"
 SPACE_NEEDED=$(apt-get --assume-no --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault postfix dirmngr 2>/dev/null | awk -F" " '/additional disk space will be used/ {print $4}')
 SPACE_AVAIL=$(df -k / | awk -F" " '/\/$/ {printf ("%0.0f",$4/1200); }')
 if [ ${SPACE_AVAIL} -lt ${SPACE_NEEDED} ]; then
@@ -366,7 +367,8 @@ if [ ${SPACE_AVAIL} -lt ${SPACE_NEEDED} ]; then
 fi
 apt-get --allow-unauthenticated install openmediavault-keyring
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
-debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault postfix dirmngr
+debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends \
+	-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install openmediavault postfix dirmngr
 FILE="${TEMP_DIR}/omv_extras.deb"; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE ; rm $FILE
 # /usr/sbin/omv-update
 debconf-apt-progress -- apt-get update
@@ -1094,7 +1096,7 @@ while true; do
 
 		if [[ "$selection" == *CUPS* && "$CUPS_STATUS" != "on" ]]; then
 			install_cups
-			check_port 445 "CUPS"
+			check_port 631 "CUPS"
 		fi
 
 		if [[ "$selection" == *headend* && "$TVHEADEND_STATUS" != "on" ]]; then
