@@ -139,6 +139,18 @@ function jobs ()
 	;;
 
 
+	# Install build essentials
+	#
+	"Development" )
+		if [[ -n $(dpkg -l | grep build-essential) ]]; then
+			debconf-apt-progress -- apt-get -y remove build-essential
+			debconf-apt-progress -- apt-get -y autoremove
+		else
+			debconf-apt-progress -- apt-get -y install build-essential
+		fi
+	;;
+
+
 	# Set the display resolution
 	#
 	"Display" )

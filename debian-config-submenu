@@ -738,6 +738,11 @@ while true; do
 
 	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else \
 	LIST+=( "Headers" "Install kernel headers" ); fi
+	if check_if_installed build-essential then ; then
+		LIST+=( "Development" "Remove base development tools" );
+		else
+		LIST+=( "Development" "Install base development tools" );
+	fi
 	if [[ -n $DISPLAY_MANAGER ]]; then
 			if [[ $(service xrdp status 2> /dev/null | grep -w active) ]]; then
 				LIST+=( "RDP" "Disable remote desktop access from Windows" )
