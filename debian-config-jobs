@@ -247,7 +247,7 @@ function jobs ()
 	#
 	"Hotspot" )
 		systemctl daemon-reload
-		CURRENT_UUID=$(nmcli -f DEVICE,TYPE,STATE device status | grep -w " wifi " | grep -w " disconnected")
+		CURRENT_UUID=$(LC_ALL=C nmcli -f DEVICE,TYPE,STATE device status | grep -w " wifi " | grep -w " disconnected")
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
 			if [[ -n $HOSTAPDBRIDGE ]]; then
 				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
@@ -575,7 +575,7 @@ function jobs ()
 	# Remove automatic wifi conections
 	#
 	"Forget" )
-		nmcli --fields UUID,TIMESTAMP-REAL,TYPE con show | grep wireless |  awk '{print $1}' | while read line; \
+		LC_ALL=C nmcli --fields UUID,TIMESTAMP-REAL,TYPE con show | grep wireless |  awk '{print $1}' | while read line; \
 		do nmcli con delete uuid  $line; done > /dev/null
 	;;
 

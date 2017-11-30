@@ -401,7 +401,7 @@ function get_wlan_interface ()
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
 
-	WLAN_INTERFACES=($(nmcli --wait 10 dev status | grep wifi | grep disconnected |awk '{print $1}'))
+	WLAN_INTERFACES=($(LC_ALL=C nmcli --wait 10 dev status | grep wifi | grep disconnected |awk '{print $1}'))
 	local LIST=()
 	for i in "${WLAN_INTERFACES[@]}"
 	do
@@ -595,7 +595,7 @@ while true; do
 			HOSTAPDCLIENTS=$(hostapd_cli all_sta 2> /dev/null | grep connected_time | wc -l)
 			LIST+=( "Hotspot" "Manage active wireless access point" )
 		else
-			[[ -n $(nmcli device status | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
+			[[ -n $(LC_ALL=C nmcli device status | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
 
 	fi
 
@@ -607,7 +607,7 @@ while true; do
 	fi
 
 
-	if [[ -n $(nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]]; then
+	if [[ -n $(LC_ALL=C nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]]; then
 		LIST+=( "WiFi" "Manage wireless networking" )
 	else
 		LIST+=( "Clear" "Clear possible blocked interfaces" )
@@ -633,13 +633,13 @@ while true; do
 	# count number of menu items to adjust window sizee
 	LISTLENGHT="$((12+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
-	WIFICONNECTED=$(nmcli -f NAME,TYPE connection show --active | grep wireless | awk 'NF{NF-=1};1')
+	WIFICONNECTED=$(LC_ALL=C nmcli -f NAME,TYPE connection show --active | grep wireless | awk 'NF{NF-=1};1')
 
 	local disclaimer=""
 
 	local ipadd=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
 
-	if [[ -n $(nmcli device status | grep wlan0 | grep connected) ]]; then
+	if [[ -n $(LC_ALL=C nmcli device status | grep wlan0 | grep connected) ]]; then
 		local ifup="\nIP ($DEFAULT_ADAPTER) via Network Manager: \Z1${ipadd}\n\Z0 "
 	else
 		local ifup="\nIP ($DEFAULT_ADAPTER) via IFUPDOWN: \Z1${ipadd}\n\Z0 "
