@@ -368,6 +368,9 @@ function jobs ()
 
 				response=0
 
+				# create interfaces file if not exits
+				[[ ! -f /etc/network/interfaces ]] && echo "source /etc/network/interfaces.d/*" > /etc/network/interfaces
+
 				# select default interfaces if there is more than one
 				select_default_interface
 
@@ -386,6 +389,7 @@ function jobs ()
 						echo -e "\nauto $WIRELESS_ADAPTER\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet manual\n" >> $TEMP_CONF
 						create_if_config "$DEFAULT_ADAPTER" "br0" >> $TEMP_CONF
 						echo -e "\nbridge_ports $NEW_DEFAULT_ADAPTER $WIRELESS_ADAPTER" >> $TEMP_CONF
+
 					;;
 					# NAT
 					0)
