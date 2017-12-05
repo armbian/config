@@ -511,9 +511,9 @@ while true; do
 	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent 2> /dev/null) == mmcblk* && -f /usr/sbin/nand-sata-install ]] \
 	&& LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
 	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
-			LIST+=( "Defreeze" "Defreeze firmware - enable kernel upgrade" )
+			LIST+=( "Defreeze" "Enable kernel upgrades" )
 		else
-			LIST+=( "Freeze" "Freeze firmware - disable kernel upgrade" )
+			LIST+=( "Freeze" "Disable kernel upgrades" )
 	fi
 	if [[ -z $(apt-mark showhold | grep -w "$BOARD") ]]; then
 	[[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
