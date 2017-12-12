@@ -697,6 +697,7 @@ function jobs ()
 		systemctl disable lightdm.service >/dev/null 2>&1
 		systemctl stop lightdm.service >/dev/null 2>&1
 		sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
+		DISPLAY_MANAGER="nodm"
 	;;
 
 
@@ -706,6 +707,7 @@ function jobs ()
 		service nodm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
 		systemctl enable lightdm.service >/dev/null 2>&1
 		systemctl start lightdm.service >/dev/null 2>&1
+		DISPLAY_MANAGER="lightdm"
 	;;
 
 
