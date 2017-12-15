@@ -982,6 +982,19 @@ function jobs ()
 		fi
 	;;
 
+	# Switch to alternative kernels
+	#
+	"DTB" )
+		aval_cubox
+		if [[ $exitstatus = 0 ]]; then
+		BOX_LENGHT=$((${#TARGET_BOARD}+24));
+		dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGHT
+		if [[ $? = 0 ]]; then
+			sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
+			reboot;
+		fi
+		fi
+	;;
 
 	# Switch to alternative kernels
 	#
