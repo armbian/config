@@ -22,8 +22,10 @@ LIST+=( "Samba" "Windows compatible file sharing" "$SAMBA_STATUS" )
 CUPS_STATUS="$(check_if_installed cups && echo "on" || echo "off" )"
 LIST+=( "CUPS" "Common UNIX Printing System (CUPS)" "$CUPS_STATUS" )
 # tvheadend
-TVHEADEND_STATUS="$(check_if_installed tvheadend && echo "on" || echo "off" )"
-LIST+=( "TV headend" "TV streaming / proxy" "$TVHEADEND_STATUS" )
+if [[ "$family" == "Ubuntu" ]]; then
+	TVHEADEND_STATUS="$(check_if_installed tvheadend && echo "on" || echo "off" )"
+	LIST+=( "TV headend" "TV streaming / proxy" "$TVHEADEND_STATUS" )
+fi
 # synthing
 SYNCTHING_STATUS="$(check_if_installed syncthing && echo "on" || echo "off" )"
 LIST+=( "Syncthing" "Personal cloud @syncthing.net" "$SYNCTHING_STATUS" )
