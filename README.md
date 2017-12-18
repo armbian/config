@@ -1,6 +1,6 @@
 # Armbian configuration utility
 
-Utility for configuring your board, adjusting services and installing applications. It comes with Armbian by default. 
+Utility for configuring your board, adjusting services and installing applications. It comes with Armbian by default.
 
 Login as root and type:
 
@@ -9,26 +9,29 @@ Login as root and type:
 ![](images/animated.gif)
 
 - **system**
-	- change timezone, languages and hostname
+	- install to SATA, eMMC, NAND or USB
+	- freeze and unfreeze kernel and BSP upgrades
+	- switching between avaliable kernels and nightly builds
+	- edit boot environment
+	- reconfigure board settings with DT overlays or FEX (Allwinner legacy)
+	- select dedicated DTB (Solidrun imx6 boards)
 	- adjust SSH daemon features
-	- update board firmware
-	- toggle desktop, RDP and login manager (desktop builds)
+	- run apt update and upgrade
+	- toggle desktop and login manager (desktop builds)
 	- adjusting the display resolution (some boards)
 	- toggle running servives (stock Debian utility)
 	- enabling read only root filesystem (Ubuntu)
-	- install kernel headers
-- **networking**
+- **network**
 	- select dynamic or static IP address
-	- hotspot management. Automatic detection of: nl80211, realtek, 802.11n, 802.11a and 802.11ac 
-	- connect to wireless 
-	- pair and connect Bluetooth devices
+	- hotspot management. Automatic detection of: nl80211, realtek, 802.11n, 802.11a and 802.11ac
+	- iperf3. Toogle bandwidth measuring server
+	- connect to wireless
+	- install IR support
+	- install support, pair and connect Bluetooth devices
 	- edit IFUPDOWN interfaces
-- **armbian**
-	- install to SATA, eMMC, NAND or USB
-	- freeze and unfreeze kernel and BSP upgrades
-	- edit boot environment, welcome screen items
-	- reconfigure board settings with DT overlays or FEX (Allwinner legacy)
-	- switching between avaliable kernels and nightly builds
+- **personal**
+	- change timezone, languages and hostname
+	- select welcome screen items
 - **software**
 	- softy
 		- [TV headend](https://tvheadend.org/) *(IPTV server)*
@@ -44,6 +47,9 @@ Login as root and type:
 		- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)*
 	- monitoring tools
 	- create diagnostics report
+	- install kernel headers
+	- remove build-essentials
+	- install RDP service (desktop builds)
 - **help**
 	- Links to documentation, support and sources
 
