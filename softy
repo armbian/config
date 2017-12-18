@@ -56,6 +56,9 @@ LIST+=( "Pi hole" "Ad blocker" "$PI_HOLE_STATUS" )
 # Transmission
 TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
 LIST+=( "Transmission" "Torrent downloading" "$TRANSMISSION_STATUS" )
+# UrBackup
+URBACKUP_STATUS="$(check_if_installed urbackup-server && echo "on" || echo "off" )"
+LIST+=( "UrBackup" "Open Source client/server backup system" "$URBACKUP_STATUS" )
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
 LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
@@ -459,6 +462,18 @@ fi
 
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
+}
+
+
+install_urbackup (){
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Open Source client/server backup system https://www.urbackup.org/
+#------------------------------------------------------------------------------------------------------------------------------------------
+PREFIX="http://hndl.urbackup.org/Server/latest/"
+URL="http://hndl.urbackup.org/Server/latest/"$(wget -q $PREFIX -O - | html2text -width 120 | grep deb | awk ' { print $3 }' | grep $(dpkg --print-architecture))
+wget -q $URL -O ${TEMP_DIR}/package.deb
+dpkg -i ${TEMP_DIR}/package.deb
+debconf-apt-progress -- apt-get -f install
 }
 
 
@@ -1162,6 +1177,12 @@ while true; do
 			install_transmission
 			check_port 9091 transmission
 		fi
+
+		if [[ "$selection" == *UrBackup* && "$URBACKUP_STATUS" != "on" ]]; then
+			install_urbackup
+			check_port 55414
+		fi
+
 
 		# reread statuses
 		check_status
