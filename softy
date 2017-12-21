@@ -318,7 +318,7 @@ install_omv (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # On Debian install OpenMediaVault 3 (Jessie) or 4 (Stretch)
 #------------------------------------------------------------------------------------------------------------------------------------------
-# TODO: Some OMV packages lack authentication, flashmemory-plugin currently doesn't work as expected
+# TODO: Some OMV packages lack authentication
 
 if [[ "$family" == "Ubuntu" ]]; then
 	dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
@@ -337,6 +337,7 @@ case $distribution in
 		;;
 esac
 
+systemctl status log2ram >/dev/null 2>&1 && (systemctl stop log2ram ; systemctl disable log2ram ; rm /etc/cron.daily/log2ram)
 export APT_LISTCHANGES_FRONTEND=none
 if [ -f /etc/armbian-release ]; then
 	. /etc/armbian-release
@@ -400,7 +401,6 @@ xmlstarlet ed -L -u "/config/system/network/dns/hostname" -v "${HOSTNAME}" ${OMV
 /usr/sbin/omv-rpc -u admin "perfstats" "set" '{"enable":false}'
 /usr/sbin/omv-rpc -u admin "config" "applyChanges" '{ "modules": ["monit","rrdcached","collectd"],"force": true }'
 sed -i 's|-j /var/lib/rrdcached/journal/ ||' /etc/init.d/rrdcached
-systemctl status log2ram >/dev/null 2>&1 && (systemctl disable log2ram ; rm /etc/cron.daily/log2ram)
 /sbin/folder2ram -enablesystemd 2>/dev/null
 
 # Prevent accidentally destroying board performance by clicking around in OMV UI since
@@ -1072,8 +1072,23 @@ TEMP_DIR=$(mktemp -d || exit 1)
 chmod 700 ${TEMP_DIR}
 trap "rm -rf \"${TEMP_DIR}\" ; exit 0" 0 1 2 3 15
 
-# Install basic stuff
-#
+# Install basic stuff, we have to wait for other apt tasks to finish
+# (eg unattended-upgrades)
+i=0
+tput sc
+while fuser /var/lib/dpkg/lock >/dev/null 2>&1 ; do
+	case $(($i % 4)) in
+		0 ) j="-" ;;
+		1 ) j="\\" ;;
+		2 ) j="|" ;;
+		3 ) j="/" ;;
+	esac
+	tput rc
+	echo -en "\r[$j] Waiting for other software managers to finish..."
+	sleep 0.5
+	((i=i+1))
+done
+
 echo -e "\nChecking dependencies. This might take a while."
 apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
 lsb-release bc expect html2text > /dev/null
