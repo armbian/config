@@ -270,6 +270,7 @@ function jobs ()
 				ifdown $WIRELESS_ADAPTER 2> /dev/null
 				rm -f /etc/network/interfaces.d/armbian.ap.nat
 				rm -f /etc/network/interfaces.d/armbian.ap.bridge
+				rm -f /var/run/hostapd/* >/dev/null 2>&1
 				sed -i '/^iptables/ d' /etc/rc.local
 				sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 				sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
@@ -282,11 +283,21 @@ function jobs ()
 		elif [[ -z $CURRENT_UUID ]]; then
 				dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --msgbox "\nAll wireless connections are in use." 7 40
 		else
+				# check for low quality drivers and combinations
+				check_and_warn
+
 				# remove interfaces from managed list
 				if [[ -f /etc/NetworkManager/conf.d/10-ignore-interfaces.conf ]]; then
 					sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 					sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 				fi
+
+				# clear current settings
+				rm -f /etc/network/interfaces.d/armbian.ap.nat
+				rm -f /etc/network/interfaces.d/armbian.ap.bridge
+				service networking restart
+				service network-manager restart
+				{ for ((i = 0 ; i <= 100 ; i+=20)); do sleep 1; echo $i; done } | dialog --title " Initializing wireless adapters " --colors --gauge "" 5 50 0
 
 				# start with basic config
 				if grep -q "^## IEEE 802.11ac" /etc/hostapd.conf; then sed '/## IEEE 802.11ac\>/,/^## IEEE 802.11ac\>/ s/.*/#&/' -i /etc/hostapd.conf; fi
@@ -311,7 +322,7 @@ function jobs ()
 				# display dialog
 				dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox \
 				"\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing nl80211 hostapd driver compatibility." 7 50
-				apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd > /dev/null
+				debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd
 				# change to selected interface
 				sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
 				# add hostapd.conf to services
@@ -326,11 +337,10 @@ function jobs ()
 				#
 				check_advanced_modes
 				#
-				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
-				if [[ -n "$CHECK" ]]; then
+				if [[ -n "$hostapd_error" ]]; then
 					dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox \
 					"\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing Realtek hostapd driver compatibility." 7 50
-					apt-get -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd-realtek > /dev/null
+					debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confnew" -y -qq --no-install-recommends install hostapd-realtek
 					# change to selected interface
 					sed -i "s/^interface=.*/interface=$WIRELESS_ADAPTER/" /etc/hostapd.conf
 					# add allow cli access if not exists. temporally
@@ -343,9 +353,7 @@ function jobs ()
 					#
 				fi
 
-				CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
-				# if both fails there is other problem
-				if [[ -n "$CHECK" ]]; then
+				if [[ -n "$hostapd_error" ]]; then
 					dialog --backtitle "$BACKTITLE" --title "Warning" \
 					--infobox "\nWireless adapter: $WIRELESS_ADAPTER\n\nNo compatible hostapd driver found." 7 39
 					sed -i "s/^DAEMON_CONF=.*/DAEMON_CONF=/" /etc/init.d/hostapd
@@ -353,8 +361,6 @@ function jobs ()
 					sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 					sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 					systemctl daemon-reload;service hostapd restart
-					sleep 3
-					break
 				fi
 
 				# let's remove bridge out for this simple configurator
@@ -432,7 +438,7 @@ function jobs ()
 				255) exit;;
 				esac
 
-				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nEnabling hotstop. Please wait!" 5 34
+				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nEnabling hotspot. Please wait!" 5 34
 
 				#
 				# only for bridged connection we need to check and reboot. tdlr check if it can be done on the fly

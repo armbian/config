@@ -7,10 +7,11 @@
 # warranty of any kind, whether express or implied.
 
 
+
 check_if_installed (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # check dpkg status of $1 -- currently only 'not installed at all' case catched
-#------------------------------------------------------------------------------------------------------------------------------------------
+#
 	local DPKG_Status="$(dpkg -s "$1" 2>/dev/null | awk -F": " '/^Status/ {print $2}')"
 	if [[ "X${DPKG_Status}" = "X" || "${DPKG_Status}" = *deinstall* ]]; then
 		return 1
@@ -21,54 +22,64 @@ check_if_installed (){
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
+# check hostapd configuration. Return error or empty if o.k.
+#
+check_hostapd ()
+{
+systemctl daemon-reload
+hostapd_error=""
+[[ -n $1 && -n $2 ]] && dialog --title " $1 " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "$2" 5 $((${#2}-3))
+service hostapd stop
+rm -f /var/run/hostapd/*
+sleep 1
+service hostapd start
+sleep 6
+if [[ "$(hostapd_cli ping 2> /dev/null| grep PONG)" == "PONG" ]]; then
+		hostapd_error=""
+	else
+		hostapd_error=$(hostapd /etc/hostapd.conf)
+		sleep 6
+		[[ -n $(echo $hostapd_error | grep "channel") ]] && hostapd_error="channel_restriction"
+		[[ -n $(echo $hostapd_error | grep "does not support" | grep "hw_mode") ]] && hostapd_error="hw_mode"
+		[[ -n $(echo $hostapd_error | grep "not found from the channel list" | grep "802.11g") ]] && hostapd_error="wrong_channel"
+		[[ -n $(echo $hostapd_error | grep "VHT") ]] && hostapd_error="unsupported_vht"
+		[[ -n $(echo $hostapd_error | grep " HT capability") ]] && hostapd_error="unsupported_ht"
+fi
+}
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
 # check all possible wireless modes
 #
 function check_advanced_modes ()
 {
-CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
-# check n,a and ac modes
-if [[ -z "$CHECK" ]]; then
-	dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11n \Z1(150-300Mbps)\Z0" 5 43
-	sleep 2
-	sed '/### IEEE 802.11n/,/^### IEEE 802.11n/ s/^# *//' -i /etc/hostapd.conf
-	CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
-	if [[ -z "$CHECK" ]]; then
-		# check various HT modes
-		check_ht_capab
-		# than go to check 5Ghz
-		dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing wireless 802.11a \Z1(5Ghz)\Z0" 5 36
-		sleep 2
-		sed '/### IEEE 802.11a\>/,/^### IEEE 802.11a\>/ s/^# *//' -i /etc/hostapd.conf
-		CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
-		if [[ -n "$CHECK" ]]; then
-			check_channels
-		fi
-		CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
-		if [[ -z "$CHECK" ]]; then
-			dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors \
-			--infobox "\nProbing wireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0" 5 51
-			sleep 2
-			sed '/### IEEE 802.11ac\>/,/^### IEEE 802.11ac\>/ s/^# *//' -i /etc/hostapd.conf
-			CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;service hostapd status|grep fail)
-			if [[ -n "$CHECK" ]]; then
-				check_channels
-			fi
-			if [[ -n "$CHECK" ]]; then
-				dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors \
-				--infobox "\nWireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0 is not supported!" 5 60
-				sed '/## IEEE 802.11ac\>/,/^## IEEE 802.11ac\>/ s/.*/#&/' -i /etc/hostapd.conf
-			fi
-		else
-			dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors \
-			--infobox "\nWireless 802.11a \Z1(5Ghz)\Z0 is not supported!" 5 45
-			sed -i "s/^channel=.*/channel=5/" /etc/hostapd.conf
-			sed '/## IEEE 802.11a\>/,/^## IEEE 802.11a\>/ s/.*/#&/' -i /etc/hostapd.conf
-		fi
+sed '/### IEEE 802.11n/,/^### IEEE 802.11n/ s/^# *//' -i /etc/hostapd.conf
+check_hostapd "Probing" "\n802.11n \Z1(150-300Mbps)\Z0"
+# check HT capability
+check_ht_capab
+if [[ -z "$hostapd_error" ]]; then
+	sed '/### IEEE 802.11a\>/,/^### IEEE 802.11a\>/ s/^# *//' -i /etc/hostapd.conf
+	sed -i "s/^channel=.*/channel=40/" /etc/hostapd.conf
+	check_hostapd "Probing" "\n802.11a \Z1(5Ghz)\Z0"
+	if [[ "$hostapd_error" == "channel_restriction" ]]; then check_channels; fi
+	if [[ "$hostapd_error" == "channel_restriction" ]]; then
+		# revering configuration
+		sed -i "s/^channel=.*/channel=5/" /etc/hostapd.conf
+		sed '/## IEEE 802.11a\>/,/^## IEEE 802.11a\>/ s/.*/#&/' -i /etc/hostapd.conf
+		check_hostapd "Reverting" "\nWireless \Z1802.11a (5Ghz)\Z0 is not supported"
 	else
-		dialog --title " Reverting configuration " --backtitle "$BACKTITLE" --no-collapse --colors \
-		--infobox "\nWireless 802.11n \Z1(150-300Mbps)\Z0 is not supported!" 5 52
-		sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf
+		sed '/### IEEE 802.11ac\>/,/^### IEEE 802.11ac\>/ s/^# *//' -i /etc/hostapd.conf
+		# check VHT capability
+		check_vht_capab
+		if [[ "$hostapd_error" == "unsupported_vht" || "$hostapd_error" == "channel_restriction" ]]; then
+			# revering configuration
+			sed '/## IEEE 802.11ac\>/,/^## IEEE 802.11ac\>/ s/.*/#&/' -i /etc/hostapd.conf
+			check_hostapd "Reverting" "\nWireless 802.11ac \Z1(433Mbps x n @ 5Ghz)\Z0 is not supported"
+			if [[ "$hostapd_error" == "channel_restriction" ]]; then check_channels; fi
+		fi
 	fi
+else
+	sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf
 fi
 }
 
@@ -147,16 +158,36 @@ dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --
 function check_ht_capab ()
 {
 declare -a arr=("[HT40+][LDPC][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][DSSS_CCK-40][SMPS-STATIC]" \
-"[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]" "[DSSS_CK-40][HT20+]")
+"[HT40-][SHORT-GI-40][SHORT-GI-40][DSSS_CCK-40]" "[SHORT-GI-20][SHORT-GI-40][HT40+]" "[DSSS_CK-40][HT20+]" "")
 local j=0
 for i in "${arr[@]}"
 do
-	j=$((j+1))
-	dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors \
-	--infobox "\nProbing high throughput capabilities \Z1(${j})\Z0" 5 46
+	j=$((j+(100/${#arr[@]})))
+	echo $j | dialog --title " Probing HT " --colors --gauge "\nSeeking for optimal \Z1high throughput\Z0 settings." 8 50 0
 	sed -i "s/^ht_capab=.*/ht_capab=$i/" /etc/hostapd.conf
-	CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
-	if [[ -z "$CHECK" ]]; then break; fi
+	check_hostapd
+	if [[ "$hostapd_error" == "channel_restriction" ]]; then check_channels; fi
+	if [[ "$hostapd_error" == "" ]]; then break; fi
+done
+}
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+#
+# check wifi high throughput
+#
+function check_vht_capab ()
+{
+declare -a arr=("[MAX-MPDU-11454][SHORT-GI-80][TX-STBC-2BY1][RX-STBC-1][MAX-A-MPDU-LEN-EXP3]" "[MAX-MPDU-11454][SHORT-GI-80][RX-STBC-1][MAX-A-MPDU-LEN-EXP3]" "")
+local j=0
+for i in "${arr[@]}"
+do
+	j=$((j+(100/${#arr[@]})))
+	echo $j | dialog --title " Probing VHT " --colors --gauge "\nSeeking for optimal \Z1very high throughput\Z0 settings." 8 54 0
+	sed -i "s/^vht_capab=.*/vht_capab=$i/" /etc/hostapd.conf
+	check_hostapd
+	if [[ "$hostapd_error" == "channel_restriction" ]]; then check_channels; fi
+	if [[ "$hostapd_error" == "" ]]; then break; fi
 done
 }
 
@@ -170,10 +201,9 @@ function check_channels ()
 declare -a arr=("36" "40")
 for i in "${arr[@]}"
 do
-	dialog --title " Info " --backtitle "$BACKTITLE" --no-collapse --colors --infobox "\nProbing channels \Z1(${i})\Z0" 5 26
 	sed -i "s/^channel=.*/channel=$i/" /etc/hostapd.conf
-	CHECK=$(systemctl daemon-reload;service hostapd stop; sleep 2;service hostapd start;sleep 2;service hostapd status|grep fail)
-	if [[ -z "$CHECK" ]]; then break; fi
+	check_hostapd "Probing" "\nChannel:\Z1 ${i}\Z0"
+	if [[ "$hostapd_error" != "channel_restriction" ]]; then break; fi
 done
 }
 
@@ -309,6 +339,22 @@ function wlan_exceptions ()
 	echo 'options dhd op_mode=2' >/etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
 	[[ -n "$(lsmod | grep -w dhd)" && $1 = "off" ]] && \
 	rm /etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
+}
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# here add shaddy wifi adaptors
+#
+function check_and_warn ()
+{
+local shaddy=false
+# blacklist
+[[ "$LINUXFAMILY" == "sun8i" && $BOARD == "orangepizero" ]] && shaddy=true
+[[ -n "$(lsmod | grep mt7601u)" ]] && shaddy=true
+[[ -n "$(lsmod | grep r8188eu)" ]] && shaddy=true
+# blacklist
+if [[ "$shaddy" == "true" ]]; then
+dialog --title " Warning " --ok-label " Accept and proceed " --msgbox '\nOne of your wireless drivers are on a black list due to poor quality.\n\nAP mode might not be possible!' 9 73
+fi
 }
 
 
@@ -693,9 +739,9 @@ while true; do
 		if [[ `grep ^ieee80211n /etc/hostapd.conf` ]]; then local type="N"; fi
 		if [[ `grep ^ieee80211ac /etc/hostapd.conf` ]]; then local type="AC"; fi
 		disclaimer=$disclaimer$" \Z1${band} ${type}\Z0"
-		if [ -n $chpid ]; then disclaimer=$disclaimer$"\n\nChip: \Z1${chpid}\Z0"; fi
+		[[ ! "$chpid" =~ .*IPv6.* ]] && disclaimer=$disclaimer$"\n\nChip: \Z1${chpid}\Z0";
 		if [ "$HOSTAPDCLIENTS" -gt "0" ]; then disclaimer=$disclaimer$" Connected clients: \Z1$HOSTAPDCLIENTS\Zn"; fi
-		if [ -n $chip ] || [ "$HOSTAPDCLIENTS" -gt "0" ]; then LISTLENGHT=$((LISTLENGHT+2)); fi
+		if [[ ! "$chpid" =~ .*IPv6.* ]]; then LISTLENGHT=$((LISTLENGHT+2)); fi
 		disclaimer=$disclaimer$"\n";
 	fi
 	disclaimer=$disclaimer"\n\Z1Note\Zn: This tool can be successful only when drivers are in good shape. If autodetection fails, you are on your own.\n "
