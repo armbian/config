@@ -273,6 +273,7 @@ function jobs ()
 				rm -f /etc/network/interfaces.d/armbian.ap.bridge
 				rm -f /var/run/hostapd/* >/dev/null 2>&1
 				sed -i '/^iptables/ d' /etc/rc.local
+				sed -i '/^service dnsmasq/ d' /etc/rc.local
 				sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 				sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 				iptables -F
@@ -431,6 +432,8 @@ function jobs ()
 						iptables-save > /etc/iptables.ipv4.nat
 						sed -i 's/^bridge=.*/#&/' /etc/hostapd.conf
 						sed -e 's/exit 0//g' -i /etc/rc.local
+						# workaround if hostapd is too slow
+						echo "service dnsmasq start" >> /etc/rc.local
 						echo "iptables-restore < /etc/iptables.ipv4.nat" >> /etc/rc.local
 						echo "exit 0" >> /etc/rc.local
 					;;
