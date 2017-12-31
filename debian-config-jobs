@@ -226,6 +226,7 @@ function jobs ()
 	"WiFi" )
 			# disable AP mode on certain adapters
 			wlan_exceptions "off"
+			[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to STA mode" 7 62 && reboot
 			nmtui-connect
 	;;
 
@@ -456,6 +457,7 @@ function jobs ()
 						sleep 2
 						ifup $WIRELESS_ADAPTER 2> /dev/null
 						echo "nameserver 8.8.8.8" > /etc/resolvconf/resolv.conf.d/base
+						[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to AP mode" 7 61 && reboot
 						# reload services
 						reload-nety "reload"
 				fi

@@ -335,10 +335,17 @@ function exceptions ()
 #
 function wlan_exceptions ()
 {
+	reboot_module=false
 	[[ -n "$(lsmod | grep -w dhd)" && $1 = "on" ]] && \
 	echo 'options dhd op_mode=2' >/etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
 	[[ -n "$(lsmod | grep -w dhd)" && $1 = "off" ]] && \
 	rm /etc/modprobe.d/ap6212.conf && rmmod dhd && modprobe dhd
+	# Cubietruck
+	[[ -n "$(lsmod | grep -w ap6210)" && $1 = "on" ]] && \
+	echo 'options ap6210 op_mode=2' >/etc/modprobe.d/ap6210.conf && reboot_module=true
+	[[ -n "$(lsmod | grep -w ap6210)" && $1 = "off" ]] && \
+	rm /etc/modprobe.d/ap6210.conf && reboot_module=true
+
 }
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
