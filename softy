@@ -127,6 +127,7 @@ i=0
 j=1
 IFS=" "
 declare -a PACKETS=($1)
+#skupaj=$(apt-get -s -y -qq install $1 | wc -l)
 skupaj=${#PACKETS[@]}
 while [[ $i -lt $skupaj ]]; do
 procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
@@ -221,6 +222,7 @@ cat > ${TEMP_DIR}/isp.conf.php <<EOF
 \$autoinstall['ssl_cert_organisation'] = 'Internet Widgits Pty Ltd';
 \$autoinstall['ssl_cert_organisation_unit'] = 'IT department';
 \$autoinstall['ssl_cert_common_name'] = \$autoinstall['hostname'];
+\$autoinstall['ssl_cert_email'] = 'joe@lamer.com';
 ?>
 EOF
 }
@@ -737,7 +739,7 @@ install_MySQL (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Maria SQL
 #------------------------------------------------------------------------------------------------------------------------------------------
-install_packet "mariadb-client mariadb-server" "Install Mysql client / server"
+install_packet "mariadb-client mariadb-server" "SQL client and server"
 #Allow MySQL to listen on all interfaces
 cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
 sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/my.cnf
@@ -766,18 +768,23 @@ expect eof
 # Execution mysql_secure_installation
 #
 echo "${SECURE_MYSQL}" >> /dev/null
+# ISP config exception
+cat > /etc/mysql/mariadb.conf.d/99-ispconfig.cnf<<"EOF"
+[mysqld]
+sql-mode="NO_ENGINE_SUBSTITUTION"
+EOF
 service mysql restart >> /dev/null
 }
 
 
 install_MySQLDovecot (){
 #------------------------------------------------------------------------------------------------------------------------------------------
-# Install Postfix, Dovecot, Saslauthd, phpMyAdmin, rkhunter, binutils
+# Install Postfix, Dovecot, Saslauthd, rkhunter, binutils
 #------------------------------------------------------------------------------------------------------------------------------------------
 echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
 echo "postfix postfix/mailname string $HOSTNAMEFQDN" | debconf-set-selections
 install_packet "postfix postfix-mysql postfix-doc openssl getmail4 rkhunter binutils dovecot-imapd dovecot-pop3d dovecot-mysql \
-dovecot-sieve sudo libsasl2-modules" "postfix, dovecot, saslauthd, phpMyAdmin, rkhunter, binutils"
+dovecot-sieve sudo libsasl2-modules" "postfix, dovecot, saslauthd, rkhunter, binutils"
 #Uncommenting some Postfix configuration files
 cp /etc/postfix/master.cf /etc/postfix/master.cf.backup
 sed -i 's|#submission inet n       -       -       -       -       smtpd|submission inet n       -       -       -       -       smtpd|' /etc/postfix/master.cf
@@ -807,67 +814,60 @@ service spamassassin stop
 systemctl disable spamassassin
 }
 
+
 install_hhvm (){
 #------------------------------------------------------------------------------------------------------------------------------------------
 # Install HipHop Virtual Machine
 #------------------------------------------------------------------------------------------------------------------------------------------
-apt-get -y -qq install software-properties-common
-apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0x5a16e7281be7a449
-add-apt-repository "deb http://dl.hhvm.com/ubuntu $distribution main"
-apt-get update
-apt-get -y -qq install hhvm
+apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xB4112585D386EB94 >/dev/null 2>&1
+add-apt-repository https://dl.hhvm.com/"${family,,}" >/dev/null 2>&1
+debconf-apt-progress -- apt-get update
+install_packet "hhvm" "HipHop Virtual Machine"
+}
+
+
+install_phpmyadmin (){
+#------------------------------------------------------------------------------------------------------------------------------------------
+# Phpmyadmin unattended installation
+#------------------------------------------------------------------------------------------------------------------------------------------
+if [[ "$family" != "Ubuntu" ]]; then
+DEBIAN_FRONTEND=noninteractive apt-get -y install phpmyadmin
+else
+debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
+debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect true"
+debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
+echo "phpmyadmin phpmyadmin/internal/skip-preseed boolean true" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
+debconf-apt-progress -- apt-get install -y phpmyadmin
+fi
 }
 
 
 install_apache (){
 #------------------------------------------------------------------------------------------------------------------------------------------
-# Install Apache2, PHP5, phpMyAdmin, FCGI, suExec, Pear and mcrypt
+# Install Apache2, PHP5, FCGI, suExec, Pear and mcrypt
 #------------------------------------------------------------------------------------------------------------------------------------------
-clear_console
-echo "========================================================================="
-echo "You will be prompted for some information during the install of phpmyadmin."
-echo "Select NO when asked to configure using dbconfig-common"
-echo "Please enter them where needed."
-echo "========================================================================="
-echo "Press ENTER to continue.."
-read DUMMY
-#echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections
 
-#BELOW ARE STILL NOT WORKING
-#echo 'phpmyadmin      phpmyadmin/dbconfig-reinstall   boolean false' | debconf-set-selections
-#echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
+local pkg="apache2 apache2-doc apache2-utils libapache2-mod-fcgid php-pear mcrypt imagemagick libruby libapache2-mod-python memcached"
 
-if [[ $family == "Ubuntu" ]]; then
+local pkg_xenial="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
+apache2-suexec-pristine php-auth php7.0-mcrypt php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
+php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php7.0-opcache php-apcu \
+libapache2-mod-fastcgi php7.0-fpm letsencrypt"
 
-install_packet "apache2 apache2-doc apache2-utils libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql \
-php7.0-imap php7.0-cli php7.0-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear php-auth php7.0-mcrypt mcrypt \
-imagemagick libruby libapache2-mod-python php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy php7.0-xmlrpc \
-php7.0-xsl memcached php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring" "apache2, PHP5, FCGI, suExec, pear and mcrypt"
-# PHP Opcode cache
-install_packet "php7.0-opcache php-apcu" "PHP Opcode cache"
-# PHP-FPM
-install_packet "libapache2-mod-fastcgi php7.0-fpm" "PHP-FPM"
-a2enmod actions fastcgi alias
-service apache2 restart
-# Install Let's Encrypt
-install_packet "letsencrypt" "Install Let's Encrypt"
+local pkg_stretch="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi libapache2-mod-fcgid \
+apache2-suexec-pristine php7.0-mcrypt libapache2-mod-python php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 \
+php7.0-tidy php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring libapache2-mod-passenger \
+php7.0-soap php7.0-fpm php7.0-opcache php-apcu certbot"
 
-else
+local pkg_jessie="apache2.2-common apache2-mpm-prefork libexpat1 ssl-cert libapache2-mod-php5 php5 php5-common php5-gd php5-mysql \
+php5-imap php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear php-auth php5-mcrypt mcrypt php5-imagick libapache2-mod-python \
+php5-curl php5-intl php5-memcache php5-memcached php5-pspell php5-recode php5-sqlite php5-tidy php5-xmlrpc php5-xsl \
+libapache2-mod-passenger php5-xcache libapache2-mod-fastcgi php5-fpm"
 
-install_packet "apache2 apache2.2-common apache2-doc apache2-mpm-prefork apache2-utils libexpat1 ssl-cert libapache2-mod-php5 php5 \
-php5-common php5-gd php5-mysql php5-imap php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear php-auth php5-mcrypt \
-mcrypt php5-imagick imagemagick libruby libapache2-mod-python php5-curl php5-intl php5-memcache php5-memcached php5-pspell php5-recode \
-php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached libapache2-mod-passenger" "apache2, PHP5, CGI, suExec, pear and mcrypt"
-
-#Install XCache
-install_packet "php5-xcache libapache2-mod-fastcgi php5-fpm" "Install XCache PHP Fpm"
-a2enmod actions fastcgi alias >> /dev/null
-
-fi
-
-#phpmyadmin
-debconf-apt-progress -- apt-get install -y phpmyadmin
-
+local temp="pkg_${distribution}"
+install_packet "${pkg} ${!temp}" "Apache for $family $distribution"
 # fix HTTPOXY vulnerability
 cat <<EOT > /etc/apache2/conf-available/httpoxy.conf
 <IfModule mod_headers.c>
@@ -875,70 +875,41 @@ cat <<EOT > /etc/apache2/conf-available/httpoxy.conf
 </IfModule>
 
 EOT
-a2enconf httpoxy >> /dev/null
 
-# enable modules
-a2enmod suexec rewrite ssl actions include >> /dev/null
-a2enmod dav_fs dav auth_digest cgi headers >> /dev/null
-
-#Restart Apache
+a2enmod actions proxy_fcgi fastcgi alias httpoxy suexec rewrite ssl actions include dav_fs dav auth_digest cgi headers >/dev/null 2>&1
 service apache2 restart >> /dev/null
 }
 
 
 install_nginx (){
 #------------------------------------------------------------------------------------------------------------------------------------------
-# Install NginX, PHP5, phpMyAdmin, FCGI, suExec, Pear, And mcrypt
+# Install NginX, PHP5, FCGI, suExec, Pear, And mcrypt
 #------------------------------------------------------------------------------------------------------------------------------------------
+local pkg="nginx php-pear memcached fcgiwrap"
 
-#echo 'phpmyadmin      phpmyadmin/reconfigure-webserver        multiselect' | debconf-set-selections
-#echo 'phpmyadmin      phpmyadmin/dbconfig-install     boolean false' | debconf-set-selections
+local pkg_xenial="php7.0-fpm php7.0-opcache php7.0-fpm php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
+php7.0-mcrypt mcrypt imagemagick libruby php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
+php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php-apcu"
 
-debconf-apt-progress -- apt-get install -y nginx
-if [ $(dpkg-query -W -f='${Status}' apache2 2>/dev/null | grep -c "ok installed") -eq 1 ];
-then
-/etc/init.d/apache2 stop >> /dev/null
-update-rc.d -f apache2 remove >> /dev/null
-fi
-service nginx start >> /dev/null
+local pkg_stretch="php7.0-fpm php7.0-opcache php7.0-fpm php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
+php7.0-mcrypt mcrypt imagemagick libruby php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
+php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php-apcu"
 
-if [[ $family == "Ubuntu" ]]; then
+local pkg_jessie="php5-fpm php5-mysql php5-curl php5-gd php5-intl php5-imagick php5-imap php5-mcrypt php5-memcache \
+php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-apc"
 
-debconf-apt-progress -- apt-get install -y php7.0-fpm
-debconf-apt-progress -- apt-get install -y php7.0-opcache php7.0-fpm php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli \
-php7.0-cgi php-pear php-auth php7.0-mcrypt mcrypt imagemagick libruby php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 \
-php7.0-tidy php7.0-xmlrpc php7.0-xsl memcached php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring
-phpenmod mcrypt
-phpenmod mbstring
-debconf-apt-progress -- apt-get install -y php-apcu
-sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
-tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-sed -i "s/^date.timezone=.*/date.timezone=""$ls""/" /etc/php/7.0/fpm/php.ini
+local temp="pkg_${distribution}"
+install_packet "${pkg} ${!temp}" "Nginx for $family $distribution"
 
-else
+phpenmod mcrypt mbstring
 
-debconf-apt-progress -- apt-get install -y php5-fpm
-debconf-apt-progress -- apt-get install -y php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt \
-php5-memcache php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl memcached
-debconf-apt-progress -- apt-get install -y php-apc
-
-fi
-
-#PHP Configuration Stuff Goes Here
-debconf-apt-progress -- apt-get install -y fcgiwrap
-reset
-echo "========================================================================="
-echo "You will be prompted for some information during the install of phpmyadmin."
-echo "Please enter them where needed."
-echo "========================================================================="
-echo "Press ENTER to continue.."
-read DUMMY
-
-DEBIAN_FRONTEND=noninteractive apt-get install -y dbconfig-common
-debconf-apt-progress -- apt-get install -y phpmyadmin
-if [[ $family == "Ubuntu" ]]; then
+if [[ -f /etc/php/7.0/fpm/php.ini ]]; then
+	tz=$(cat /etc/timezone | sed 's/\//\\\//g')
+	sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
 	service php7.0-fpm reload >> /dev/null
-	else
+else
+	debconf-apt-progress -- apt-get install -y python-certbot -t jessie-backports
 	service php5-fpm reload >> /dev/null
 fi
 }
@@ -953,10 +924,9 @@ install_packet "pure-ftpd-common pure-ftpd-mysql" "p3ureFTPd"
 sed -i 's/VIRTUALCHROOT=false/VIRTUALCHROOT=true/' /etc/default/pure-ftpd-common
 echo 1 > /etc/pure-ftpd/conf/TLS
 mkdir -p /etc/ssl/private/
-
-openssl req -x509 -nodes -days 7300 -newkey rsa:2048 -subj "/C=/ST=/L=/O=/CN=$(hostname -f)" -keyout /etc/ssl/private/pure-ftpd.pem -out /etc/ssl/private/pure-ftpd.pem
+openssl req -x509 -nodes -days 7300 -newkey rsa:2048 -subj "/C=GB/ST=GB/L=GB/O=GB/OU=GB/CN=$(hostname -f)/emailAddress=joe@joe.com" -keyout /etc/ssl/private/pure-ftpd.pem -out /etc/ssl/private/pure-ftpd.pem >/dev/null 2>&1
 chmod 600 /etc/ssl/private/pure-ftpd.pem
-/etc/init.d/pure-ftpd-mysql restart  >> /dev/null
+/etc/init.d/pure-ftpd-mysql restart >> /dev/null
 }
 
 
@@ -984,7 +954,29 @@ install_Fail2BanDovecot() {
 # Install fail2ban
 #------------------------------------------------------------------------------------------------------------------------------------------
 install_packet "fail2ban ufw" "Install fail2ban and UFW Firewall"
+if [[ $distribution == "stretch" ]]; then
+cat > /etc/fail2ban/jail.local <<"EOF"
+[pure-ftpd]
+enabled = true
+port = ftp
+filter = pure-ftpd
+logpath = /var/log/syslog
+maxretry = 3
 
+[dovecot]
+enabled = true
+filter = dovecot
+logpath = /var/log/mail.log
+maxretry = 5
+
+[postfix-sasl]
+enabled = true
+port = smtp
+filter = postfix-sasl
+logpath = /var/log/mail.log
+maxretry = 3
+EOF
+else
 cat > /etc/fail2ban/jail.local <<"EOF"
 [pureftpd]
 enabled  = true
@@ -1007,6 +999,7 @@ filter   = postfix-sasl
 logpath  = /var/log/mail.log
 maxretry = 3
 EOF
+fi
 }
 
 
@@ -1067,6 +1060,10 @@ if [[ $EUID != 0 ]]; then
 	sleep 3
 	exit
 fi
+
+# nameserver backup
+echo 'nameserver 8.8.8.8' > /etc/resolvconf/resolv.conf.d/head
+resolvconf -u
 
 # Create a safe temporary directory
 TEMP_DIR=$(mktemp -d || exit 1)
@@ -1160,8 +1157,9 @@ while true; do
 				dialog --msgbox "Invalid FQDN. Exiting..." 7 70
 				exit
 			fi
-			choose_webserver; install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server; install_hhvm
-			create_ispconfig_configuration; install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
+			choose_webserver; install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server;
+			install_phpmyadmin
+			install_hhvm; create_ispconfig_configuration;install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 			install_ISPConfig
 			read -n 1 -s -p "Press any key to continue"
 		fi
