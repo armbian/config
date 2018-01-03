@@ -56,7 +56,7 @@ Login as root and type:
 **Running this utility on 3rd party Debian based distributions**
 
 	# Install dependencies
-	apt install git bc expect rcconf dialog network-manager sunxi-tools iptables debconf-utils unzip build-essential html2text apt-transport-https html2text
+	apt install git bc expect rcconf dialog network-manager sunxi-tools iptables debconf-utils unzip build-essential html2text apt-transport-https html2text dirmngr
 
 	git clone https://github.com/armbian/config
 	cd config
