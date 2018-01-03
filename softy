@@ -1090,10 +1090,6 @@ while fuser /var/lib/dpkg/lock >/dev/null 2>&1 ; do
 	((i=i+1))
 done
 
-echo -e "\nChecking dependencies. This might take a while."
-apt-get -qq -y --no-install-recommends install debconf-utils unzip build-essential html2text apt-transport-https dialog whiptail \
-lsb-release bc expect html2text > /dev/null
-
 # gather some info
 #
 TTY_X=$(($(stty size | awk '{print $2}')-6)) # determine terminal width
