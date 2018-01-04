@@ -209,10 +209,13 @@ cat > ${TEMP_DIR}/isp.conf.php <<EOF
 \$autoinstall['mysql_database'] = 'dbispconfig'; // default: dbispcongig
 \$autoinstall['mysql_charset'] = 'utf8'; // default: utf8
 \$autoinstall['mysql_port'] = '3306'; // default: 3306
-\$autoinstall['configure_jailkit'] = 'n'; // y (default), n
-\$autoinstall['configure_dns'] = 'n'; // y (default), n
-\$autoinstall['http_server'] = '$server'; // apache (default), nginx
+\$autoinstall['configure_jailkit'] = 'y'; // y (default), n
+\$autoinstall['configure_firewall'] = 'y'; // y (default), n
+\$autoinstall['configure_$server'] = 'y'; // y (default), n
+\$autoinstall['configure_dns'] = 'y'; // y (default), n
+\$autoinstall['http_server'] = '$server'; // y (default), n
 \$autoinstall['ispconfig_port'] = '8080'; // default: 8080
+\$autoinstall['ispconfig_admin_password'] = '1234'; // default: 1234
 \$autoinstall['ispconfig_use_ssl'] = 'y'; // y (default), n
 
 /* SSL Settings */
@@ -742,7 +745,8 @@ install_MySQL (){
 install_packet "mariadb-client mariadb-server" "SQL client and server"
 #Allow MySQL to listen on all interfaces
 cp /etc/mysql/my.cnf /etc/mysql/my.cnf.backup
-sed -i 's|bind-address           = 127.0.0.1|#bind-address           = 127.0.0.1|' /etc/mysql/my.cnf
+[[ -f /etc/mysql/my.cnf ]] && sed -i 's|bind-address.*|#bind-address           = 127.0.0.1|' /etc/mysql/my.cnf
+[[ -f /etc/mysql/mariadb.conf.d/50-server.cnf ]] && sed -i 's|bind-address.*|#bind-address           = 127.0.0.1|' /etc/mysql/mariadb.conf.d/50-server.cnf
 SECURE_MYSQL=$(expect -c "
 set timeout 3
 spawn mysql_secure_installation
@@ -769,6 +773,7 @@ expect eof
 #
 echo "${SECURE_MYSQL}" >> /dev/null
 # ISP config exception
+mkdir -p /etc/mysql/mariadb.conf.d/
 cat > /etc/mysql/mariadb.conf.d/99-ispconfig.cnf<<"EOF"
 [mysqld]
 sql-mode="NO_ENGINE_SUBSTITUTION"
@@ -810,8 +815,8 @@ install_packet "amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 ar
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
 libnet-ident-perl zip libnet-dns-perl postgrey" "amavisd, spamassassin, clamav"
 sed -i "s/^AllowSupplementaryGroups.*/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
-service spamassassin stop
-systemctl disable spamassassin
+service spamassassin stop >/dev/null 2>&1
+systemctl disable spamassassin >/dev/null 2>&1
 }
 
 
@@ -831,7 +836,7 @@ install_phpmyadmin (){
 # Phpmyadmin unattended installation
 #------------------------------------------------------------------------------------------------------------------------------------------
 if [[ "$family" != "Ubuntu" ]]; then
-DEBIAN_FRONTEND=noninteractive apt-get -y install phpmyadmin
+DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y install phpmyadmin
 else
 debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
 debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect true"
@@ -876,7 +881,8 @@ cat <<EOT > /etc/apache2/conf-available/httpoxy.conf
 
 EOT
 
-a2enmod actions proxy_fcgi fastcgi alias httpoxy suexec rewrite ssl actions include dav_fs dav auth_digest cgi headers >/dev/null 2>&1
+a2enmod actions proxy_fcgi setenvif fastcgi alias httpoxy suexec rewrite ssl actions include dav_fs dav auth_digest cgi headers >/dev/null 2>&1
+a2enconf php7.0-fpm >/dev/null 2>&1
 service apache2 restart >> /dev/null
 }
 
@@ -896,7 +902,7 @@ php7.0-mcrypt mcrypt imagemagick libruby php7.0-curl php7.0-intl php7.0-pspell p
 php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php-apcu"
 
 local pkg_jessie="php5-fpm php5-mysql php5-curl php5-gd php5-intl php5-imagick php5-imap php5-mcrypt php5-memcache \
-php5-memcached php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-apc"
+php5-memcached php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-apc"
 
 local temp="pkg_${distribution}"
 install_packet "${pkg} ${!temp}" "Nginx for $family $distribution"
@@ -917,18 +923,22 @@ fi
 
 install_PureFTPD (){
 #------------------------------------------------------------------------------------------------------------------------------------------
-# Install PureFTPd
+# Install PureFTPd and Quota
 #------------------------------------------------------------------------------------------------------------------------------------------
-install_packet "pure-ftpd-common pure-ftpd-mysql" "p3ureFTPd"
+install_packet "pure-ftpd-common pure-ftpd-mysql quota quotatool" "pureFTPd and Quota"
 
 sed -i 's/VIRTUALCHROOT=false/VIRTUALCHROOT=true/' /etc/default/pure-ftpd-common
 echo 1 > /etc/pure-ftpd/conf/TLS
 mkdir -p /etc/ssl/private/
 openssl req -x509 -nodes -days 7300 -newkey rsa:2048 -subj "/C=GB/ST=GB/L=GB/O=GB/OU=GB/CN=$(hostname -f)/emailAddress=joe@joe.com" -keyout /etc/ssl/private/pure-ftpd.pem -out /etc/ssl/private/pure-ftpd.pem >/dev/null 2>&1
 chmod 600 /etc/ssl/private/pure-ftpd.pem
-/etc/init.d/pure-ftpd-mysql restart >> /dev/null
+/etc/init.d/pure-ftpd-mysql restart >/dev/null 2>&1
+local temp=$(cat /etc/fstab | grep "/ " | tail -1 | awk '{print $4}')
+sed -i "s/$temp/$temp,usrjquota=quota.user,grpjquota=quota.group,jqfmt=vfsv0/" /etc/fstab
+mount -o remount / >/dev/null 2>&1
+quotacheck -avugm >/dev/null 2>&1
+quotaon -avug >/dev/null 2>&1
 }
-
 
 
 install_Bind (){
@@ -946,6 +956,17 @@ install_Stats (){
 install_packet "vlogger webalizer awstats geoip-database libclass-dbi-mysql-perl" "vlogger, webalizer, awstats"
 sed -i "s/*/10 * * * * www-data/#*/10 * * * * www-data/" /etc/cron.d/awstats
 sed -i "s/10 03 * * * www-data/#10 03 * * * www-data/" /etc/cron.d/awstats
+}
+
+
+install_Jailkit() {
+#------------------------------------------------------------------------------------------------------------------------------------------
+debconf-apt-progress -- apt-get install -y build-essential autoconf automake libtool flex bison debhelper binutils
+cd ${TEMP_DIR}
+wget -q http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz -O - | tar -xz && cd jailkit-2.19
+echo 5 > debian/compat
+./debian/rules binary > /dev/null 2>&1
+dpkg -i ../jailkit_2.19-1_*.deb > /dev/null 2>&1
 }
 
 
@@ -1159,7 +1180,8 @@ while true; do
 			fi
 			choose_webserver; install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server;
 			install_phpmyadmin
-			install_hhvm; create_ispconfig_configuration;install_PureFTPD; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
+			install_hhvm; create_ispconfig_configuration;install_PureFTPD;
+			install_Jailkit; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 			install_ISPConfig
 			read -n 1 -s -p "Press any key to continue"
 		fi
