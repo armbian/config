@@ -1108,6 +1108,8 @@ while fuser /var/lib/dpkg/lock >/dev/null 2>&1 ; do
 	((i=i+1))
 done
 
+apt-get -qq -y --no-install-recommends install debconf-utils html2text apt-transport-https dialog whiptail lsb-release bc expect > /dev/null
+
 # gather some info
 #
 TTY_X=$(($(stty size | awk '{print $2}')-6)) # determine terminal width
