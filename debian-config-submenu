@@ -511,7 +511,8 @@ function select_default_interface ()
 	local LIST=()
 	for i in "${ADAPTER[@]}"
 	do
-			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+			local IPADDR=$(ip -4 addr show dev ${i[0]} | awk '/inet/ {print $2}' | cut -d'/' -f1)
+			LIST+=( "${i[0]//[[:blank:]]/}" "${IPADDR}" )
 	done
 	LIST_LENGHT=$((${#LIST[@]}/2));
 	if [ "$LIST_LENGHT" -eq 0 ]; then
