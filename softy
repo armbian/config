@@ -1182,7 +1182,10 @@ while true; do
 			fi
 			choose_webserver; install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server;
 			install_phpmyadmin
-			install_hhvm; create_ispconfig_configuration;install_PureFTPD;
+			if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
+				install_hhvm
+			fi
+			create_ispconfig_configuration;install_PureFTPD;
 			install_Jailkit; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 			install_ISPConfig
 			read -n 1 -s -p "Press any key to continue"
