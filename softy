@@ -188,6 +188,7 @@ if [[ $family == "Ubuntu" ]]; then
 else
 	grep -q "contrib" /etc/apt/sources.list || sed -i 's|main|main contrib|' /etc/apt/sources.list
 	grep -q "non-free" /etc/apt/sources.list || sed -i 's|contrib|contrib non-free|' /etc/apt/sources.list
+	grep -q "deb http://ftp.debian.org/debian jessie-backports main" /etc/apt/sources.list || echo "deb http://ftp.debian.org/debian jessie-backports main" >> /etc/apt/sources.list
 	debconf-apt-progress -- apt-get update
 fi
 }
