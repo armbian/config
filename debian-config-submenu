@@ -507,7 +507,7 @@ function select_default_interface ()
 {
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
-	local ADAPTER=($(ls /sys/class/net | grep -E -v 'lo|tun'))
+	local ADAPTER=($(ls /sys/class/net | grep -E -v 'lo|tun|bonding_masters|dummy0'))
 	local LIST=()
 	for i in "${ADAPTER[@]}"
 	do
