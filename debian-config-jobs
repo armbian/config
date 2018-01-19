@@ -964,9 +964,9 @@ function jobs ()
 	# Switch to daily builds
 	#
 	"Nightly" )
-		dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
-		--yesno "\nYou are switching to automated nightly repository which is untested and might break your system.\
-		Are you fine with that?" 9 48
+		dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
+		"\nYou are switching to untested auto-build repository which might break your system.\n\nAre you fine with that?" 10 48
+
 		if [[ $? = 0 ]]; then
 			sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
 			debconf-apt-progress -- apt-get update
@@ -1013,9 +1013,10 @@ function jobs ()
 		aval_kernel
 		if [[ $exitstatus = 0 ]]; then
 			exceptions "$INSTALL_KERNEL"
-			dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
-			--yesno "\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\nMake sure you know what you are doing! \
-			\n\nBoard config will be reverted to defaults." 11 46
+			dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
+			"\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\n\
+			Warning: another kernel might not provide the same functionality or can be broken! \
+			\n\nBoard config will be reverted to defaults." 12 50
 			if [[ $? = 0 ]]; then
 				# remove old
 				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel." 5 28
