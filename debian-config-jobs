@@ -643,7 +643,7 @@ function jobs ()
 		dialog --title " Update " --backtitle "$BACKTITLE" --no-label "Cancel" --yesno "\nDo you want to update board firmware?" 7 41
 		if [[ $? = 0 ]]; then
 			debconf-apt-progress -- apt-get update
-			debconf-apt-progress -- apt-get -y upgrade
+			debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
 			dialog --title " Firmware update " --colors --no-label "Cancel" --backtitle "$BACKTITLE" --yesno \
 			"\nFirmware has been updated. Reboot?   " 7 39
 			if [[ $? = 0 ]]; then reboot; fi
@@ -1033,7 +1033,7 @@ function jobs ()
 				INSTALL_DTB=""
 				[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
 				INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-				debconf-apt-progress -- apt-get -y	--no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+				debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
 				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
 				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
 
