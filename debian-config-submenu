@@ -94,11 +94,9 @@ function create_if_config() {
 		gateway=$(route -n | grep 'UG[ \t]' | awk '{print $2}' | sed -n '1p')
 		echo -e "# armbian-config created"
 		echo -e "source /etc/network/interfaces.d/*\n"
-		echo -e "# Local loopback\nauto lo\niface lo init loopback\n"
-		echo -e "# Interface $2\nallow-hotplug $2\nno-auto-down $2"
-		if [[ "$3" != "fixed" ]]; then
-			echo -e "iface $2 inet dhcp"
-		else
+		if [[ "$3" == "fixed" ]]; then
+			echo -e "# Local loopback\nauto lo\niface lo init loopback\n"
+			echo -e "# Interface $2\nallow-hotplug $2\nno-auto-down $2"
 			echo -e "iface $2 inet static\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8"
 		fi
 } #
