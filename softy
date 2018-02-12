@@ -57,7 +57,7 @@ LIST+=( "Pi hole" "Ad blocker" "$PI_HOLE_STATUS" )
 TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
 LIST+=( "Transmission" "Torrent downloading" "$TRANSMISSION_STATUS" )
 # UrBackup
-URBACKUP_STATUS="$(check_if_installed urbackup-server && echo "on" || echo "off" )"
+URBACKUP_STATUS="$(check_if_installed urbackup-server-dbg && echo "on" || echo "off" )"
 LIST+=( "UrBackup" "Open Source client/server backup system" "$URBACKUP_STATUS" )
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
@@ -1229,7 +1229,7 @@ while true; do
 
 		if [[ "$selection" == *UrBackup* && "$URBACKUP_STATUS" != "on" ]]; then
 			install_urbackup
-			check_port 55414
+			check_port 51413 "UrBackup"
 		fi
 
 		if [[ "$selection" == *Webmin* && "$WEBMIN_STATUS" != "on" ]]; then
