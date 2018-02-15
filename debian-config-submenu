@@ -96,7 +96,7 @@ function create_if_config() {
 		echo -e "source /etc/network/interfaces.d/*\n"
 		if [[ "$3" == "fixed" ]]; then
 			echo -e "# Local loopback\nauto lo\niface lo init loopback\n"
-			echo -e "# Interface $2\nallow-hotplug $2\nno-auto-down $2"
+			echo -e "# Interface $2\nauto $2\nallow-hotplug $2"
 			echo -e "iface $2 inet static\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8"
 		fi
 } #
@@ -261,7 +261,7 @@ function ip_editor ()
 		if [[ $? = 0 ]]; then
 				echo -e "# armbian-config created\nsource /etc/network/interfaces.d/*\n" >$3
 				echo -e "# Local loopback\nauto lo\niface lo inet loopback\n" >> $3
-				echo -e "# Interface $2\nallow-hotplug $2\nno-auto-down $2\niface $2 inet static\
+				echo -e "# Interface $2\nauto $2\nallow-hotplug $2\niface $2 inet static\
 				\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway\n\tdns-nameservers 8.8.8.8" >> $3
 		fi
 		}
