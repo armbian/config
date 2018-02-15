@@ -194,18 +194,35 @@ function jobs ()
 	# Select dynamic or edit static IP address
 	#
 	"IP" )
-			# select default interfaces if there is more than one
-			select_default_interface
+			# check if we have systemd networking in action
+			SYSTEMDNET=$(service systemd-networkd status | grep -w active | grep -w running)
 			dialog --title " IP address assignment " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" \
 			--yes-label "DHCP" --no-label "Static" --yesno \
 			"\n\Z1DHCP:\Z0   automatic IP asignment by your router or DHCP server\n\n\Z1Static:\Z0 manually fixed IP address" 9 70
 			exitstatus=$?;
+
+			# dynamic
 			if [[ $exitstatus = 0 ]]; then
-				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
+				if [[ -n $SYSTEMDNET ]]; then
+					filename="/etc/systemd/network/10-${DEFAULT_ADAPTER}.network"
+					if [[ -f $filename ]]; then
+						sed -i '/Network/,$d' $filename
+						echo -e "[Network]" >>$filename
+						echo -e "DHCP=ipv4" >>$filename
+					fi
+				else
+					create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
+				fi
 			fi
+
+			# static
 			if [[ $exitstatus = 1 ]]; then
 				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "fixed" > /dev/null
-				ip_editor "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "/etc/network/interfaces"
+				if [[ -n $SYSTEMDNET ]]; then
+					systemd_ip_editor "${DEFAULT_ADAPTER}"
+				else
+					ip_editor "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "/etc/network/interfaces"
+				fi
 			fi
 	;;
 
