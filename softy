@@ -1084,8 +1084,10 @@ if [[ $EUID != 0 ]]; then
 fi
 
 # nameserver backup
-echo 'nameserver 8.8.8.8' > /etc/resolvconf/resolv.conf.d/head
-resolvconf -u
+if [ -d /etc/resolvconf/resolv.conf.d ]; then
+	echo 'nameserver 8.8.8.8' > /etc/resolvconf/resolv.conf.d/head
+	resolvconf -u
+fi
 
 # Create a safe temporary directory
 TEMP_DIR=$(mktemp -d || exit 1)
