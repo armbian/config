@@ -611,9 +611,11 @@ while true; do
 
 	LIST=()
 
+	local mark=$(apt-mark showhold | grep -w "$BOARD")
+
 	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent 2> /dev/null) == mmcblk* && -f /usr/sbin/nand-sata-install ]] \
 	&& LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
-	if [[ -n $(apt-mark showhold | grep -w "$BOARD") ]]; then
+	if [[ -n "${mark}" ]]; then
 			LIST+=( "Defreeze" "Enable kernel upgrades" )
 		else
 			LIST+=( "Freeze" "Disable kernel upgrades" )
@@ -633,7 +635,7 @@ while true; do
 	[[ "$LINUXFAMILY" = cubox && "$BRANCH" = "next" ]] && LIST+=( "DTB" "Switch board .dtb configuration" )
 	[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
 	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
-	| wc -l) -gt 1 ]] && LIST+=( "Switch" "Switch to alternative kernels" )
+	| wc -l) -gt 1 && -z "${mark}" ]] && LIST+=( "Switch" "Switch to alternative kernels" )
 
 
 	LIST+=( "SSH" "Reconfigure SSH daemon" )
