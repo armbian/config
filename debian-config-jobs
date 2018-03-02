@@ -630,6 +630,11 @@ function jobs ()
 		dpkg-reconfigure locales
 	;;
 
+	# Change keyboard
+	#
+	"Keyboard" )
+		dpkg-reconfigure keyboard-configuration
+	;;
 
 	# Change Hostname
 	#
