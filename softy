@@ -46,7 +46,7 @@ fi
 
 # OMV
 OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
-[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=3
+[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=5
 # MINIdlna
 MINIDLNA_STATUS="$(check_if_installed minidlna && echo "on" || echo "off" )"
 LIST+=( "Minidlna" "Lightweight DLNA/UPnP-AV server" "$MINIDLNA_STATUS" )
@@ -62,9 +62,6 @@ LIST+=( "UrBackup" "Open Source client/server backup system" "$URBACKUP_STATUS" 
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
 LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
-# Webmin
-WEBMIN_STATUS="$(check_if_installed webmin && echo "on" || echo "off" )"
-LIST+=( "Webmin" "Web-based interface for system administration" "$WEBMIN_STATUS" )
 }
 
 function choose_webserver
@@ -482,16 +479,6 @@ install_urbackup (){
 PREFIX="http://hndl.urbackup.org/Server/latest/"
 URL="http://hndl.urbackup.org/Server/latest/"$(wget -q $PREFIX -O - | html2text -width 120 | grep deb | awk ' { print $3 }' | grep $(dpkg --print-architecture))
 wget -q $URL -O ${TEMP_DIR}/package.deb
-dpkg -i ${TEMP_DIR}/package.deb
-debconf-apt-progress -- apt-get -yy -f install
-}
-
-
-install_webmin (){
-#------------------------------------------------------------------------------------------------------------------------------------------
-# Webmin http://www.webmin.com
-#------------------------------------------------------------------------------------------------------------------------------------------
-wget -q http://www.webmin.com/download/deb/webmin-current.deb -O ${TEMP_DIR}/package.deb
 dpkg -i ${TEMP_DIR}/package.deb
 debconf-apt-progress -- apt-get -yy -f install
 }
@@ -1232,11 +1219,6 @@ while true; do
 		if [[ "$selection" == *UrBackup* && "$URBACKUP_STATUS" != "on" ]]; then
 			install_urbackup
 			check_port 51413 "UrBackup"
-		fi
-
-		if [[ "$selection" == *Webmin* && "$WEBMIN_STATUS" != "on" ]]; then
-			install_webmin
-			check_port 10000
 		fi
 
 		# reread statuses

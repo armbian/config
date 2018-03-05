@@ -611,6 +611,14 @@ while true; do
 
 	LIST=()
 
+	# detect desktop
+	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
+	check_if_installed nodm && DESKTOP_INSTALLED="nodm";
+	check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
+	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
+	[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
+
+
 	local mark=$(apt-mark showhold | grep -w "$BOARD")
 
 	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent 2> /dev/null) == mmcblk* && -f /usr/sbin/nand-sata-install ]] \
@@ -648,12 +656,14 @@ while true; do
 			LIST+=( "Desktop" "Disable desktop" )
 			[[ $DISPLAY_MANAGER == 'nodm' ]] && 			LIST+=( "Lightdm" "Switch to standard login manager" )
 			[[ $DISPLAY_MANAGER == 'lightdm' ]] && 			LIST+=( "Nodm" "Switch to simple auto login manager" )
-		elif [[ -n $DESKTOP_INSTALLED ]]; then
-			LIST+=( "Desktop" "Enable desktop" )
+	else
+			if [[ -n $DESKTOP_INSTALLED ]]; then
+				LIST+=( "Desktop" "Enable desktop" )
+				else
+				LIST+=( "Desktop" "Install desktop" )
+			fi
 	fi
 
-
-	LIST+=( "Services" "Toggle running services" )
 	if [[ "$DISTRO" == "Ubuntu" && "$(modinfo overlay > /dev/null 2>&1; echo $?)" == "0" ]]; then
 		if [ -n "$(mount | grep -w tmpfs-root)" ]; then
 			LIST+=( "Overlayroot" "Disable virtual read-only root filesystem" )
@@ -850,11 +860,6 @@ while true; do
 
 	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else \
 	LIST+=( "Headers" "Install kernel headers" ); fi
-	if check_if_installed build-essential then ; then
-		LIST+=( "Development" "Remove base development tools" );
-		else
-		LIST+=( "Development" "Install base development tools" );
-	fi
 	if [[ -n $DISPLAY_MANAGER ]]; then
 			if [[ $(service xrdp status 2> /dev/null | grep -w active) ]]; then
 				LIST+=( "RDP" "Disable remote desktop access from Windows" )
@@ -899,12 +904,6 @@ BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
 TITLE="$BOARD_NAME "
 DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
 [[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
-# detect desktop
-DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
-check_if_installed bluetooth nodm && DESKTOP_INSTALLED="nodm";
-check_if_installed bluetooth lightdm && DESKTOP_INSTALLED="lightdm";
-[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
-[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
 OVERLAYDIR="/boot/dtb/overlay";
 [[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
 dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
