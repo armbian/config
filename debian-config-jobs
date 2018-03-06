@@ -712,7 +712,7 @@ function jobs ()
 				sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
 			else
 				debconf-apt-progress -- apt-get update
-				debconf-apt-progress -- apt-get -y install armbian-desktop
+				debconf-apt-progress -- apt-get -y install armbian-desktop-${DISTROID}
 			fi
 		fi
 	;;
