@@ -922,26 +922,30 @@ function jobs ()
 
 			DIALOG_CANCEL=1
 			DIALOG_ESC=255
-			LIST_CONST=8
+			LIST_CONST=7
 
 			PermitRootLogin="";
 			PubkeyAuthentication="";
 			X11Forwarding="";
+			PhoneAuthentication="";
 
 			[[ $(grep "^PermitRootLogin" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && PermitRootLogin="on"
 			[[ $(grep "^PubkeyAuthentication" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && PubkeyAuthentication="on"
 			[[ $(grep "^X11Forwarding" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && X11Forwarding="on"
+			[[ $(grep "^ChallengeResponseAuthentication" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && PhoneAuthentication="on"
 
 			MOTD=("X11Forwarding" "X11 forwarding" "$X11Forwarding" \
-			"PermitRootLogin" "Allow root login" "$PermitRootLogin" \
-			"PubkeyAuthentication" "Using public keys for SSH authentication" "$PubkeyAuthentication")
+			"PermitRootLogin" "Allow root login" "$PermitRootLogin")
+
+			MOTD+=( "PubkeyAuthentication" "Use public keys for SSH authentication" "$PubkeyAuthentication" )
+			MOTD+=( "PhoneAuthentication" "Use keys and mobile phone with one-time passcode" "$PhoneAuthentication" )
 
 			LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
 
 			exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title " Toggle sshd options " --clear --cancel-label \
 				"Cancel" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
-				$LISTLENGHT 74 21 "${MOTD[@]}" 2>&1 1>&3)
+				$LISTLENGHT 80 21 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 			exec 3>&-
 
@@ -959,12 +963,51 @@ function jobs ()
 									else
 									sed -i "s/#\?${MOTD[$n]}.*/${MOTD[$n]} no/" /etc/ssh/sshd_config
 								fi
+								if [[ " ${my_array[*]} " == *" PhoneAuthentication "* ]]; then
+										grep pam_google_authenticator /etc/pam.d/sshd >/dev/null || sed -i "s/^\@include common-password.*/@include common-password\nauth required pam_google_authenticator.so nullok/" /etc/pam.d/sshd
+										sed -i "s/^ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/" /etc/ssh/sshd_config
+										sed -i -n '/and ChallengeResponseAuthentication to/{p;:a;N;/UsePAM yes/!ba;s/.*\n/AuthenticationMethods publickey,password publickey,keyboard-interactive\n/};p' /etc/ssh/sshd_config
+										sed -i "s/^\@include common-auth/\#@include common-auth/" /etc/pam.d/sshd
+										# enable ssh key auth
+										#sed -i "s/^PubkeyAuthentication.*/PubkeyAuthentication yes/" /etc/ssh/sshd_config
+									else
+										sed -i '/^auth required pam_google_authenticator.so nullok/ d' /etc/pam.d/sshd
+										sed -i "s/^ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/" /etc/ssh/sshd_config
+										sed -i '/^AuthenticationMethods publickey,password publickey,keyboard-interactive/ d' /etc/ssh/sshd_config
+										sed -i "s/^\#@include common-auth/\@include common-auth/" /etc/pam.d/sshd
+								fi
 						fi
+
 					done
-					service sshd restart
+
+
+					PubkeyAuthentication="";
+					[[ $(grep "^PubkeyAuthentication" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] && PubkeyAuthentication="on"
+					if [[ $PubkeyAuthentication != "on" ]]; then
+						sed -i '/^AuthenticationMethods publickey,password publickey,keyboard-interactive/ d' /etc/ssh/sshd_config
+						sed -i -n '/and ChallengeResponseAuthentication to/{p;:a;N;/UsePAM yes/!ba;s/.*\n/AuthenticationMethods password keyboard-interactive\n/};p' /etc/ssh/sshd_config
+						sed -i "s/^PubkeyAuthentication.*/PubkeyAuthentication no/" /etc/ssh/sshd_config
+						sed -i "s/^\#@include common-auth/\@include common-auth/" /etc/pam.d/sshd
+					fi
+
+					systemctl restart sshd.service
 				;;
 				esac
 		done
+		if [[ $PhoneAuthentication == "on" ]]; then
+			if [[ -f ~/.google_authenticator ]]; then
+				dialog --title " Enabling two-factor authentication " --backtitle "$BACKTITLE" --yes-label "No" --no-label "Yes" --yesno \
+				"\nYou have enabled Google one time phone authentication.\n\nYou will need a smartphone or another client device with an authenticator application such as Google Authenticator or Authy.\
+				\n\nMake sure you have your tokens on your phone otherwise you will not be able to log in.\
+				\n\nDo you want to create new tokens and transfer them to the phone?" 17 61
+			fi
+			if [[ $? == 1 || ! -f ~/.google_authenticator ]]; then
+				google-authenticator -t -d -f -r 3 -R 30 -W
+				# all users on system shall use the same
+				for i in /home/* ; do cp ~/.google_authenticator $i/.google_authenticator; chown "${i/\/home\//}"."${i/\/home\//}" $i/.google_authenticator; done
+				read
+			fi
+		fi
 	;;
 
 
