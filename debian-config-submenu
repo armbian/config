@@ -496,6 +496,55 @@ function get_h3modes ()
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
+# configure armbian desktop
+#
+function configure-desktop ()
+{
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
+
+	local USERS=($(awk -F'[/:]' '{if ($3 >= 1000 && $3 != 65534) print $1}' /etc/passwd))
+	local LIST=()
+	for i in "${USERS[@]}"
+	do
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGHT=$((${#LIST[@]}/2));
+
+	if [ "$LIST_LENGHT" -eq 1 ]; then
+			DESKTOP_USER=${USERS[0]}
+	else
+			exec 3>&1
+			DESKTOP_USER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select interface" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			exec 3>&-
+	fi
+
+	# add user to groups
+	for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
+		usermod -aG ${additionalgroup} ${DESKTOP_USER} 2>/dev/null
+	done
+	# fix for gksu in Xenial
+	touch /home/${DESKTOP_USER}/.Xauthority
+
+	# set up profile sync daemon on desktop systems
+	which psd >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		echo "${DESKTOP_USER} ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper" >> /etc/sudoers
+		touch /home/${DESKTOP_USER}/.activate_psd
+	fi
+
+	sed -i "s/NODM_USER=\(.*\)/NODM_USER=${DESKTOP_USER}/" /etc/default/nodm
+	sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
+	chown ${DESKTOP_USER}:${DESKTOP_USER} /home/${DESKTOP_USER}/.
+	sleep 3
+	service nodm stop
+	sleep 1
+	service nodm start
+}
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
 # search for wlan interfaces and provide a selection menu if there are more than one
 #
 function get_wlan_interface ()

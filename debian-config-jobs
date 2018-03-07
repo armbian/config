@@ -713,6 +713,7 @@ function jobs ()
 			else
 				debconf-apt-progress -- apt-get update
 				debconf-apt-progress -- apt-get -y install armbian-desktop-${DISTROID}
+				configure-desktop
 			fi
 		fi
 	;;
