@@ -527,8 +527,10 @@ function configure-desktop ()
 	for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
 		usermod -aG ${additionalgroup} ${DESKTOP_USER} 2>/dev/null
 	done
+
 	# fix for gksu in Xenial
 	touch /home/${DESKTOP_USER}/.Xauthority
+	cp -R /etc/skel/. /home/${DESKTOP_USER}
 
 	# set up profile sync daemon on desktop systems
 	which psd >/dev/null 2>&1
