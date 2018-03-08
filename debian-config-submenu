@@ -520,6 +520,9 @@ function configure-desktop ()
 			exec 3>&-
 	fi
 
+	# install nodm
+	debconf-apt-progress -- apt-get -y -qq install nodm
+
 	# add user to groups
 	for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
 		usermod -aG ${additionalgroup} ${DESKTOP_USER} 2>/dev/null
