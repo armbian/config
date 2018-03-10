@@ -541,7 +541,7 @@ function configure-desktop ()
 
 	sed -i "s/NODM_USER=\(.*\)/NODM_USER=${DESKTOP_USER}/" /etc/default/nodm
 	sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
-	chown ${DESKTOP_USER}:${DESKTOP_USER} /home/${DESKTOP_USER}/.
+	chown -R ${DESKTOP_USER}:${DESKTOP_USER} /home/${DESKTOP_USER}/.
 	sleep 3
 	service nodm stop
 	sleep 1
