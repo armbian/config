@@ -245,6 +245,34 @@ function description
 }
 
 
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# edit ip address witing network manager
+#
+function nm_ip_editor ()
+{
+exec 3>&1
+	dialog --title " Static IP configuration" --backtitle "$BACKTITLE" --form "\nAdapter: $1
+	\n " 12 38 0 \
+	"Address:"				1 1 "$address"				1 15 15 0 \
+	"Netmask:"			2 1 "$netmask"	2 15 15 0 \
+	"Gateway:"			3 1 "$gateway"			3 15 15 0 \
+	2>&1 1>&3 | {
+		read -r address;read -r netmask;read -r gateway
+		if [[ $? = 0 ]]; then
+				localuuid=$(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $1 | awk '{print $1}')
+				nmcli con mod $localuuid ipv4.method manual ipv4.addresses "$address/$netmask $gateway" ipv4.dns "8.8.8.8,$gateway"
+				nmcli c down $localuuid
+				sleep 2
+				nmcli c up $localuuid
+		fi
+		}
+exit
+}
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# edit ip address
+#
 function systemd_ip_editor ()
 {
 local filename="/etc/systemd/network/10-$1.network"
@@ -494,11 +522,10 @@ function get_h3modes ()
 	fi
 }
 
-
+function add_choose_user ()
 #-----------------------------------------------------------------------------------------------------------------------------------------#
-# configure armbian desktop
+# create or pick unprivileged user
 #
-function configure-desktop ()
 {
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
@@ -511,41 +538,63 @@ function configure-desktop ()
 	done
 	LIST_LENGHT=$((${#LIST[@]}/2));
 
-	if [ "$LIST_LENGHT" -eq 1 ]; then
-			DESKTOP_USER=${USERS[0]}
+	if [ "$LIST_LENGHT" -eq 0 ]; then
+		dialog --backtitle "$BACKTITLE" --title " Notice " --msgbox "\nWe didn't find any unprivileged user with sudo rights which is required to run this service.\
+		\n\nPress enter to create one!" 10 48
+		read -t 0 temp
+		echo -e "\nPlease provide a username (eg. your forename) or leave blank for canceling user creation: \c"
+		read -e username
+		CHOSEN_USER="$(echo "$username" | tr '[:upper:]' '[:lower:]' | tr -d -c '[:alnum:]')"
+		[ -z "$CHOSEN_USER" ] && return
+		echo "Trying to add user $CHOSEN_USER"
+		adduser $CHOSEN_USER || return
+	elif [ "$LIST_LENGHT" -eq 1 ]; then
+			CHOSEN_USER=${USERS[0]}
 	else
 			exec 3>&1
-			DESKTOP_USER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select interface" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			CHOSEN_USER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select unprivileged user" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
+}
 
-	# install nodm
-	debconf-apt-progress -- apt-get -y -qq install nodm
 
-	# add user to groups
-	for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
-		usermod -aG ${additionalgroup} ${DESKTOP_USER} 2>/dev/null
-	done
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+# configure armbian desktop
+#
+function configure_desktop ()
+{
+	add_choose_user
 
-	# fix for gksu in Xenial
-	touch /home/${DESKTOP_USER}/.Xauthority
-	cp -R /etc/skel/. /home/${DESKTOP_USER}
+	if [ -n "$CHOSEN_USER" ]; then
+		# install desktop and nodm
+		debconf-apt-progress -- apt-get update
+		debconf-apt-progress -- apt-get -y install armbian-desktop-${DISTROID}
+		DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y -qq install nodm
+		# add user to groups
+		for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
+				usermod -aG ${additionalgroup} ${CHOSEN_USER} 2>/dev/null
+		done
 
-	# set up profile sync daemon on desktop systems
-	which psd >/dev/null 2>&1
-	if [ $? -eq 0 ]; then
-		echo "${DESKTOP_USER} ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper" >> /etc/sudoers
-		touch /home/${DESKTOP_USER}/.activate_psd
+		# fix for gksu in Xenial
+		touch /home/${CHOSEN_USER}/.Xauthority
+		cp -R /etc/skel/. /home/${CHOSEN_USER}
+
+		# set up profile sync daemon on desktop systems
+		which psd >/dev/null 2>&1
+		if [ $? -eq 0 ]; then
+			echo "${CHOSEN_USER} ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper" >> /etc/sudoers
+			touch /home/${CHOSEN_USER}/.activate_psd
+		fi
+
+		sed -i "s/NODM_USER=\(.*\)/NODM_USER=${CHOSEN_USER}/" /etc/default/nodm
+		sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
+		chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/.
+		sleep 3
+		service nodm stop
+		sleep 1
+		service nodm start
 	fi
-
-	sed -i "s/NODM_USER=\(.*\)/NODM_USER=${DESKTOP_USER}/" /etc/default/nodm
-	sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
-	chown -R ${DESKTOP_USER}:${DESKTOP_USER} /home/${DESKTOP_USER}/.
-	sleep 3
-	service nodm stop
-	sleep 1
-	service nodm start
 }
 
 

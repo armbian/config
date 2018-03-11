@@ -199,7 +199,11 @@ function jobs ()
 						echo -e "DHCP=ipv4" >>$filename
 					fi
 				else
-					create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
+					if [[ -n $(LC_ALL=C nmcli device status | grep $DEFAULT_ADAPTER | grep connected) ]]; then
+						nmcli connection delete uuid $(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $DEFAULT_ADAPTER | awk '{print $1}')
+						else
+						create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
+					fi
 				fi
 			fi
 
@@ -209,7 +213,11 @@ function jobs ()
 				if [[ -n $SYSTEMDNET ]]; then
 					systemd_ip_editor "${DEFAULT_ADAPTER}"
 				else
-					ip_editor "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "/etc/network/interfaces"
+					if [[ -n $(LC_ALL=C nmcli device status | grep $DEFAULT_ADAPTER | grep connected) ]]; then
+						nm_ip_editor "$DEFAULT_ADAPTER"
+					else
+						ip_editor "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "/etc/network/interfaces"
+					fi
 				fi
 			fi
 	;;
@@ -711,9 +719,7 @@ function jobs ()
 				&& echo "/usr/sbin/nodm" > /etc/X11/default-display-manager && \
 				sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
 			else
-				debconf-apt-progress -- apt-get update
-				debconf-apt-progress -- apt-get -y install armbian-desktop-${DISTROID}
-				configure-desktop
+				configure_desktop
 			fi
 		fi
 	;;
