@@ -200,7 +200,9 @@ function jobs ()
 					fi
 				else
 					if [[ -n $(LC_ALL=C nmcli device status | grep $DEFAULT_ADAPTER | grep connected) ]]; then
-						nmcli connection delete uuid $(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $DEFAULT_ADAPTER | awk '{print $1}')
+						nmcli connection delete uuid $(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $DEFAULT_ADAPTER | awk '{print $1}') >/dev/null 2>&1
+						nmcli con add con-name "Armbian ethernet" type ethernet ifname $DEFAULT_ADAPTER >/dev/null 2>&1
+						nmcli con up "Armbian ethernet" >/dev/null 2>&1
 						else
 						create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
 					fi
