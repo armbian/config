@@ -260,7 +260,9 @@ exec 3>&1
 		read -r address;read -r netmask;read -r gateway
 		if [[ $? = 0 ]]; then
 				localuuid=$(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $1 | awk '{print $1}')
-				nmcli con mod $localuuid ipv4.method manual ipv4.addresses "$address/$netmask $gateway" ipv4.dns "8.8.8.8,$gateway"
+				nmcli con mod $localuuid ipv4.method manual ipv4.addresses "$address/$netmask"
+				nmcli con mod $localuuid ipv4.method manual ipv4.gateway  "$gateway"
+				nmcli con mod $localuuid ipv4.dns "8.8.8.8,$gateway"
 				nmcli c down $localuuid
 				sleep 2
 				nmcli c up $localuuid
