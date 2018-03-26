@@ -570,7 +570,7 @@ function configure_desktop ()
 	if [ -n "$CHOSEN_USER" ]; then
 		# install desktop and nodm
 		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get -y install armbian-desktop-${DISTROID}
+		debconf-apt-progress -- apt-get -y install armbian-${DISTROID}-desktop
 		DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y -qq install nodm
 		# add user to groups
 		for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
