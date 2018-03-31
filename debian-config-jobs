@@ -1088,13 +1088,17 @@ function jobs ()
 					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log
 					aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log
 				fi
-				# install new
+				# install new packages
 				INSTALL_DTB=""
 				[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
 				INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 				debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
 				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
 				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
+
+				# install new boot script
+				[[ -f /usr/share/armbian/boot.cmd ]] && cp /usr/share/armbian/boot.cmd /boot/boot.cmd && mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr
+				[[ -f /usr/share/armbian/boot.ini ]] && cp /usr/share/armbian/boot.ini /boot/boot.ini
 
 				dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" \
 				--yesno "\nNew kernel was installed. Reboot?" 7 64
