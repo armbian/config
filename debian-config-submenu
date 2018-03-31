@@ -374,6 +374,11 @@ function exceptions ()
 	UBOOT_BRANCH=$TARGET_BRANCH # uboot naming is different
 
 	if [[ $TARGET_BRANCH == "default" ]]; then TARGET_BRANCH=""; else TARGET_BRANCH="-"$TARGET_BRANCH; fi
+	# pine64
+	if [[ $TARGET_FAMILY == pine64 ]]; then
+		TARGET_FAMILY="sunxi64"
+	fi
+	# allwinner legacy kernels
 	if [[ $TARGET_FAMILY == sun*i ]]; then
 		TARGET_FAMILY="sunxi"
 		if [[ $UBOOT_BRANCH == "default" ]]; then
