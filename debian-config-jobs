@@ -27,29 +27,37 @@ function jobs ()
 	# Remove BT
 	#
 	"BT remove" )
-		debconf-apt-progress -- apt-get -y remove bluetooth bluez bluez-tools
-		check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y remove pulseaudio-module-bluetooth blueman
-		debconf-apt-progress -- apt -y -qq autoremove
+		if ! is_package_manager_running; then
+			debconf-apt-progress -- apt-get -y remove bluetooth bluez bluez-tools
+			check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y remove pulseaudio-module-bluetooth blueman
+			debconf-apt-progress -- apt -y -qq autoremove
+		fi
 	;;
 
 	# Enabling BT
 	#
 	"BT install" )
-		debconf-apt-progress -- apt-get -y install bluetooth bluez bluez-tools
-		check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y --no-install-recommends install pulseaudio-module-bluetooth blueman
+		if ! is_package_manager_running; then	
+			debconf-apt-progress -- apt-get -y install bluetooth bluez bluez-tools
+			check_if_installed xserver-xorg && debconf-apt-progress -- apt-get -y --no-install-recommends install pulseaudio-module-bluetooth blueman
+		fi
 	;;
 
 	# Removing IR
 	#
 	"Remove IR" )
-		debconf-apt-progress -- apt-get -y remove lirc
-		debconf-apt-progress -- apt -y -qq autoremove
+		if ! is_package_manager_running; then
+			debconf-apt-progress -- apt-get -y remove lirc
+			debconf-apt-progress -- apt -y -qq autoremove
+		fi
 	;;
 
 	# Enabling IR
 	#
 	"IR" )
-		debconf-apt-progress -- apt-get -y --no-install-recommends install lirc
+		if ! is_package_manager_running; then
+			debconf-apt-progress -- apt-get -y --no-install-recommends install lirc
+		fi
 	;;
 
 
@@ -129,12 +137,14 @@ function jobs ()
 	# Install kernel headers
 	#
 	"Headers" )
-		TARGET_BRANCH=$BRANCH
-		exceptions "$BRANCH"
-		if [[ -n $(dpkg -l | grep linux-headers) ]]; then
-			debconf-apt-progress -- apt-get -y remove linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
-		else
-			debconf-apt-progress -- apt-get -y install linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+		if ! is_package_manager_running; then
+			TARGET_BRANCH=$BRANCH
+			exceptions "$BRANCH"
+			if [[ -n $(dpkg -l | grep linux-headers) ]]; then
+				debconf-apt-progress -- apt-get -y remove linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+			else
+				debconf-apt-progress -- apt-get -y install linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+			fi
 		fi
 	;;
 
@@ -262,6 +272,7 @@ function jobs ()
 	# Create WiFi access point
 	#
 	"Hotspot" )
+	if ! is_package_manager_running; then
 		systemctl daemon-reload
 		CURRENT_UUID=$(LC_ALL=C nmcli -f DEVICE,TYPE,STATE device status | grep -w " wifi " | grep -w " disconnected")
 		if [[ -n $(service hostapd status | grep -w active | grep -w running) ]]; then
@@ -480,6 +491,7 @@ function jobs ()
 						reload-nety "reload"
 				fi
 		fi
+	fi
 	;;
 
 
@@ -654,19 +666,21 @@ function jobs ()
 	# Firmware update
 	#
 	"Firmware" )
-		clear
-		exec 3>&1
-		monitor=$(dialog --print-maxsize 2>&1 1>&3)
-		exec 3>&-
-		mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//');mon_x=$(( $mon_x / 2 ))
-		mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//');
-		dialog --title " Update " --backtitle "$BACKTITLE" --no-label "Cancel" --yesno "\nDo you want to update board firmware?" 7 41
-		if [[ $? = 0 ]]; then
-			debconf-apt-progress -- apt-get update
-			debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
-			dialog --title " Firmware update " --colors --no-label "Cancel" --backtitle "$BACKTITLE" --yesno \
-			"\nFirmware has been updated. Reboot?   " 7 39
-			if [[ $? = 0 ]]; then reboot; fi
+		if ! is_package_manager_running; then
+			clear
+			exec 3>&1
+			monitor=$(dialog --print-maxsize 2>&1 1>&3)
+			exec 3>&-
+			mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//');mon_x=$(( $mon_x / 2 ))
+			mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//');
+			dialog --title " Update " --backtitle "$BACKTITLE" --no-label "Cancel" --yesno "\nDo you want to update board firmware?" 7 41
+			if [[ $? = 0 ]]; then
+				debconf-apt-progress -- apt-get update
+				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
+				dialog --title " Firmware update " --colors --no-label "Cancel" --backtitle "$BACKTITLE" --yesno \
+				"\nFirmware has been updated. Reboot?   " 7 39
+				if [[ $? = 0 ]]; then reboot; fi
+			fi
 		fi
 	;;
 
@@ -681,6 +695,7 @@ function jobs ()
 	# Freeze and unfreeze kernel and board support packages
 	#
 	"Freeze" | "Defreeze" )
+	if ! is_package_manager_running; then
 		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
 		"\nDo you want to ${1,,} kernel updates?" 7 44
 		if [[ $? = 0 ]]; then
@@ -695,6 +710,7 @@ function jobs ()
 		[[ $1 == "Freeze" ]] && local command="hold"
 		for word in $PACKAGE_LIST; do apt-mark $command $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
 		fi
+	fi
 	;;
 
 
@@ -708,20 +724,22 @@ function jobs ()
 			[[ $exitstatus = 0 ]] && service nodm stop >/dev/null 2>&1 && service lightdm stop >/dev/null 2>&1 && \
 			sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
 		else
-			if [[ -n $DESKTOP_INSTALLED ]]; then
-				dialog --colors --title " Choose a display manager " --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Lightdm" \
-				--no-label "Nodm" --yesno "\n\Z1Lightdm\Z0 = full featured login display manager\n\Z1Nodm\Z0    = autoloading into desktop" 8 70
-				exitstatus=$?;
-				[[ $exitstatus = 0 ]] && [[ -f /etc/X11/default-display-manager ]] && \
-				echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager && \
-				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm \
-				&& systemctl start lightdm.service
-				[[ $exitstatus = 1 ]] && [[ -f /etc/X11/default-display-manager ]] && \
-				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install nodm \
-				&& echo "/usr/sbin/nodm" > /etc/X11/default-display-manager && \
-				sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
-			else
-				configure_desktop
+			if ! is_package_manager_running; then
+				if [[ -n $DESKTOP_INSTALLED ]]; then
+					dialog --colors --title " Choose a display manager " --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Lightdm" \
+					--no-label "Nodm" --yesno "\n\Z1Lightdm\Z0 = full featured login display manager\n\Z1Nodm\Z0    = autoloading into desktop" 8 70
+					exitstatus=$?;
+					[[ $exitstatus = 0 ]] && [[ -f /etc/X11/default-display-manager ]] && \
+					echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager && \
+					debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm \
+					&& systemctl start lightdm.service
+					[[ $exitstatus = 1 ]] && [[ -f /etc/X11/default-display-manager ]] && \
+					debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install nodm \
+					&& echo "/usr/sbin/nodm" > /etc/X11/default-display-manager && \
+					sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
+				else
+					configure_desktop
+				fi
 			fi
 		fi
 	;;
@@ -737,12 +755,14 @@ function jobs ()
 
 
 	"Lightdm" )
-		[[ -f /etc/X11/default-display-manager ]] && echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager
-		debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm
-		service nodm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
-		systemctl enable lightdm.service >/dev/null 2>&1
-		systemctl start lightdm.service >/dev/null 2>&1
-		DISPLAY_MANAGER="lightdm"
+		if ! is_package_manager_running; then
+			[[ -f /etc/X11/default-display-manager ]] && echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager
+			debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm
+			service nodm stop && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
+			systemctl enable lightdm.service >/dev/null 2>&1
+			systemctl start lightdm.service >/dev/null 2>&1
+			DISPLAY_MANAGER="lightdm"
+		fi
 	;;
 
 
@@ -751,11 +771,14 @@ function jobs ()
 			systemctl stop xrdp.service >/dev/null 2>&1
 			systemctl disable xrdp.service >/dev/null 2>&1
 		else
-			debconf-apt-progress -- apt-get -y install xrdp vnc4server
-			systemctl enable xrdp.service >/dev/null 2>&1
-			systemctl start xrdp.service >/dev/null 2>&1
-			dialog --title "Info" --backtitle "$BACKTITLE" --nocancel --no-collapse --pause \
-			"\nRemote graphical login to $BOARD_NAME using Microsoft Remote Desktop Protocol (RDP) is enabled." 11 57 3
+			if ! is_package_manager_running; then
+				debconf-apt-progress -- apt-get -y install xrdp vnc4server
+				systemctl enable xrdp.service >/dev/null 2>&1
+				systemctl start xrdp.service >/dev/null 2>&1
+				dialog --title "Info" --backtitle "$BACKTITLE" --nocancel --no-collapse --pause \
+				"\nRemote graphical login to $BOARD_NAME using Microsoft Remote Desktop Protocol (RDP) is enabled." 11 57 3
+
+			fi
 		fi
 	;;
 
@@ -1024,16 +1047,18 @@ function jobs ()
 	# Switch to daily builds
 	#
 	"Nightly" )
-		dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
-		"\nYou are switching to untested auto-build repository which might break your system.\n\nAre you fine with that?" 10 48
+		if ! is_package_manager_running; then
+			dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
+			"\nYou are switching to untested auto-build repository which might break your system.\n\nAre you fine with that?" 10 48
 
-		if [[ $? = 0 ]]; then
-			sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
-			debconf-apt-progress -- apt-get update
-			debconf-apt-progress -- apt-get -y upgrade
-			dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" \
-			--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
-			if [[ $? = 0 ]]; then reboot; fi
+			if [[ $? = 0 ]]; then
+				sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
+				debconf-apt-progress -- apt-get update
+				debconf-apt-progress -- apt-get -y upgrade
+				dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" \
+				--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
+				if [[ $? = 0 ]]; then reboot; fi
+			fi
 		fi
 	;;
 
@@ -1041,74 +1066,80 @@ function jobs ()
 	# Switch to stable builds
 	#
 	"Stable" )
-		dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
-		--yesno "\nYou are switching back to stable respository where you are going to get future updates. Are you fine with that?" 9 44
-		if [[ $? = 0 ]]; then
-			sed -i 's/beta.armbian.com/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
-			debconf-apt-progress -- apt-get update
-			debconf-apt-progress -- apt-get -y upgrade
-			dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
-			"\nReboot to apply new settings?" 7 34
-			if [[ $? = 0 ]]; then reboot; fi
+		if ! is_package_manager_running; then
+			dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" \
+			--yesno "\nYou are switching back to stable respository where you are going to get future updates. Are you fine with that?" 9 44
+			if [[ $? = 0 ]]; then
+				sed -i 's/beta.armbian.com/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
+				debconf-apt-progress -- apt-get update
+				debconf-apt-progress -- apt-get -y upgrade
+				dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
+				"\nReboot to apply new settings?" 7 34
+				if [[ $? = 0 ]]; then reboot; fi
+			fi
 		fi
 	;;
 
 	# Switch to alternative kernels
 	#
 	"DTB" )
-		aval_cubox
-		if [[ $exitstatus = 0 ]]; then
-		BOX_LENGHT=$((${#TARGET_BOARD}+24));
-		dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGHT
-		if [[ $? = 0 ]]; then
-			sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
-			reboot;
-		fi
+		if ! is_package_manager_running; then
+			aval_cubox
+			if [[ $exitstatus = 0 ]]; then
+			BOX_LENGHT=$((${#TARGET_BOARD}+24));
+			dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGHT
+			if [[ $? = 0 ]]; then
+				sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
+				reboot;
+			fi
+			fi
 		fi
 	;;
 
 	# Switch to alternative kernels
 	#
 	"Switch" )
-		aval_kernel
-		if [[ -n $TARGET_BRANCH  ]]; then
-			exceptions "$INSTALL_KERNEL"
-			dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
-			"\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\nWarning: another kernel might not provide\
-			the same functionality or can be broken!\n\nBoard config will be reverted to defaults." 12 50
-			if [[ $? = 0 ]]; then
-				# remove old
-				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel." 5 28
-				apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
-				# if test download is ok, remove old kernel
+		if ! is_package_manager_running; then
+			aval_kernel
+			if [[ -n $TARGET_BRANCH  ]]; then
+				exceptions "$INSTALL_KERNEL"
+				dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
+				"\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\nWarning: another kernel might not provide\
+				the same functionality or can be broken!\n\nBoard config will be reverted to defaults." 12 50
 				if [[ $? = 0 ]]; then
-					aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log
-					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log
-					aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log
+					# remove old
+					dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel." 5 28
+					apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+					linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+					linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
+					# if test download is ok, remove old kernel
+					if [[ $? = 0 ]]; then
+						aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log
+						aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log
+						aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log
+					fi
+					# install new packages
+					INSTALL_DTB=""
+					[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
+					INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+					debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+					linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+					linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
+
+					# install new boot script
+					[[ -f /usr/share/armbian/boot.cmd ]] && cp /usr/share/armbian/boot.cmd /boot/boot.cmd && mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr
+					[[ -f /usr/share/armbian/boot.ini ]] && cp /usr/share/armbian/boot.ini /boot/boot.ini
+					# create armbianEnv.txt
+					[[ ! -f /boot/armbianEnv.txt ]] && printf "verbosity=1\nrootdev=$(sed -e 's/^.*root=//' -e 's/ .*$//' < /proc/cmdline)" > /boot/armbianEnv.txt
+
+					dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" \
+					--yesno "\nNew kernel was installed. Reboot?" 7 64
+					exitstatus=$?;
+					[[ $exitstatus = 0 ]] &&  reboot
 				fi
-				# install new packages
-				INSTALL_DTB=""
-				[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
-				INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-				debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
-
-				# install new boot script
-				[[ -f /usr/share/armbian/boot.cmd ]] && cp /usr/share/armbian/boot.cmd /boot/boot.cmd && mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr
-				[[ -f /usr/share/armbian/boot.ini ]] && cp /usr/share/armbian/boot.ini /boot/boot.ini
-				# create armbianEnv.txt
-				[[ ! -f /boot/armbianEnv.txt ]] && printf "verbosity=1\nrootdev=$(sed -e 's/^.*root=//' -e 's/ .*$//' < /proc/cmdline)" > /boot/armbianEnv.txt
-
-				dialog --title "Kernel switch" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" \
-				--yesno "\nNew kernel was installed. Reboot?" 7 64
-				exitstatus=$?;
-				[[ $exitstatus = 0 ]] &&  reboot
+			else
+				dialog --backtitle "$BACKTITLE" --title " Info " --msgbox  "\nNo alternative kernels available!" 7 38
 			fi
-		else
-			dialog --backtitle "$BACKTITLE" --title " Info " --msgbox  "\nNo alternative kernels available!" 7 38
 		fi
 	;;
 
@@ -1116,21 +1147,23 @@ function jobs ()
 	# Toggle virtual read-only root filesystem
 	#
 	"Overlayroot" )
-		if [[ -n $(mount | grep -w overlay) ]]; then
-			dialog --title " Root overlay " --backtitle "$BACKTITLE" --yes-label "Disable" \
-			--no-label "Cancel" \
-			--yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
-			[[ $? = 0 ]] && overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf && \
-			overlayroot-chroot rm /etc/update-motd.d/97-overlayroot && reboot
-		else
-			debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y --no-install-recommends install overlayroot
-			echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
-			echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then \
-			echo -e "\n[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]";fi' >> /etc/update-motd.d/97-overlayroot
-			chmod +x /etc/update-motd.d/97-overlayroot
-			dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" \
-			--no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
-			[[ $? = 0 ]] && sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf && reboot
+		if ! is_package_manager_running; then
+			if [[ -n $(mount | grep -w overlay) ]]; then
+				dialog --title " Root overlay " --backtitle "$BACKTITLE" --yes-label "Disable" \
+				--no-label "Cancel" \
+				--yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
+				[[ $? = 0 ]] && overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf && \
+				overlayroot-chroot rm /etc/update-motd.d/97-overlayroot && reboot
+			else
+				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y --no-install-recommends install overlayroot
+				echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
+				echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then \
+				echo -e "\n[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]";fi' >> /etc/update-motd.d/97-overlayroot
+				chmod +x /etc/update-motd.d/97-overlayroot
+				dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" \
+				--no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
+				[[ $? = 0 ]] && sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf && reboot
+			fi
 		fi
 	;;
 

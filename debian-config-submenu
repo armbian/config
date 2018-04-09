@@ -994,26 +994,3 @@ while true; do
 
 done
 }
-
-
-
-
-DIALOG_CANCEL=1
-DIALOG_ESC=255
-
-#-----------------------------------------------------------------------------------------------------------------------------------------#
-# gather info about the board and start with loading menu
-#
-[[ -f /etc/armbian-release ]] && source /etc/armbian-release && ARMBIAN="Armbian $VERSION $IMAGE_TYPE";
-DISTRO=$(lsb_release -is)
-DISTROID=$(lsb_release -sc)
-KERNELID=$(uname -r)
-[[ -z "${ARMBIAN// }" ]] && ARMBIAN=$KERNELID
-BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
-TITLE="$BOARD_NAME "
-DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
-[[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
-OVERLAYDIR="/boot/dtb/overlay";
-[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
-dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
-sleep 1

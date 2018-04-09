@@ -33,6 +33,7 @@ fi
 # load functions
 [[ -f /usr/lib/armbian-config/jobs.sh ]] && source /usr/lib/armbian-config/jobs.sh || source ${BASH_SOURCE}-jobs
 [[ -f /usr/lib/armbian-config/submenu.sh ]] && source /usr/lib/armbian-config/submenu.sh || source ${BASH_SOURCE}-submenu
+[[ -f /usr/lib/armbian-config/functions.sh ]] && source /usr/lib/armbian-config/functions.sh || source ${BASH_SOURCE}-functions
 
 
 
@@ -60,7 +61,7 @@ do
 	DIALOG_ESC=255
 	TITLELENGHT=${#MENUTITLE}
 
-	[[ "$TITLELENGHT" -lt 50 ]] && TITLELENGHT="50"
+	[[ "$TITLELENGHT" -lt 60 ]] && TITLELENGHT="60"
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
