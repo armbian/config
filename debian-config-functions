@@ -8,31 +8,55 @@
 
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+#
 # gather info about the board and start with loading menu
 #
-DIALOG_CANCEL=1
-DIALOG_ESC=255
+function main(){
 
-[[ -f /etc/armbian-release ]] && source /etc/armbian-release && ARMBIAN="Armbian $VERSION $IMAGE_TYPE";
-DISTRO=$(lsb_release -is)
-DISTROID=$(lsb_release -sc)
-KERNELID=$(uname -r)
-[[ -z "${ARMBIAN// }" ]] && ARMBIAN="$DISTRO $DISTROID"
-BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
-TITLE="$BOARD_NAME "
-DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
-[[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
-OVERLAYDIR="/boot/dtb/overlay";
-[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
-dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
-sleep 1
+	DIALOG_CANCEL=1
+	DIALOG_ESC=255
+
+	[[ -f /etc/armbian-release ]] && source /etc/armbian-release && ARMBIAN="Armbian $VERSION $IMAGE_TYPE";
+	DISTRO=$(lsb_release -is)
+	DISTROID=$(lsb_release -sc)
+	KERNELID=$(uname -r)
+	[[ -z "${ARMBIAN// }" ]] && ARMBIAN="$DISTRO $DISTROID"
+	BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
+	TITLE="$BOARD_NAME "
+	DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
+	[[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
+	OVERLAYDIR="/boot/dtb/overlay";
+	[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
+	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
+	sleep 1
+
+}
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+#
+# check dpkg status of $1 -- currently only 'not installed at all' case catched
+#
+check_if_installed (){
+
+	local DPKG_Status="$(dpkg -s "$1" 2>/dev/null | awk -F": " '/^Status/ {print $2}')"
+	if [[ "X${DPKG_Status}" = "X" || "${DPKG_Status}" = *deinstall* ]]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+
+
+
+#
 # check if package manager is doing something
 #
 function is_package_manager_running() {
+
   fuser -s /var/lib/dpkg/lock
   if [[ $? = 0 ]]; then
     # 0 = true
@@ -43,5 +67,280 @@ function is_package_manager_running() {
     # 1 = false
     return 1
   fi
+
 }
 
+
+
+
+#
+# show disclaimer
+#
+function beta_disclaimer ()
+{
+exec 3>&1
+	ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title " Warning " \
+	--clear \--radiolist "\n$1.\n \n" 12 56 7 "Yes, I understand" "" off	 2>&1 1>&3)
+exec 3>&-
+}
+
+
+
+
+#
+# show box
+#
+function show_box ()
+{
+	dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --msgbox "\n$2\n \n" $3 56
+}
+
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------#
+#
+# show description for MOTD files
+#
+function description
+{
+	case $1 in
+		*header*)
+			echo "Big board logo and kernel info"
+		;;
+		*sysinfo*)
+			echo "Sysinfo - load, ip, memory, uptime, ..."
+		;;
+		*tips*)
+			echo "Shows tip of the day"
+		;;
+		*updates*)
+			echo "Display number of avaliable updates"
+		;;
+		*armbian-config*)
+			echo "Show command for system configuration"
+		;;
+		*autoreboot-warn*)
+			echo "Show warning when reboot is needed"
+		;;
+		*uk.armbian.com*)
+			echo "United Kingdom"
+		;;
+		*.armbian.com*)
+			echo "Estonia"
+		;;
+		*)
+		echo ""
+		;;
+	esac
+}
+
+
+
+
+#
+# check if board has alternative kernels
+#
+function aval_kernel ()
+{
+
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
+	AVAL_KERNEL=($(apt-cache search --names-only '^linux-'$(lsb_release	 -cs)'-root.*.'$BOARD'*' \
+	| grep -w "$BOARD " | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | grep -v "$BRANCH" ))
+	local LIST=()
+	for i in "${AVAL_KERNEL[@]}"
+	do
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGHT=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGHT" -eq 1 ]; then
+			TARGET_BRANCH=${AVAL_KERNEL[0]}
+	else
+			exec 3>&1
+			TARGET_BRANCH=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+			--title "Upgrade from $BRANCH to:" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			exitstatus=$?;
+			exec 3>&-
+	fi
+
+}
+
+
+
+
+#
+# check if board has alternative kernels
+#
+function aval_cubox ()
+{
+
+	LIST=("imx6dl-hummingboard.dtb" "HB Solo/DualLite" "imx6dl-hummingboard-emmc-som-v15.dtb" "HB Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard-som-v15.dtb" "HB Solo/DualLite v1.5" \
+	"imx6dl-hummingboard2.dtb" "HB2 Solo/DualLite" "imx6dl-hummingboard2-emmc-som-v15.dtb" "HB2 Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard2-som-v15.dtb" "HB2 Solo/DualLite v1.5" \
+	"imx6q-hummingboard.dtb" "HB Dual/Quad" "imx6q-hummingboard-emmc-som-v15.dtb" "HB Dual/Quad v1.5 with eMMC" "imx6q-hummingboard-som-v15.dtb" "HB Dual/Quad v1.5" \
+	"imx6q-hummingboard2.dtb" "HB2 Dual/Quad" "imx6q-hummingboard2-emmc-som-v15.dtb" "HB2 Dual/Quad v1.5 with eMMC" "imx6q-hummingboard2-som-v15.dtb" "HB2 Dual/Quad v1.5" \
+	"imx6dl-cubox-i.dtb" "Cubox-i Solo/DualLite" "imx6dl-cubox-i-emmc-som-v15.dtb" "Cubox-i Solo/DualLite v1.5 with eMMC" "imx6dl-cubox-i-som-v15.dtb" "Cubox-i Solo/DualLite v1.5" \
+	"imx6q-cubox-i.dtb" "Cubox-i Dual/Quad" "imx6q-cubox-i-emmc-som-v15.dtb" "Cubox-i Dual/Quad v1.5 with eMMC" "imx6q-cubox-i-som-v15.dtb" "Cubox-i Dual/Quad v1.5")
+
+	LIST_LENGHT=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGHT" -eq 1 ]; then
+			TARGET_BOARD=${AVAL_KERNEL[0]}
+	else
+			exec 3>&1
+			TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select board configuration" --clear --menu "" $((6+${LIST_LENGHT})) 80 25 "${LIST[@]}" 2>&1 1>&3)
+			exitstatus=$?;
+			exec 3>&-
+	fi
+
+}
+
+
+
+
+#
+# select video modes for a10 and a20
+#
+function get_a20modes ()
+{
+
+	IFS=$'\r'
+	GLOBIGNORE='*'
+	SCREEN_RESOLUTION=("1920x1080p60" "1280x720p60" "1920x1080p50" "1280x1024p60" "1024x768p60" "800x600p60" "640x480p60" "1360x768p60" "1440x900p60" "1680x1050p60")
+	local LIST=()
+	for i in "${SCREEN_RESOLUTION[@]}"
+	do
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGHT=$((${#LIST[@]}/2));
+	#echo $LIST_LENGHT
+	#exit
+	if [ "$LIST_LENGHT" -eq 1 ]; then
+			SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
+	else
+			exec 3>&1
+			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGHT})) 25 $((1+${LIST_LENGHT})) "${LIST[@]}" 2>&1 1>&3)
+			exec 3>&-
+	fi
+
+}
+
+
+
+
+#
+# select video modes for h3
+#
+function get_h3modes ()
+{
+
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
+	SCREEN_RESOLUTION=($(h3disp -i))
+	local LIST=()
+	for i in "${SCREEN_RESOLUTION[@]}"
+	do
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGHT=$((${#LIST[@]}/2));
+	#echo $LIST_LENGHT
+	#exit
+	if [ "$LIST_LENGHT" -eq 1 ]; then
+			SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
+	else
+			exec 3>&1
+			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGHT})) 25 $((1+${LIST_LENGHT})) "${LIST[@]}" 2>&1 1>&3)
+			exec 3>&-
+	fi
+
+}
+
+
+
+#
+# create or pick unprivileged user
+#
+function add_choose_user ()
+{
+
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
+
+	local USERS=($(awk -F'[/:]' '{if ($3 >= 1000 && $3 != 65534) print $1}' /etc/passwd))
+	local LIST=()
+	for i in "${USERS[@]}"
+	do
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGHT=$((${#LIST[@]}/2));
+
+	if [ "$LIST_LENGHT" -eq 0 ]; then
+		dialog --backtitle "$BACKTITLE" --title " Notice " --msgbox "\nWe didn't find any unprivileged user with sudo rights which is required to run this service.\
+		\n\nPress enter to create one!" 10 48
+		read -t 0 temp
+		echo -e "\nPlease provide a username (eg. your forename) or leave blank for canceling user creation: \c"
+		read -e username
+		CHOSEN_USER="$(echo "$username" | tr '[:upper:]' '[:lower:]' | tr -d -c '[:alnum:]')"
+		[ -z "$CHOSEN_USER" ] && return
+		echo "Trying to add user $CHOSEN_USER"
+		adduser $CHOSEN_USER || return
+	elif [ "$LIST_LENGHT" -eq 1 ]; then
+			CHOSEN_USER=${USERS[0]}
+	else
+			exec 3>&1
+			CHOSEN_USER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select unprivileged user" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			exec 3>&-
+	fi
+
+}
+
+
+
+
+#
+# configure armbian desktop
+#
+function configure_desktop ()
+{
+
+	add_choose_user
+
+	if [ -n "$CHOSEN_USER" ]; then
+		# install desktop and nodm
+		debconf-apt-progress -- apt-get update
+		debconf-apt-progress -- apt-get -y install armbian-${DISTROID}-desktop
+		DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y -qq install nodm
+		# add user to groups
+		for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
+				usermod -aG ${additionalgroup} ${CHOSEN_USER} 2>/dev/null
+		done
+
+		# fix for gksu in Xenial
+		touch /home/${CHOSEN_USER}/.Xauthority
+		cp -R /etc/skel/. /home/${CHOSEN_USER}
+
+		# set up profile sync daemon on desktop systems
+		which psd >/dev/null 2>&1
+		if [ $? -eq 0 ]; then
+			echo "${CHOSEN_USER} ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper" >> /etc/sudoers
+			touch /home/${CHOSEN_USER}/.activate_psd
+		fi
+
+		sed -i "s/NODM_USER=\(.*\)/NODM_USER=${CHOSEN_USER}/" /etc/default/nodm
+		sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
+		chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/.
+		sleep 3
+		service nodm stop
+		sleep 1
+		service nodm start
+	fi
+
+}
+
+
+
+
+main "$@"
