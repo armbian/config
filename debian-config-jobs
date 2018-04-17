@@ -1126,7 +1126,7 @@ function jobs ()
 	"Switch" )
 		if ! is_package_manager_running; then
 			aval_kernel
-			if [[ -n $TARGET_BRANCH  ]]; then
+			if [[ -n $TARGET_BRANCH ]]; then
 				exceptions "$INSTALL_KERNEL"
 				dialog --title " Install and reboot " --colors --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
 				"\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\nWarning: another kernel might not provide\
@@ -1162,8 +1162,6 @@ function jobs ()
 					exitstatus=$?;
 					[[ $exitstatus = 0 ]] &&  reboot
 				fi
-			else
-				dialog --backtitle "$BACKTITLE" --title " Info " --msgbox  "\nNo alternative kernels available!" 7 38
 			fi
 		fi
 	;;

@@ -80,7 +80,7 @@ function beta_disclaimer ()
 {
 exec 3>&1
 	ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title " Warning " \
-	--clear \--radiolist "\n$1.\n \n" 12 56 7 "Yes, I understand" "" off	 2>&1 1>&3)
+	--clear \--radiolist "\n$1\n \n" 11 56 5 "Yes, I understand" "" off	 2>&1 1>&3)
 exec 3>&-
 }
 
@@ -156,12 +156,16 @@ function aval_kernel ()
 	LIST_LENGHT=$((${#LIST[@]}/2));
 	if [ "$LIST_LENGHT" -eq 1 ]; then
 			TARGET_BRANCH=${AVAL_KERNEL[0]}
+			dialog --backtitle "$BACKTITLE" --title " Info " --msgbox  "\nNo alternative kernels available!" 7 38
 	else
-			exec 3>&1
-			TARGET_BRANCH=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Upgrade from $BRANCH to:" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
-			exitstatus=$?;
-			exec 3>&-
+			beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot."
+			if [[ -n $ACKNOWLEDGEMENT ]]; then
+				exec 3>&1
+				TARGET_BRANCH=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+				--title "Upgrade from $BRANCH to:" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+				exitstatus=$?;
+				exec 3>&-
+			fi
 	fi
 
 }
