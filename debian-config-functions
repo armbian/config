@@ -74,6 +74,24 @@ function is_package_manager_running() {
 
 
 #
+# display qr code for google authemtication method
+#
+function display_qr_code()
+{
+		clear
+		SECRET=$(head -1 /root/.google_authenticator)
+		qrencode -d 9 -8 -t UTF8 "otpauth://totp/test?secret=$SECRET"
+		echo -e "\nSetting up your OTP-generator\
+		\nInstall Google Authenticator generator application on your mobile phone from Android market (e.g. FreeOTP) or from F-Droid.\
+		\nIn the applications menu click the corresponding button to create a new account and either scan the QR code, or enter the secret key manually:\
+		\n\n$SECRET \n\nNow you should see a new passcode token being generated every 60 seconds on your phone.\n"  | fold -sw 38
+		read -n 1 -s -r -p "Press any key to continue"
+}
+
+
+
+
+#
 # show disclaimer
 #
 function beta_disclaimer ()
