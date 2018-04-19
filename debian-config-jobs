@@ -952,7 +952,7 @@ function jobs ()
 	"SSH" )
 		while true; do
 
-			DIALOG_CANCEL=1
+			DIALOG_CANCEL=2
 			DIALOG_ESC=255
 			LIST_CONST=7
 
@@ -962,11 +962,11 @@ function jobs ()
 			PasswordAuthentication="";
 			PhoneAuthentication=""
 			MergeParameter="";
-			EXTRABUTTON="";
+			Buttons="--no-cancel --ok-label "Save" --help-button --help-label Cancel"
 
 			# read values
 			[[ $(grep "^PermitRootLogin" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]] 			&& PermitRootLogin="on"
-			[[ $(grep "^PasswordAuthentication" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]]  	&& PasswordAuthentication="on"
+			[[ $(grep "^@include common-auth" /etc/pam.d/sshd | awk '{print $2}') == "common-auth" ]]  	&& PasswordAuthentication="on"
 			[[ $(grep "^PubkeyAuthentication" /etc/ssh/sshd_config | awk '{print $2}') == "yes" ]]  	&& PubkeyAuthentication="on"
 			[[ -n $(grep "pam_google_authenticator.so" /etc/pam.d/sshd) ]] 								&& PhoneAuthentication="on"
 
@@ -977,15 +977,17 @@ function jobs ()
 			MOTD+=( "PhoneAuthentication" "Mobile phone one-time passcode" "$PhoneAuthentication" )
 			LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
 
+			Buttons="--no-cancel --ok-label "Save" --help-button --help-label Cancel"
 			if [[ $PhoneAuthentication == "on" ]]; then
-				EXTRABUTTON="--help-button --help-label Generate-token";
-				[[ -f ~/.google_authenticator ]] && EXTRABUTTON="--help-button --help-label Generate-token --extra-button --extra-label Show-token";
+				Buttons="--cancel-label Generate-token --ok-label "Save" --help-button --help-label Cancel"
+				if [[ -f ~/.google_authenticator ]]; then
+					Buttons="--cancel-label New-token --ok-label "Save" --help-button --help-label Cancel --extra-button --extra-label Show-token"
+				fi
 			fi
 
 			exec 3>&1
-				selection=$(dialog $EXTRABUTTON --backtitle "$BACKTITLE" --title " Toggle sshd options " --clear --cancel-label \
-				"Cancel" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
-				$LISTLENGHT 80 21 "${MOTD[@]}" 2>&1 1>&3)
+				selection=$(dialog $Buttons --backtitle "$BACKTITLE" --title " Toggle sshd options " --clear --checklist \
+				"\nChoose what you want to enable or disable:\n " $LISTLENGHT 80 21 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 			exec 3>&-
 
@@ -1063,7 +1065,7 @@ function jobs ()
 				3)
 					display_qr_code
 				;;
-				2)
+				1)
 					google-authenticator -t -d -f -r 3 -R 30 -W -q
 					display_qr_code
 				;;
