@@ -194,15 +194,21 @@ function aval_kernel ()
 #
 # check if board has alternative kernels
 #
-function aval_cubox ()
+function aval_dtbs ()
 {
 
+	if [[ $LINUXFAMILY == cubox ]]; then
+	local width=80
 	LIST=("imx6dl-hummingboard.dtb" "HB Solo/DualLite" "imx6dl-hummingboard-emmc-som-v15.dtb" "HB Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard-som-v15.dtb" "HB Solo/DualLite v1.5" \
 	"imx6dl-hummingboard2.dtb" "HB2 Solo/DualLite" "imx6dl-hummingboard2-emmc-som-v15.dtb" "HB2 Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard2-som-v15.dtb" "HB2 Solo/DualLite v1.5" \
 	"imx6q-hummingboard.dtb" "HB Dual/Quad" "imx6q-hummingboard-emmc-som-v15.dtb" "HB Dual/Quad v1.5 with eMMC" "imx6q-hummingboard-som-v15.dtb" "HB Dual/Quad v1.5" \
 	"imx6q-hummingboard2.dtb" "HB2 Dual/Quad" "imx6q-hummingboard2-emmc-som-v15.dtb" "HB2 Dual/Quad v1.5 with eMMC" "imx6q-hummingboard2-som-v15.dtb" "HB2 Dual/Quad v1.5" \
 	"imx6dl-cubox-i.dtb" "Cubox-i Solo/DualLite" "imx6dl-cubox-i-emmc-som-v15.dtb" "Cubox-i Solo/DualLite v1.5 with eMMC" "imx6dl-cubox-i-som-v15.dtb" "Cubox-i Solo/DualLite v1.5" \
 	"imx6q-cubox-i.dtb" "Cubox-i Dual/Quad" "imx6q-cubox-i-emmc-som-v15.dtb" "Cubox-i Dual/Quad v1.5 with eMMC" "imx6q-cubox-i-som-v15.dtb" "Cubox-i Dual/Quad v1.5")
+	else
+	local width=52
+	LIST=("xu4" "Odroid XU4" "xu3" "Odroid XU3" "xu3l" "Odroid XU3 Lite" "hc1" "Odroid HC1/HC2")
+	fi
 
 	LIST_LENGHT=$((${#LIST[@]}/2));
 	if [ "$LIST_LENGHT" -eq 1 ]; then
@@ -210,7 +216,7 @@ function aval_cubox ()
 	else
 			exec 3>&1
 			TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select board configuration" --clear --menu "" $((6+${LIST_LENGHT})) 80 25 "${LIST[@]}" 2>&1 1>&3)
+			--title "Select optimised board configuration" --clear --menu "" $((6+${LIST_LENGHT})) ${width} 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 	fi

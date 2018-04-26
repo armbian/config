@@ -1136,16 +1136,17 @@ function jobs ()
 
 	;;
 
-	# Switch to alternative kernels
+	# Switch to alternative configurations
 	#
 	"DTB" )
 		if ! is_package_manager_running; then
-			aval_cubox
+			aval_dtbs
 			if [[ $exitstatus = 0 ]]; then
-			BOX_LENGHT=$((${#TARGET_BOARD}+24));
+			BOX_LENGHT=$((${#TARGET_BOARD}+28));
 			dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGHT
 			if [[ $? = 0 ]]; then
-				sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
+				sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt 2> /dev/null && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt 2> /dev/null || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
+				[[ "$LINUXFAMILY" = odroidxu4 ]] && sed -i "s/^fdt_file/board_name/" /boot/armbianEnv.txt
 				reboot;
 			fi
 			fi

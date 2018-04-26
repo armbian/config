@@ -49,6 +49,7 @@ while true; do
 	[[ -d ${OVERLAYDIR} ]] && \
 	LIST+=( "Hardware" "Toggle hardware configuration: UART, I2C, etc." )
 	[[ "$LINUXFAMILY" = cubox && "$BRANCH" = "next" ]] && LIST+=( "DTB" "Switch board .dtb configuration" )
+	[[ "$LINUXFAMILY" = odroidxu4 && "$BRANCH" = "next" ]] && LIST+=( "DTB" "Select optimised board configuration" )
 	[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
 	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
 	| wc -l) -gt 1 && -z "${mark}" ]] && LIST+=( "Switch" "Switch to alternative kernels" )
