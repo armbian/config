@@ -1146,7 +1146,7 @@ function jobs ()
 			dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGHT
 			if [[ $? = 0 ]]; then
 				sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt 2> /dev/null && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt 2> /dev/null || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
-				[[ "$LINUXFAMILY" = odroidxu4 ]] && sed -i "s/^fdt_file/board_name/" /boot/armbianEnv.txt
+				[[ "$LINUXFAMILY" = odroidxu4 ]] && sed -i "s/^fdt_file/board_name/" /boot/armbianEnv.txt && sed -i "s/^BOARD_NAME.*/BOARD_NAME=\"Odroid ${TARGET_BOARD^^}\"/" /etc/armbian-release
 				reboot;
 			fi
 			fi
