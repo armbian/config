@@ -14,7 +14,7 @@ Login as root and type:
 	- switching between avaliable kernels and nightly builds
 	- edit boot environment
 	- reconfigure board settings with DT overlays or FEX (Allwinner legacy)
-	- select dedicated DTB (Solidrun imx6 boards)
+	- select dedicated DTB (Solidrun imx6 and Odroid XU4/HC1/HC2 boards)
 	- adjust SSH daemon features
 	- run apt update and upgrade
 	- toggle desktop and login manager (desktop builds)
