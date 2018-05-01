@@ -6,8 +6,20 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
-
-
+# Functions:
+# main
+# check_if_installed
+# is_package_manager_running
+# display_qr_code
+# beta_disclaimer
+# show_box
+# description
+# aval_kernel
+# aval_dtbs
+# get_a20modes
+# get_h3modes
+# add_choose_user
+# configure_desktop
 
 #
 # gather info about the board and start with loading menu
@@ -371,4 +383,3 @@ function configure_desktop ()
 
 
 
-main "$@"

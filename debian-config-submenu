@@ -6,7 +6,11 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
-
+# Functions:
+# submenu_settings
+# submenu_networking
+# submenu_personal
+# submenu_software
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 # system
@@ -261,7 +265,7 @@ function submenu_software ()
 while true; do
 
 	LIST=()
-	[[ -f /usr/bin/softy ]] && LIST+=( "Softy" "3rd party applications installer" )
+	[[ -f /usr/bin/softy || -f softy ]] && LIST+=( "Softy" "3rd party applications installer" )
 	[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && \
 	LIST+=( "Consumption" "Control board consumption" )
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI board monitoring" )

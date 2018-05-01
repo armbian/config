@@ -6,7 +6,26 @@
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
-
+# Functions:
+# check_hostapd
+# check_advanced_modes
+# create_if_config
+# reload-nety
+# check_port
+# check_ht_capab
+# check_vht_capab
+# check_channels
+# nm_ip_editor
+# systemd_ip_editor
+# ip_editor
+# wlan_edit_basic
+# wlan_edit
+# exceptions
+# wlan_exceptions
+# check_and_warn
+# get_wlan_interface
+# select_default_interface
+# connect_bt_interface
 
 
 #
@@ -121,7 +140,7 @@ function reload-nety() {
 #
 # Check if something is running on port $1 and display info
 #
-check_port ()
+function check_port ()
 {
 	[[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$1'"') ]] && dialog --backtitle "$BACKTITLE" --title "Checking service" \
 	--msgbox "\nIt looks good.\n\nThere is $2 service on port $1" 9 52

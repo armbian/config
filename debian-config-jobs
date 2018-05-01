@@ -21,7 +21,7 @@ function jobs ()
 	# Application installer
 	#
 	"Softy" )
-		softy
+		./softy || softy
 	;;
 
 	# Remove BT

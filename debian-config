@@ -30,12 +30,30 @@ fi
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
-# load functions
-[[ -f /usr/lib/armbian-config/jobs.sh ]] && source /usr/lib/armbian-config/jobs.sh || source ${BASH_SOURCE}-jobs
-[[ -f /usr/lib/armbian-config/submenu.sh ]] && source /usr/lib/armbian-config/submenu.sh || source ${BASH_SOURCE}-submenu
-[[ -f /usr/lib/armbian-config/functions.sh ]] && source /usr/lib/armbian-config/functions.sh || source ${BASH_SOURCE}-functions
-[[ -f /usr/lib/armbian-config/functions-network.sh ]] && source /usr/lib/armbian-config/functions-network.sh || source ${BASH_SOURCE}-functions-network
+# load functions, local first
 
+if  [[ -f ${BASH_SOURCE}-jobs ]]; then source ${BASH_SOURCE}-jobs;
+	elif  [[ -f /usr/lib/armbian-config/jobs.sh ]]; then source /usr/lib/armbian-config/jobs.sh;
+	else exit 1;
+fi
+
+if  [[ -f ${BASH_SOURCE}-submenu ]]; then source ${BASH_SOURCE}-submenu;
+	elif  [[ -f /usr/lib/armbian-config/submenu.sh ]]; then source /usr/lib/armbian-config/submenu.sh;
+	else exit 1;
+fi
+sleep 1
+if  [[ -f ${BASH_SOURCE}-functions ]]; then source ${BASH_SOURCE}-functions;
+	elif  [[ -f /usr/lib/armbian-config/functions.sh ]]; then source /usr/lib/armbian-config/functions.sh;
+	else exit 1;
+fi
+
+if  [[ -f ${BASH_SOURCE}-functions-network ]]; then source ${BASH_SOURCE}-functions-network;
+	elif  [[ -f /usr/lib/armbian-config/functions-network.sh ]]; then source /usr/lib/armbian-config/functions-network.sh;
+	else exit 1;
+fi
+
+# collect info
+main "$@"
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------------#
