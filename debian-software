@@ -20,6 +20,7 @@
 # install_tvheadend
 # install_urbackup
 # install_transmission
+# install_transmission_seed_armbian_torrents
 # install_syncthing
 # install_vpn_server
 # install_vpn_client
@@ -79,6 +80,7 @@ function check_status
 #
 # Check if service is already installed
 #
+dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading install info ... " 5 28
 LIST=()
 LIST_CONST=5
 # Samba
@@ -113,13 +115,13 @@ fi
 OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
 [[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=5
 # Plex
-PLEX_STATUS="$(check_if_installed plexmediaserver && echo "on" || echo "off" )"
+PLEX_STATUS="$((check_if_installed plexmediaserver || check_if_installed plexmediaserver-installer) && echo "on" || echo "off" )"
 LIST+=( "Plex" "Plex media server" "$PLEX_STATUS" )
 # Radarr
-RADARR_STATUS="$([[ -d /usr/local/bin/Radarr ]] && echo "on" || echo "off" )"
+RADARR_STATUS="$([[ -d /opt/Radarr ]] && echo "on" || echo "off" )"
 LIST+=( "Radarr" "Automatically downloading movies" "$RADARR_STATUS" )
 # Sonarr
-SONARR_STATUS="$([[ -d /usr/local/bin/Sonarr ]] && echo "on" || echo "off" )"
+SONARR_STATUS="$([[ -d /opt/NzbDrone ]] && echo "on" || echo "off" )"
 LIST+=( "Sonarr" "Automatically downloading TV shows" "$SONARR_STATUS" )
 # MINIdlna
 MINIDLNA_STATUS="$(check_if_installed minidlna && echo "on" || echo "off" )"
@@ -131,7 +133,7 @@ LIST+=( "Pi hole" "Ad blocker" "$PI_HOLE_STATUS" )
 TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
 LIST+=( "Transmission" "Torrent downloading" "$TRANSMISSION_STATUS" )
 # UrBackup
-URBACKUP_STATUS="$(check_if_installed urbackup-server-dbg && echo "on" || echo "off" )"
+URBACKUP_STATUS="$(check_if_installed urbackup-server && echo "on" || echo "off" )"
 LIST+=( "UrBackup" "Open Source client/server backup system" "$URBACKUP_STATUS" )
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
@@ -579,7 +581,7 @@ install_urbackup ()
 PREFIX="http://hndl.urbackup.org/Server/latest/"
 URL="http://hndl.urbackup.org/Server/latest/"$(wget -q $PREFIX -O - | html2text -width 120 | grep deb | awk ' { print $3 }' | grep $(dpkg --print-architecture))
 wget -q $URL -O ${TEMP_DIR}/package.deb
-dpkg -i ${TEMP_DIR}/package.deb
+dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
 debconf-apt-progress -- apt-get -yy -f install
 }
 
@@ -600,9 +602,15 @@ sed -e 's/exit 0//g' -i /etc/rc.local
 service transmission-daemon restart
 exit 0
 EOF
-dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nDo you want to help \
-community and seed armbian torrent files? It will ensure faster download for everyone. We need around 50Gb of your space." 10 44
-if [[ $? = 0 ]]; then
+}
+
+
+
+install_transmission_seed_armbian_torrents ()
+{
+#
+# seed our torrents
+#
 # adjust network buffers if necessary
 rmem_recommended=4194304
 wmem_recommended=1048576
@@ -649,7 +657,6 @@ done < ${TEMP_DIR}/torrent-tmp/active.torrents
 EOF
 chmod +x /etc/cron.daily/seed-armbian-torrent
 /etc/cron.daily/seed-armbian-torrent &
-fi
 }
 
 
@@ -772,7 +779,7 @@ if [ "$(dpkg --print-architecture | grep arm64)" == "arm64" ]; then
 	debconf-apt-progress -- apt-get -y install mono-complete mediainfo
 	wget http://update.sonarr.tv/v2/develop/mono/NzbDrone.develop.tar.gz -O - | tar -xz -C /opt
 else
-	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FDA5DFFC
+	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FDA5DFFC >/dev/null 2>&1
 	echo -e "deb https://apt.sonarr.tv/ develop main" > /etc/apt/sources.list.d/sonarr.list
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install nzbdrone
@@ -788,7 +795,7 @@ ExecStart=/usr/bin/mono --debug /opt/NzbDrone/NzbDrone.exe -nobrowser
 [Install]
 WantedBy=multi-user.target
 _EOF_
-systemctl enable sonarr
+systemctl enable sonarr >/dev/null 2>&1
 systemctl start sonarr
 }
 
@@ -1448,6 +1455,12 @@ while true; do
 			check_port 7878 "Radarr movie downloader"
 		fi
 
+		if [[ "$selection" == *Sonarr* && "$SONARR_STATUS" != "on" ]]; then
+			install_sonarr
+			sleep 2
+			check_port 8989 "Sonarr movie downloader"
+		fi
+
 		if [[ "$selection" == *hole* && "$PI_HOLE_STATUS" != "on" ]]; then
 			curl -L "https://install.pi-hole.net" | bash
 			read -n 1 -s -p "Press any key to continue"
@@ -1456,6 +1469,11 @@ while true; do
 		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
 			install_transmission
 			check_port 9091 transmission
+			dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\nDo you want to help \
+			community and seed armbian torrent files? It will ensure faster download for everyone. We need around 50Gb of your space." 10 44
+			if [[ $? = 0 ]]; then
+				install_transmission_seed_armbian_torrents
+			fi
 		fi
 
 		if [[ "$selection" == *UrBackup* && "$URBACKUP_STATUS" != "on" ]]; then
