@@ -159,8 +159,7 @@ function jobs ()
 	#
 	"Full"|"Mini" )
 		if ! is_package_manager_running; then
-			echo "debconf-apt-progress -- apt-get -y install armbian-firmware$(echo -"${1,,}" | sed 's/-mini//')"
-			read
+			debconf-apt-progress -- apt-get -y install armbian-firmware$(echo -"${1,,}" | sed 's/-mini//')
 		fi
 	;;
 
