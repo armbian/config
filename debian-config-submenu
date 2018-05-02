@@ -273,6 +273,15 @@ while true; do
 
 	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else \
 	LIST+=( "Headers" "Install kernel headers" ); fi
+
+	if [[ -d /etc/armbian ]]; then
+		if [[ -n $(dpkg -l | grep linux-firmware-full) ]]; then
+			LIST+=( "Mini" "Install mini firmware package" );
+		else
+			LIST+=( "Full" "Install full firmware package" );
+		fi
+	fi
+
 	if [[ -n $DISPLAY_MANAGER ]]; then
 			if [[ $(service xrdp status 2> /dev/null | grep -w active) ]]; then
 				LIST+=( "RDP" "Disable remote desktop access from Windows" )

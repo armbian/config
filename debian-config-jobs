@@ -155,6 +155,16 @@ function jobs ()
 	;;
 
 
+	# Toggle mini and full firmware
+	#
+	"Full"|"Mini" )
+		if ! is_package_manager_running; then
+			echo "debconf-apt-progress -- apt-get -y install armbian-firmware$(echo -"${1,,}" | sed 's/-mini//')"
+			read
+		fi
+	;;
+
+
 	# Set the display resolution
 	#
 	"Display" )
