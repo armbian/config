@@ -672,12 +672,15 @@ install_syncthing ()
 #
 # Install Personal cloud https://syncthing.net/
 #
-curl -s https://syncthing.net/release-key.txt | apt-key add -
-	if !(grep -qs syncthing "/etc/apt/sources.list.d/syncthing.list");then
-	echo "deb http://apt.syncthing.net/ syncthing release" | tee /etc/apt/sources.list.d/syncthing.list
-	debconf-apt-progress -- apt-get update
-	install_packet "syncthing syncthing-inotify" "Install Personal cloud https://syncthing.net/"
-cat > /etc/systemd/system/syncthing.service <<"EOF"
+
+add_choose_user
+curl -s https://syncthing.net/release-key.txt | apt-key add - >/dev/null 2>&1
+if !(grep -qs syncthing "/etc/apt/sources.list.d/syncthing.list");then
+echo "deb http://apt.syncthing.net/ syncthing release" | tee /etc/apt/sources.list.d/syncthing.list
+fi
+debconf-apt-progress -- apt-get update
+install_packet "syncthing syncthing-inotify" "Install Personal cloud https://syncthing.net/"
+cat <<EOT > /etc/systemd/system/syncthing.service
 [Unit]
 Description=Syncthing - Open Source Continuous File Synchronization
 Documentation=man:syncthing(1)
@@ -688,20 +691,19 @@ ExecStart=/usr/bin/syncthing -no-browser -no-restart -logfile=/var/log/syncthing
 Restart=on-failure
 SuccessExitStatus=3 4
 RestartForceExitStatus=3 4
-User=root
+User=$CHOSEN_USER
 
 [Install]
 WantedBy=default.target
-
-EOF
-cat > /etc/systemd/system/syncthing-inotify.service <<"EOF"
+EOT
+cat <<EOT > /etc/systemd/system/syncthing-inotify.service
 [Unit]
 Description=Syncthing Inotify File Watcher
 After=network.target syncthing.service
 Requires=syncthing.service
 
 [Service]
-User=root
+User=$CHOSEN_USER
 ExecStart=/usr/bin/syncthing-inotify -logfile=/var/log/syncthing-inotify.log -logflags=3
 SuccessExitStatus=2
 RestartForceExitStatus=3
@@ -711,14 +713,15 @@ ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target
-EOF
-	# increase open file limit
+EOT
+# increase open file limit
+if !(grep -qs "fs.inotify.max_user_watches=204800" "/etc/sysctl.conf");then
 	echo -e "fs.inotify.max_user_watches=204800" | tee -a /etc/sysctl.conf
-	systemctl enable syncthing
-	systemctl start syncthing
-	systemctl enable syncthing-inotify
-	systemctl start syncthing-inotify
-	fi
+fi
+systemctl enable syncthing
+systemctl start syncthing
+systemctl enable syncthing-inotify
+systemctl start syncthing-inotify
 }
 
 
