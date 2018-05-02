@@ -41,6 +41,12 @@ function main(){
 	[[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
 	OVERLAYDIR="/boot/dtb/overlay";
 	[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
+	# detect desktop
+	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
+	check_if_installed nodm && DESKTOP_INSTALLED="nodm";
+	check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
+	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
+	[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
 	sleep 1
 

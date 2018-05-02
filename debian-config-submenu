@@ -21,14 +21,6 @@ while true; do
 
 	LIST=()
 
-	# detect desktop
-	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
-	check_if_installed nodm && DESKTOP_INSTALLED="nodm";
-	check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
-	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
-	[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
-
-
 	local mark=$(apt-mark showhold | grep -w "$BOARD")
 
 	[[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent 2> /dev/null) == mmcblk* && -f /usr/sbin/nand-sata-install ]] \
