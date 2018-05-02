@@ -229,7 +229,7 @@ function aval_kernel ()
 			LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
 	LIST_LENGHT=$((${#LIST[@]}/2));
-	if [ "$LIST_LENGHT" -eq 1 ]; then
+	if [ "$LIST_LENGHT" -eq 0 ]; then
 			TARGET_BRANCH=${AVAL_KERNEL[0]}
 			dialog --backtitle "$BACKTITLE" --title " Info " --msgbox  "\nNo alternative kernels available!" 7 38
 	else
