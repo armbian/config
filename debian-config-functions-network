@@ -20,7 +20,6 @@
 # ip_editor
 # wlan_edit_basic
 # wlan_edit
-# exceptions
 # wlan_exceptions
 # check_and_warn
 # get_wlan_interface
@@ -343,34 +342,6 @@ function wlan_edit ()
 		dialog --backtitle "$BACKTITLE" --title " Edit hostapd configuration /etc/hostapd.conf" --no-collapse \
 		--ok-label "Save" --editbox /etc/hostapd.conf 30 0 2> /etc/hostapd.conf.out
 		[[ $? = 0 ]] && mv /etc/hostapd.conf.out /etc/hostapd.conf && service hostapd restart
-	fi
-
-}
-
-
-
-
-
-#
-# naming exceptions for packages
-#
-function exceptions ()
-{
-
-	TARGET_FAMILY=$LINUXFAMILY
-	UBOOT_BRANCH=$TARGET_BRANCH # uboot naming is different
-
-	if [[ $TARGET_BRANCH == "default" ]]; then TARGET_BRANCH=""; else TARGET_BRANCH="-"$TARGET_BRANCH; fi
-	# pine64
-	if [[ $TARGET_FAMILY == pine64 ]]; then
-		TARGET_FAMILY="sunxi64"
-	fi
-	# allwinner legacy kernels
-	if [[ $TARGET_FAMILY == sun*i ]]; then
-		TARGET_FAMILY="sunxi"
-		if [[ $UBOOT_BRANCH == "default" ]]; then
-			TARGET_FAMILY=$(cat /proc/cpuinfo | grep "Hardware" | sed 's/^.*Allwinner //' | awk '{print $1;}')
-		fi
 	fi
 
 }

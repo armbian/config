@@ -8,6 +8,7 @@
 
 # Functions:
 # main
+# exceptions
 # check_if_installed
 # is_package_manager_running
 # display_qr_code
@@ -42,6 +43,33 @@ function main(){
 	[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
 	sleep 1
+
+}
+
+
+
+
+#
+# naming exceptions for packages
+#
+function exceptions ()
+{
+
+	TARGET_FAMILY=$LINUXFAMILY
+	UBOOT_BRANCH=$TARGET_BRANCH # uboot naming is different
+
+	if [[ $TARGET_BRANCH == "default" ]]; then TARGET_BRANCH=""; else TARGET_BRANCH="-"$TARGET_BRANCH; fi
+	# pine64
+	if [[ $TARGET_FAMILY == pine64 ]]; then
+		TARGET_FAMILY="sunxi64"
+	fi
+	# allwinner legacy kernels
+	if [[ $TARGET_FAMILY == sun*i ]]; then
+		TARGET_FAMILY="sunxi"
+		if [[ $UBOOT_BRANCH == "default" ]]; then
+			TARGET_FAMILY=$(cat /proc/cpuinfo | grep "Hardware" | sed 's/^.*Allwinner //' | awk '{print $1;}')
+		fi
+	fi
 
 }
 

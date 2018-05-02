@@ -140,10 +140,16 @@ function jobs ()
 		if ! is_package_manager_running; then
 			TARGET_BRANCH=$BRANCH
 			exceptions "$BRANCH"
+			if [[ -d /etc/armbian ]]; then
+				INSTALL_PKG="linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}";
+				else
+				INSTALL_PKG="linux-headers-$(uname -r | sed 's/'-$(dpkg --print-architecture)'//')";
+			fi
+
 			if [[ -n $(dpkg -l | grep linux-headers) ]]; then
-				debconf-apt-progress -- apt-get -y remove linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+				debconf-apt-progress -- apt-get -y purge ${INSTALL_PKG}
 			else
-				debconf-apt-progress -- apt-get -y install linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
+				debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
 			fi
 		fi
 	;;

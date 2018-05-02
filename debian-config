@@ -41,7 +41,7 @@ if  [[ -f ${BASH_SOURCE}-submenu ]]; then source ${BASH_SOURCE}-submenu;
 	elif  [[ -f /usr/lib/armbian-config/submenu.sh ]]; then source /usr/lib/armbian-config/submenu.sh;
 	else exit 1;
 fi
-sleep 1
+
 if  [[ -f ${BASH_SOURCE}-functions ]]; then source ${BASH_SOURCE}-functions;
 	elif  [[ -f /usr/lib/armbian-config/functions.sh ]]; then source /usr/lib/armbian-config/functions.sh;
 	else exit 1;
