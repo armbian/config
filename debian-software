@@ -133,7 +133,7 @@ LIST+=( "Pi hole" "Ad blocker" "$PI_HOLE_STATUS" )
 TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
 LIST+=( "Transmission" "Torrent downloading" "$TRANSMISSION_STATUS" )
 # UrBackup
-URBACKUP_STATUS="$(check_if_installed urbackup-server && echo "on" || echo "off" )"
+URBACKUP_STATUS="$((check_if_installed urbackup-server || check_if_installed urbackup-server-dbg) && echo "on" || echo "off" )"
 LIST+=( "UrBackup" "Open Source client/server backup system" "$URBACKUP_STATUS" )
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
@@ -155,7 +155,7 @@ case $? in
 		server="nginx"
 		;;
 	*)
-		dialog --title "Choose a webserver" --backtitle "$backtitle" --yes-label "Apache" --no-label "Nginx" \
+		dialog --title "Choose a webserver" --backtitle "$BACKTITLE" --yes-label "Apache" --no-label "Nginx" \
 		--yesno "\nChoose a web server which you are familiar with. They both work almost the same." 8 70
 		response=$?
 		case $response in
@@ -176,7 +176,7 @@ function server_conf
 # Add some reqired date for installation
 #
 exec 3>&1
-dialog --title "Server configuration" --separate-widget $'\n' --ok-label "Install" --backtitle "$backtitle" \
+dialog --title "Server configuration" --separate-widget $'\n' --ok-label "Install" --backtitle "$BACKTITLE" \
 --form "\nPlease fill out this form:\n " \
 12 70 0 \
 "Your FQDN for $serverip:"	1 1 "$hostnamefqdn"         1 31 32 0 \
@@ -214,7 +214,7 @@ procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
 		x=${PACKETS[$i]}
 		if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
 			printf '%.0f\n' $procent | dialog \
-			--backtitle "$backtitle" \
+			--backtitle "$BACKTITLE" \
 			--title "Installing" \
 			--gauge "\n$2\n\n$x" 10 70
 		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >${TEMP_DIR}/install.log 2>&1 || echo 'Installation failed' \
@@ -236,9 +236,14 @@ echo ""
 check_port ()
 {
 #
-# Check if something is running on port $1 and display info
+# Display warning with black background if service $2 is not running on a port $1
 #
-[[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$1'"') ]] && dialog --backtitle "$backtitle" --title "Checking service" --msgbox "\nIt looks good.\n\nThere is $2 service on port $1" 9 52
+temp_rc=$(mktemp)
+cat <<-'EOF' > $temp_rc
+screen_color = (BLACK,BLACK,ON)
+EOF
+[[ -z $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$1'"') ]] && DIALOGRC=$temp_rc dialog --colors --no-shadow --backtitle \
+"$BACKTITLE" --title " \Z1Warning\Z0 " --msgbox "\nThere is no sign of service $2 on port $1" 7 $((41+${#2}+${#1}))
 }
 
 
@@ -401,7 +406,7 @@ EOF
 sed -i "s/SMBGROUP/$SMBGROUP/" /etc/samba/smb.conf.tmp
 sed -i "s/SMBUSER/$SMBUSER/" /etc/samba/smb.conf.tmp
 sed -i "s/SUBNET/$SUBNET/" /etc/samba/smb.conf.tmp
-dialog --backtitle "$backtitle" --title "Review samba configuration" --no-collapse --editbox /etc/samba/smb.conf.tmp 30 0 2> /etc/samba/smb.conf.tmp.out
+dialog --backtitle "$BACKTITLE" --title "Review samba configuration" --no-collapse --editbox /etc/samba/smb.conf.tmp 30 0 2> /etc/samba/smb.conf.tmp.out
 if [[ $? = 0 ]]; then
 	mv /etc/samba/smb.conf.tmp.out /etc/samba/smb.conf
 	install -m 755 -g $SMBUSER -o $SMBUSER -d /ext
@@ -421,7 +426,7 @@ install_omv (){
 # TODO: Some OMV packages lack authentication
 
 if [[ "$family" == "Ubuntu" ]]; then
-	dialog --backtitle "$backtitle" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
+	dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
 	sleep 5
 	exit 1
 fi
@@ -471,7 +476,7 @@ debconf-set-selections <<< "postfix postfix/main_mailer_type string 'No configur
 SPACE_NEEDED=$(apt-get --assume-no --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault postfix dirmngr 2>/dev/null | awk -F" " '/additional disk space will be used/ {print $4}')
 SPACE_AVAIL=$(df -k / | awk -F" " '/\/$/ {printf ("%0.0f",$4/1200); }')
 if [ ${SPACE_AVAIL} -lt ${SPACE_NEEDED} ]; then
-	dialog --backtitle "$backtitle" --title "No space left on device" --msgbox "\nOpenMediaVault needs ${SPACE_NEEDED} MB for installation while only ${SPACE_AVAIL} MB are available." 7 52
+	dialog --backtitle "$BACKTITLE" --title "No space left on device" --msgbox "\nOpenMediaVault needs ${SPACE_NEEDED} MB for installation while only ${SPACE_AVAIL} MB are available." 7 52
 	exit 1
 fi
 apt-get --allow-unauthenticated install openmediavault-keyring
@@ -580,9 +585,9 @@ install_urbackup ()
 #
 PREFIX="http://hndl.urbackup.org/Server/latest/"
 URL="http://hndl.urbackup.org/Server/latest/"$(wget -q $PREFIX -O - | html2text -width 120 | grep deb | awk ' { print $3 }' | grep $(dpkg --print-architecture))
-wget -q $URL -O ${TEMP_DIR}/package.deb
+fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
 dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
-debconf-apt-progress -- apt-get -yy -f install
+apt-get -yy -f install
 }
 
 
@@ -735,8 +740,8 @@ elif [ "$(dpkg --print-architecture | grep arm64)" == "arm64" ]; then
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install binutils:armhf plexmediaserver-installer:armhf
 else
-	wget https://downloads.plex.tv/plex-media-server/1.12.3.4973-215c28d86/plexmediaserver_1.12.3.4973-215c28d86_amd64.deb -O ${TEMP_DIR}/package.deb
-	dpkg -i ${TEMP_DIR}/package.deb
+	fancy_wget "https://downloads.plex.tv/plex-media-server/1.12.3.4973-215c28d86/plexmediaserver_1.12.3.4973-215c28d86_amd64.deb" "-O ${TEMP_DIR}/package.deb"
+	dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
 fi
 }
 
@@ -750,7 +755,9 @@ install_radarr ()
 #
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get -y install mono-devel mediainfo libmono-cil-dev
-wget $( curl -s "https://api.github.com/repos/Radarr/Radarr/releases" | grep 'linux.tar.gz' | grep 'browser_download_url' | head -1 | cut -d \" -f 4 ) -O - | tar -xz -C /opt
+wgeturl=$(curl -s "https://api.github.com/repos/Radarr/Radarr/releases" | grep 'linux.tar.gz' | grep 'browser_download_url' | head -1 | cut -d \" -f 4)
+fancy_wget "$wgeturl" "-O ${TEMP_DIR}/radarr.tgz"
+tar xf ${TEMP_DIR}/radarr.tgz -C /opt
 cat << _EOF_ > /etc/systemd/system/radarr.service
 [Unit]
 Description=Radarr Daemon
@@ -777,7 +784,8 @@ install_sonarr ()
 if [ "$(dpkg --print-architecture | grep arm64)" == "arm64" ]; then
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install mono-complete mediainfo
-	wget http://update.sonarr.tv/v2/develop/mono/NzbDrone.develop.tar.gz -O - | tar -xz -C /opt
+	fancy_wget "http://update.sonarr.tv/v2/develop/mono/NzbDrone.develop.tar.gz" "-O ${TEMP_DIR}/sonarr.tgz"
+	tar xf ${TEMP_DIR}/sonarr.tgz -C /opt
 else
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FDA5DFFC >/dev/null 2>&1
 	echo -e "deb https://apt.sonarr.tv/ develop main" > /etc/apt/sources.list.d/sonarr.list
@@ -1349,7 +1357,7 @@ set ${serverIP//./ }
 SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
 mysql_pass=""
-backtitle="Softy - Armbian post deployment scripts, http://www.armbian.com"
+BACKTITLE="Softy - Armbian post deployment scripts, http://www.armbian.com"
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # main dialog routine
@@ -1364,7 +1372,7 @@ while true; do
 	LISTLENGHT="$(($LIST_CONST+${#LIST[@]}/2))"
 
 	exec 3>&1
-	selection=$(dialog --backtitle "$backtitle" --title "Installing to $family $distribution" --clear --cancel-label \
+	selection=$(dialog --backtitle "$BACKTITLE" --title "Installing to $family $distribution" --clear --cancel-label \
 	"Exit" --checklist "\nChoose what you want to install:\n " $LISTLENGHT 70 15 "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
@@ -1486,3 +1494,5 @@ while true; do
 		i=$[$i+1]
 	done
 done
+
+

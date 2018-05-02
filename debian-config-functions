@@ -118,6 +118,17 @@ function is_package_manager_running() {
 
 
 
+#
+# wget with dialog progress bar $1=URL $2=parameters
+#
+function fancy_wget()
+{
+LANG=C wget $2 --progress=bar:force:noscroll $1 2>&1 | stdbuf -i0 -o0 -e0 tr '>' '\n' | \
+stdbuf -i0 -o0 -e0 sed -rn 's/^.*\<([0-9]+)%\[.*$/\1/p' | dialog --backtitle "$BACKTITLE" --title " Downloading " \
+--gauge "Please wait" 7 70 0
+}
+
+
 
 #
 # display qr code for google authemtication method
@@ -413,7 +424,3 @@ function configure_desktop ()
 	fi
 
 }
-
-
-
-
