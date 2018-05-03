@@ -567,7 +567,7 @@ install_tvheadend ()
 # TVheadend https://tvheadend.org/ unofficial port https://tvheadend.org/boards/5/topics/21528
 #
 if [ ! -f /etc/apt/sources.list.d/tvheadend.list ]; then
-	echo "deb https://dl.bintray.com/tvheadend/deb xenial stable-4.2" >> /etc/apt/sources.list.d/tvheadend.list
+	echo "deb https://dl.bintray.com/tvheadend/deb xenial release-4.2" >> /etc/apt/sources.list.d/tvheadend.list
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1
 fi
 
