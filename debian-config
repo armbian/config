@@ -1,15 +1,21 @@
 #!/bin/bash
 #
-# Copyright (c) 2017 Igor Pecovnik, igor.pecovnik@gma**.com
+# Copyright (c) 2018 Igor Pecovnik, igor.pecovnik@gma**.com
 #
 # This file is licensed under the terms of the GNU General Public
 # License version 2. This program is licensed "as is" without any
 # warranty of any kind, whether express or implied.
 
+
+
+
 # define sane $PATH
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+
+#
 # check for root
 #
 if [[ $EUID != 0 ]]; then
@@ -19,7 +25,9 @@ if [[ $EUID != 0 ]]; then
 fi
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+#
 # check if we have internet connection to install dependencies
 #
 echo -e "GET http://github.com HTTP/1.0\n\n" | nc github.com 80 > /dev/null 2>&1
@@ -29,9 +37,11 @@ if [[ $? -ne 0 ]]; then
 fi
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
-# load functions, local first
 
+
+#
+# load functions, local first
+#
 if  [[ -f ${BASH_SOURCE}-jobs ]]; then source ${BASH_SOURCE}-jobs;
 	elif  [[ -f /usr/lib/armbian-config/jobs.sh ]]; then source /usr/lib/armbian-config/jobs.sh;
 	else exit 1;
@@ -52,11 +62,16 @@ if  [[ -f ${BASH_SOURCE}-functions-network ]]; then source ${BASH_SOURCE}-functi
 	else exit 1;
 fi
 
+
+
+
 # collect info
 main "$@"
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+#
 # Main menu
 #
 while true
@@ -112,11 +127,10 @@ do
 		;;
 
 		"Help" )
-			show_box "Info" "This tool provides a straightforward way of configuring the \Z4${BOARD_NAME}\Z0. \
+			show_box "Info" "This tool provides a straightforward way of configuring. \
 			\n \nAlthough it can be run at any time, some of the options may have difficulties if you alter system settings manually.\n\
 			\n\Z1Documentation:\Z0     https://docs.armbian.com\n\n\Z1Support:\Z0           https://forum.armbian.com\n
 			\n\Z1Sources:\Z0           https://git.armbian.com" "18"
 		;;
 	esac
 done
-#-----------------------------------------------------------------------------------------------------------------------------------------#

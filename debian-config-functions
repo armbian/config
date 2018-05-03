@@ -35,9 +35,10 @@ function main(){
 	DISTROID=$(lsb_release -sc)
 	KERNELID=$(uname -r)
 	[[ -z "${ARMBIAN// }" ]] && ARMBIAN="$DISTRO $DISTROID"
-	BACKTITLE="Configuration utility, $ARMBIAN, https://www.armbian.com"
-	TITLE="$BOARD_NAME "
 	DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
+	local ipadd=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
+	BACKTITLE="Configuration utility, $ARMBIAN, $ipadd"
+	TITLE="$BOARD_NAME "
 	[[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
 	OVERLAYDIR="/boot/dtb/overlay";
 	[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
