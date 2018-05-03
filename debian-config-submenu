@@ -127,7 +127,10 @@ while true; do
 	DIALOG_CANCEL=1
 	DIALOG_ESC=255
 
+	# edit ip
 	LIST+=( "IP" "Select dynamic or edit static IP address" )
+
+	# hostapd
 	HOSTAPDBRIDGE=$(cat /etc/hostapd.conf 2> /dev/null | grep -w "^bridge=br0")
 	HOSTAPDSTATUS=$(service hostapd status 2> /dev/null | grep -w active | grep -w running)
 	if [[ -n "$HOSTAPDSTATUS" ]]; then
@@ -139,13 +142,15 @@ while true; do
 
 	fi
 
-	if pgrep -x "iperf3" > /dev/null
-	then
-		LIST+=( "Iperf3" "Disable network throughput tests daemon" )
-		else
-		LIST+=( "Iperf3" "Enable network throughput tests daemon" )
+	# network throughput test
+	if check_if_installed iperf3; then
+		if pgrep -x "iperf3" > /dev/null
+		then
+			LIST+=( "Iperf3" "Disable network throughput tests daemon" )
+			else
+			LIST+=( "Iperf3" "Enable network throughput tests daemon" )
+		fi
 	fi
-
 
 	if [[ -n $(LC_ALL=C nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]]; then
 		LIST+=( "WiFi" "Manage wireless networking" )
