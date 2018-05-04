@@ -121,7 +121,9 @@ if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)
 	VPN_CLIENT_STATUS="$([[ -d /usr/local/vpnclient ]] && echo "on" || echo "off" )"
 	LIST+=( "VPN client" "Softether VPN client" "$VPN_CLIENT_STATUS" )
 fi
-
+# NCP
+NCP_STATUS="$( [[ -d /var/www/nextcloud ]] && echo "on" || echo "off" )"
+[[ "$family" != "Ubuntu" ]] && LIST+=( "NCP" "Nextcloud personal cloud" "$NCP_STATUS" )
 # OMV
 OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
 [[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=3
@@ -460,8 +462,9 @@ if [[ $? = 0 ]]; then
 fi
 }
 
-
-
+install_ncp (){
+    curl -sSL https://raw.githubusercontent.com/nextcloud/nextcloudpi/master/install.sh | bash
+}
 
 install_omv (){
 #
@@ -1479,6 +1482,10 @@ while true; do
 		if [[ "$selection" == *client* && "$VPN_CLIENT_STATUS" != "on" ]]; then
 			install_vpn_client
 			selection=${selection//\"VPN client\"/}
+		fi
+                if [[ "$selection" == *NCP* && "$NCP_STATUS" != "on" ]]; then
+			install_ncp
+                        selection=${selection//NCP/}
 		fi
 
 		if [[ "$selection" == *OMV* && "$OMV_STATUS" != "on" ]]; then
