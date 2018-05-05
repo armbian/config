@@ -57,8 +57,9 @@ Login as root and type:
 **Running this utility on 3rd party Debian based distributions**
 
 	# Install dependencies
-	apt install git iperf3 qrencode psmisc curl bc expect dialog network-manager sunxi-tools iptables resolvconf debconf-utils unzip \
-	build-essential html2text apt-transport-https html2text dirmngr software-properties-common libpam-google-authenticator qrencode
+	apt install git iperf3 qrencode psmisc curl bc expect dialog network-manager sunxi-tools iptables \
+	resolvconf debconf-utils unzip build-essential html2text apt-transport-https html2text dirmngr \
+	software-properties-common libpam-google-authenticator qrencode
 
 	git clone https://github.com/armbian/config
 	cd config
