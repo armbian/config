@@ -304,6 +304,22 @@ while true; do
 				else
 				LIST+=( "RDP" "Enable remote desktop access from Windows" )
 			fi
+			if ! check_if_installed thunderbird then ; then
+				LIST+=( "Thunderbird" "Install full featured email client" )
+				else
+				LIST+=( "Thunderbird" "Remove full featured email client" )
+			fi
+			if ! check_if_installed libreoffice-writer then ; then
+				LIST+=( "Writer" "Libreoffice: Writer only" )
+				LIST+=( "Suite" "Libreoffice: Full suite" )
+				else
+					if ! check_if_installed libreoffice-base then ; then
+						LIST+=( "Suite" "Libreoffice: Full suite" )
+						LIST+=( "Libre" "Remove Libre office packages" )
+					else
+						LIST+=( "Libre" "Remove Libre office packages" )
+					fi
+			fi
 	fi
 
 	# count number of menu items to adjust window sizee
