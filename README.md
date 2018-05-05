@@ -38,24 +38,27 @@ Login as root and type:
 		- [Syncthing](https://syncthing.net/) *(personal cloud)*
 		- [SoftEther VPN server](https://www.softether.org/) *(VPN server)*
 		- [ExaGear desktop](https://eltechs.com/product/exagear-desktop) *(x86 emulator)*
+		- [Plex](https://www.plex.tv/) *(Plex media server)*
+		- [Radarr](https://radarr.video/) *(Movie downloading server)*
+		- [Sonarr](https://sonarr.tv/) *(TV shows downloading server)*
 		- [Transmission](https://transmissionbt.com/) *(torrent server)*
 		- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
+		- [NCP](https://ownyourbits.com/nextcloudplus/) *(Nextcloud personal cloud)*
 		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
 		- [PI hole](https://pi-hole.net) *(ad blocker)*
 		- [UrBackup](https://www.urbackup.org/) *(client/server backup system)*
 		- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)*
 	- monitoring tools
 	- create diagnostics report
-	- install kernel headers
-	- remove build-essentials
-	- install RDP service (desktop builds)
+	- toggle kernel headers, RDP service, Thunderbird and Libreoffice (desktop builds)
 - **help**
 	- Links to documentation, support and sources
 
 **Running this utility on 3rd party Debian based distributions**
 
 	# Install dependencies
-	apt install git iperf3 qrencode psmisc curl bc expect rcconf dialog network-manager sunxi-tools iptables resolvconf debconf-utils unzip build-essential html2text apt-transport-https html2text dirmngr software-properties-common libpam-google-authenticator qrencode
+	apt install git iperf3 qrencode psmisc curl bc expect dialog network-manager sunxi-tools iptables resolvconf debconf-utils unzip \
+	build-essential html2text apt-transport-https html2text dirmngr software-properties-common libpam-google-authenticator qrencode
 
 	git clone https://github.com/armbian/config
 	cd config
