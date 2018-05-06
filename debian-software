@@ -581,7 +581,7 @@ if [ "X${BOARD}" = "Xodroidxu4" ]; then
 	HMP_Fix='; taskset -c -p 4-7 $i '
 	apt install -y i2c-tools
 	/usr/sbin/i2cdetect -y 1 | grep -q "60: 60"
-	if [ $? - eq 0 ]; then
+	if [ $? -eq 0 ]; then
 		add-apt-repository -y ppa:kyle1117/ppa
 		sed -i 's/jessie/xenial/' /etc/apt/sources.list.d/kyle1117-ppa-jessie.list
 		apt install -y -q cloudshell-lcd odroid-cloudshell cloudshell2-fan &
