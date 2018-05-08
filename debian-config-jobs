@@ -662,6 +662,9 @@ function jobs ()
 	#
 	"Locales" )
 		dpkg-reconfigure locales
+		source /etc/default/locale
+		sed -i "s/^LANGUAGE=.*/LANGUAGE=$LANG/" /etc/default/locale
+		export LANGUAGE=$LANG
 	;;
 
 	# Change keyboard
