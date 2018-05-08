@@ -489,7 +489,7 @@ case $distribution in
 		;;
 esac
 
-systemctl status log2ram >/dev/null 2>&1 && (systemctl stop log2ram ; systemctl disable log2ram ; rm /etc/cron.daily/log2ram)
+systemctl status log2ram >/dev/null 2>&1 && (systemctl stop log2ram ; systemctl disable log2ram >/dev/null 2>&1; rm /etc/cron.daily/log2ram)
 export APT_LISTCHANGES_FRONTEND=none
 if [ -f /etc/armbian-release ]; then
 	. /etc/armbian-release
