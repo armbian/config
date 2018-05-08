@@ -290,7 +290,7 @@ while true; do
 	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else \
 	LIST+=( "Headers" "Install kernel headers" ); fi
 
-	if [[ -d /etc/armbian ]]; then
+	if [[ -f /etc/armbian.txt ]]; then
 		if [[ -n $(dpkg -l | grep -w "armbian-firmware-full ") ]]; then
 			LIST+=( "Mini" "Install mini firmware package" );
 		else
