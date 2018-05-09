@@ -8,6 +8,7 @@
 
 # Functions:
 # main
+# check_desktop
 # exceptions
 # check_if_installed
 # is_package_manager_running
@@ -43,17 +44,26 @@ function main(){
 	OVERLAYDIR="/boot/dtb/overlay";
 	[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
 	# detect desktop
-	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
-	check_if_installed nodm && DESKTOP_INSTALLED="nodm";
-	check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
-	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
-	[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
+	check_desktop
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
 	sleep 1
 
 }
 
 
+
+
+#
+# read desktop parameters
+#
+function check_desktop()
+{
+DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
+check_if_installed nodm && DESKTOP_INSTALLED="nodm";
+check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
+[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
+[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
+}
 
 
 #

@@ -26,6 +26,9 @@ while true; do
 	DIALOG_CANCEL=1
 	DIALOG_ESC=255
 
+	# detect desktop
+	check_desktop
+
 	# check update status of BSP packages
 	local mark=$(apt-mark showhold | grep -w "$BOARD")
 
@@ -73,6 +76,9 @@ while true; do
 	# desktop
 	if [[ -n $DISPLAY_MANAGER ]]; then
 			LIST+=( "Desktop" "Disable desktop" )
+			if ! check_if_installed mpv ; then
+				LIST+=( "Default" "Install desktop with browser and extras" )
+			fi
 			[[ $DISPLAY_MANAGER == 'nodm' ]] && 			LIST+=( "Lightdm" "Switch to standard login manager" )
 			[[ $DISPLAY_MANAGER == 'lightdm' ]] && 			LIST+=( "Nodm" "Switch to simple auto login manager" )
 	else
@@ -285,6 +291,9 @@ done
 function submenu_software ()
 {
 while true; do
+
+	# detect desktop
+	check_desktop
 
 	LIST=()
 	[[ -f /usr/bin/softy || -f softy ]] && LIST+=( "Softy" "3rd party applications installer" )
