@@ -617,8 +617,17 @@ if [ ! -f /etc/apt/sources.list.d/tvheadend.list ]; then
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61 >/dev/null 2>&1
 fi
 
+if [[ $distribution == "stretch" ]]; then
+	URL="http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u8_"$(dpkg --print-architecture)".deb"
+	fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
+	dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
+	local pkglist="libssl-doc zlib1g-dev tvheadend xmltv-util"
+else
+	local pkglist="libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util"
+fi
+
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
+debconf-apt-progress -- apt-get -y install $pkglist
 }
 
 
