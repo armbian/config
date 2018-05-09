@@ -763,6 +763,7 @@ function jobs ()
 					debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install nodm \
 					&& echo "/usr/sbin/nodm" > /etc/X11/default-display-manager && \
 					sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
+				fi
 			fi
 		fi
 	;;
