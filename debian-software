@@ -803,7 +803,7 @@ ExecStart=/usr/bin/mono --debug /opt/Radarr/Radarr.exe -nobrowser
 [Install]
 WantedBy=multi-user.target
 _EOF_
-systemctl enable radarr
+systemctl enable radarr >/dev/null 2>&1
 systemctl start radarr
 }
 
