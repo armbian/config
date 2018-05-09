@@ -78,8 +78,14 @@ while true; do
 	else
 			if [[ -n $DESKTOP_INSTALLED ]]; then
 															LIST+=( "Desktop" "Enable desktop" )
+															if ! check_if_installed mpv ; then
+																LIST+=( "Default" "Install desktop with browser and extras" )
+															fi
 				else
-															LIST+=( "Desktop" "Install desktop" )
+															LIST+=( "Minimal" "Install minimal desktop" )
+															if ! check_if_installed mpv ; then
+																LIST+=( "Default" "Install desktop with browser and extras" )
+															fi
 			fi
 	fi
 

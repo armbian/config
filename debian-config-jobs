@@ -166,7 +166,6 @@ function jobs ()
 	#
 	"Full"|"Mini" )
 		if ! is_package_manager_running; then
-		echo "armbian-firmware$(echo -"${1,,}" | sed 's/-mini//')"
 			debconf-apt-progress -- apt-get -y purge armbian-firmware* # workaround since pkg replace deesn't work properly
 			debconf-apt-progress -- apt-get -y install armbian-firmware$(echo -"${1,,}" | sed 's/-mini//')
 		fi
@@ -764,11 +763,16 @@ function jobs ()
 					debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install nodm \
 					&& echo "/usr/sbin/nodm" > /etc/X11/default-display-manager && \
 					sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=true/" /etc/default/nodm && service nodm start
-				else
-					configure_desktop
-				fi
 			fi
 		fi
+	;;
+
+	"Minimal" )
+	configure_desktop
+	;;
+
+	"Default")
+	configure_desktop "--install-recommends"
 	;;
 
 
