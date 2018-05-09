@@ -405,12 +405,24 @@ function configure_desktop ()
 	add_choose_user
 
 	if [ -n "$CHOSEN_USER" ]; then
-		# install desktop and nodm
+
+		# update packages
 		debconf-apt-progress -- apt-get update
+
+		# remove desktop package to secure proper install
+		if check_if_installed armbian-${DISTROID}-desktop ; then
+			debconf-apt-progress -- apt-get -y remove armbian-${DISTROID}-desktop
+		fi
+
+		# install desktop package
 		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop
 		DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y -qq install nodm
+
+		# clean apt cache
+		apt-get clean
+
 		# add user to groups
-		for additionalgroup in sudo netdev audio video dialout plugdev bluetooth systemd-journal ssh; do
+		for additionalgroup in sudo netdev audio video dialout plugdev input bluetooth systemd-journal ssh; do
 				usermod -aG ${additionalgroup} ${CHOSEN_USER} 2>/dev/null
 		done
 

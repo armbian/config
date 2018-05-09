@@ -319,16 +319,16 @@ while true; do
 				else
 				LIST+=( "RDP" "Enable remote desktop access from Windows" )
 			fi
-			if ! check_if_installed thunderbird then ; then
+			if ! check_if_installed thunderbird ; then
 				LIST+=( "Thunderbird" "Install full featured email client" )
 				else
 				LIST+=( "Thunderbird" "Remove full featured email client" )
 			fi
-			if ! check_if_installed libreoffice-writer then ; then
+			if ! check_if_installed libreoffice-writer ; then
 				LIST+=( "Writer" "Libreoffice: Writer only" )
 				LIST+=( "Suite" "Libreoffice: Full suite" )
 				else
-					if ! check_if_installed libreoffice-base then ; then
+					if ! check_if_installed libreoffice-base ; then
 						LIST+=( "Suite" "Libreoffice: Full suite" )
 						LIST+=( "Libre" "Remove Libre office packages" )
 					else
