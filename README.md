@@ -19,7 +19,6 @@ Login as root and type:
 	- run apt update and upgrade
 	- toggle desktop and login manager (desktop builds)
 	- adjusting the display resolution (some boards)
-	- toggle running servives (stock Debian utility)
 	- enabling read only root filesystem (Ubuntu)
 - **network**
 	- select dynamic or static IP address
