@@ -1064,6 +1064,12 @@ function jobs ()
 
 									# phone
 									if [[ " ${my_array[*]} " == *" PhoneAuthentication "* ]]; then
+										if ! check_if_installed libpam-google-authenticator ; then
+											debconf-apt-progress -- apt-get -y install libpam-google-authenticator
+										fi
+										if ! check_if_installed qrencode ; then
+											debconf-apt-progress -- apt-get -y install qrencode
+										fi
 										MergeParameter="keyboard-interactive"
 										sed -i "s/^#\?ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/" /etc/ssh/sshd_config
 										sed -i -n '/password updating/{p;:a;N;/@include common-password/!ba;s/.*\n/auth required pam_google_authenticator.so nullok\n/};p' /etc/pam.d/sshd
