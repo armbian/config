@@ -152,7 +152,7 @@ while true; do
 			HOSTAPDCLIENTS=$(hostapd_cli all_sta 2> /dev/null | grep connected_time | wc -l)
 			LIST+=( "Hotspot" "Manage active wireless access point" )
 		else
-			[[ -n $(LC_ALL=C nmcli device status | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
+			[[ -n $(LC_ALL=C nmcli device status 2> /dev/null | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
 
 	fi
 
@@ -166,7 +166,7 @@ while true; do
 		fi
 	fi
 
-	if [[ -n $(LC_ALL=C nmcli device status | grep wifi | grep -v unavailable | grep -v unmanaged) ]]; then
+	if [[ -n $(LC_ALL=C nmcli device status 2> /dev/null | grep wifi | grep -v unavailable | grep -v unmanaged) ]]; then
 		LIST+=( "WiFi" "Manage wireless networking" )
 	else
 		LIST+=( "Clear" "Clear possible blocked interfaces" )
@@ -192,14 +192,14 @@ while true; do
 	# count number of menu items to adjust window sizee
 	LISTLENGHT="$((12+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
-	WIFICONNECTED=$(LC_ALL=C nmcli -f NAME,TYPE connection show --active | grep wireless | awk 'NF{NF-=1};1')
+	WIFICONNECTED=$(LC_ALL=C nmcli -f NAME,TYPE connection show --active 2> /dev/null | grep wireless | awk 'NF{NF-=1};1')
 
 	local disclaimer=""
 
 	local ipadd=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
 
 
-	if [[ -n $(LC_ALL=C nmcli device status | grep $DEFAULT_ADAPTER | grep connected) ]]; then
+	if [[ -n $(LC_ALL=C nmcli device status 2> /dev/null | grep $DEFAULT_ADAPTER | grep connected) ]]; then
 		local ifup="\nIP ($DEFAULT_ADAPTER) via Network Manager: \Z1${ipadd}\n\Z0 "
 	else
 		if [[ -n $(service systemd-networkd status | grep -w active | grep -w running) ]]; then
