@@ -16,6 +16,7 @@ Login as root and type:
 	- reconfigure board settings with DT overlays or FEX (Allwinner legacy)
 	- select dedicated DTB (Solidrun imx6 and Odroid XU4/HC1/HC2 boards)
 	- adjust SSH daemon features
+	- 3G/4G LTE modem management
 	- run apt update and upgrade
 	- toggle desktop and login manager (desktop builds)
 	- adjusting the display resolution (some boards)
