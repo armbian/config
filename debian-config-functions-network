@@ -7,6 +7,8 @@
 # warranty of any kind, whether express or implied.
 
 # Functions:
+# initialize_lte
+# function lte
 # check_hostapd
 # check_advanced_modes
 # create_if_config
@@ -25,6 +27,124 @@
 # get_wlan_interface
 # select_default_interface
 # connect_bt_interface
+
+
+
+#
+# 3G/4G general stuff
+#
+function initialize_lte ()
+{
+# This file defines udev rules for some 3G/UMTS/LTE modems.  It
+# addresses the issue that the ttyUSB devices are numbered randomly, and
+# their numbering can vary between server reboots.  These rules create
+# persistent symlinks which can be reliably used in WWAN interface
+# startup scripts.
+
+# These rules assume that there is only one WWAN modem in the system. In
+# order to address multiple WWAN cards, the rules need to be more
+# specific and associate with serial numbers of the modems.
+
+# Copyright (c) 2016 Stanislav Sinyagin <ssinyagin@k-open.com>.
+
+# This content is published under Creative Commons Attribution 4.0
+# International (CC BY 4.0) lincense.
+# Source repository: https://github.com/ssinyagin/wwan_udev_rules
+
+if ! check_if_installed ppp then; then
+        apt-get -y -qq install ppp >/dev/null 2>&1
+fi
+cat >/etc/udev/rules.d/99-wwan.rules <<'EOT'
+
+
+# Source repository: https://github.com/ssinyagin/wwan_udev_rules
+
+# Huawei ME909s-120 LTE modem
+SUBSYSTEM=="tty", ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="15c1", SYMLINK+="ttyWWAN%E{ID_USB_INTERFACE_NUM}"
+SUBSYSTEM=="net", ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="15c1", NAME="lte0"
+
+# Huawei MU709s-2 UMTS modem
+SUBSYSTEM=="tty", ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1c25", SYMLINK+="ttyWWAN%E{ID_USB_INTERFACE_NUM}"
+SUBSYSTEM=="net", ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1c25", NAME="umts0"
+
+# Qualcomm Gobi2000
+SUBSYSTEM=="tty", ATTRS{idVendor}=="03f0", ATTRS{idProduct}=="251d", SYMLINK+="ttyWWAN%E{ID_USB_INTERFACE_NUM}"
+
+# Sierra Wireless MC8775
+SUBSYSTEM=="tty", ATTRS{idVendor}=="03f0", ATTRS{idProduct}=="1e1d", SYMLINK+="ttyWWAN%E{.ID_PORT}"
+
+# Novatel Wireless, Inc. Expedite E371
+SUBSYSTEM=="tty", ATTRS{idVendor}=="413c", ATTRS{idProduct}=="819b", SYMLINK+="ttyWWAN%E{ID_USB_INTERFACE_NUM}"
+
+# SIMCom SIM7100
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1e0e", ATTRS{idProduct}=="9001", SYMLINK+="ttyWWAN%E{ID_USB_INTERFACE_NUM}"
+SUBSYSTEM=="net", ATTRS{idVendor}=="1e0e", ATTRS{idProduct}=="9001", NAME="lte0"
+EOT
+
+# reload udev rules
+udevadm control --reload-rules && udevadm trigger
+}
+
+
+
+
+#
+# 3G/4G init scripts add + remove
+#
+function lte ()
+{
+case $1 in
+	"12d1:15c1" )
+	# Huawei ME909s-120 LTE modem
+	LTE_MODEM_ID=$1
+	if [[ $2 == on && $(cat /sys/class/net/lte0/operstate) == "up" ]]; then
+		show_box  "Warning" "Huawei ME909s-120 LTE modem is up and running" 7
+	elif [[ $2 == on ]]; then
+		show_box  "Info" "Huawei ME909s-120 LTE modem will try to connect" 7
+cat >/etc/chatscripts/sunrise.HUAWEI <<'EOT'
+ABORT BUSY
+ABORT 'NO CARRIER'
+ABORT ERROR
+TIMEOUT 10
+'' ATZ
+OK 'AT+CFUN=1'
+OK 'AT+CMEE=1'
+OK 'AT\^NDISDUP=1,1,"internet"'
+OK
+EOT
+cat >/etc/chatscripts/gsm_off.HUAWEI <<'EOT'
+ABORT ERROR
+TIMEOUT 5
+'' AT+CFUN=0 OK
+EOT
+
+cat >/etc/network/interfaces.d/lte0 <<'EOT'
+allow-hotplug lte0
+iface lte0 inet dhcp
+    pre-up /usr/sbin/chat -v -f /etc/chatscripts/sunrise.HUAWEI >/dev/ttyWWAN02 </dev/ttyWWAN02
+    post-down /usr/sbin/chat -v -f /etc/chatscripts/gsm_off.HUAWEI >/dev/ttyWWAN02 </dev/ttyWWAN02
+EOT
+
+		# disable interface
+		ifup lte0 2> /dev/null
+
+	elif [[ $2 == off ]]; then
+		show_box  "Warning" "Huawei ME909s-120 LTE will kill connection" 7
+		# enable interface
+		ifdown lte0 2> /dev/null
+		rm /etc/chatscripts/sunrise.HUAWEI
+		rm /etc/chatscripts/gsm_off.HUAWEI
+		rm /etc/network/interfaces.d/lte0
+	elif [[ $(cat /sys/class/net/lte0/operstate) == "up" ]]; then
+		LTE_MODEM="Huawei ME909s-120 LTE modem is online"
+	else
+		LTE_MODEM="Huawei ME909s-120 LTE modem is offline"
+	fi
+	;;
+esac
+}
+
+
 
 
 #

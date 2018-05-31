@@ -1,5 +1,6 @@
 #!/bin/bash
 #
+#
 # Copyright (c) 2017 Igor Pecovnik, igor.pecovnik@gma**.com
 #
 # This file is licensed under the terms of the GNU General Public
@@ -276,6 +277,19 @@ function jobs ()
 			wlan_exceptions "off"
 			[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to STA mode" 7 62 && reboot
 			nmtui-connect
+	;;
+
+
+	# Connect to 3G/4G network
+	#
+	"LTE" )
+			if [[ $LTE_MODEM == *online* ]]; then
+				dialog --title " LTE modem is connected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Disconnect" --yesno "\n\Z1Disconnect:\Z0 kill mobile connection\n\n" 7 42
+				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "off"
+			else
+				dialog --title " LTE modem is disconnected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Connect" --yesno "\n\Z1Connect:\Z0 dial mobile connection\n\n" 7 42
+				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "on"
+			fi
 	;;
 
 

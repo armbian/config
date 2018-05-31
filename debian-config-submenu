@@ -141,6 +141,9 @@ while true; do
 	DIALOG_CANCEL=1
 	DIALOG_ESC=255
 
+	# check if we have some LTE modems
+	for i in $(lsusb | awk '{print $6}'); do lte "$i"; done;
+
 	# edit ip
 	LIST+=( "IP" "Select dynamic or edit static IP address" )
 
@@ -171,6 +174,13 @@ while true; do
 	else
 		LIST+=( "Clear" "Clear possible blocked interfaces" )
 	fi
+
+	if [[ -n $LTE_MODEM ]]; then
+		# apply udev rules
+		initialize_lte
+		LIST+=( "LTE" "$LTE_MODEM" )
+	fi
+
 	check_if_installed lirc && LIST+=( "Remove IR" "Remove IR support" ) || LIST+=( "IR" "Install IR support" )
 	if check_if_installed bluetooth then ; then
 			LIST+=( "BT remove" "Remove Bluetooth support" )
