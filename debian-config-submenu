@@ -159,6 +159,13 @@ while true; do
 
 	fi
 
+	# toogle IPV6
+	if [[ $(cat /proc/sys/net/ipv6/conf/all/disable_ipv6) == 1 ]]; then
+			LIST+=( "IPV6" "Enable IPV6 for APT and system" )
+		else
+			LIST+=( "IPV6" "Disable IPV6 for APT and system" )
+	fi
+
 	# network throughput test
 	if check_if_installed iperf3; then
 		if pgrep -x "iperf3" > /dev/null

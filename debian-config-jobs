@@ -258,10 +258,10 @@ function jobs ()
 			fi
 	;;
 
-	# Connect to wireless access point
+	# Start network performance daemon
 	#
 	"Iperf3" )
-			# disable AP mode on certain adapters
+			#
 			if pgrep -x "iperf3" > /dev/null
 			then
 				pkill iperf3
@@ -269,6 +269,27 @@ function jobs ()
 				iperf3 -s -D
 			fi
 	;;
+
+
+	# Toogle IPV6
+	#
+	"IPV6" )
+			#
+			sed -i --follow-symlinks '/^net.ipv6.conf*/d' /etc/sysctl.d/99-sysctl.conf
+			if [ -f "/etc/apt/apt.conf.d/99force-ipv4" ]; then
+				rm /etc/apt/apt.conf.d/99force-ipv4
+				echo 'net.ipv6.conf.all.disable_ipv6 = 0' >> /etc/sysctl.d/99-sysctl.conf
+				echo 'net.ipv6.conf.default.disable_ipv6 = 0' >> /etc/sysctl.d/99-sysctl.conf
+				echo 'net.ipv6.conf.lo.disable_ipv6 = 0' >> /etc/sysctl.d/99-sysctl.conf
+			else
+				echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
+				echo 'net.ipv6.conf.all.disable_ipv6 = 1' >> /etc/sysctl.d/99-sysctl.conf
+				echo 'net.ipv6.conf.default.disable_ipv6 = 1' >> /etc/sysctl.d/99-sysctl.conf
+				echo 'net.ipv6.conf.lo.disable_ipv6 = 1' >> /etc/sysctl.d/99-sysctl.conf
+			fi
+			sysctl -p > /dev/null
+	;;
+
 
 	# Connect to wireless access point
 	#
