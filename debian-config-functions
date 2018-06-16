@@ -485,9 +485,9 @@ function configure_desktop ()
 
 		# Prevent loading paralel printer port drivers which we don't need here.Suppress boot error if kernel modules are absent
 		if [[ -f /etc/modules-load.d/cups-filters.conf ]]; then
-			sed "s/^lp/#lp/" -i /etc/default/console-setup
-			sed "s/^ppdev/#ppdev/" -i /etc/default/console-setup
-			sed "s/^parport_pc/#parport_pc/" -i /etc/default/console-setup
+			sed "s/^lp/#lp/" -i /etc/modules-load.d/cups-filters.conf
+			sed "s/^ppdev/#ppdev/" -i /etc/modules-load.d/cups-filters.conf
+			sed "s/^parport_pc/#parport_pc/" -i /etc/modules-load.d/cups-filters.conf
 		fi
 
 		# fix for gksu in Xenial
