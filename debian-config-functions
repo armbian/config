@@ -390,7 +390,7 @@ function get_h3modes ()
 
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
-	SCREEN_RESOLUTION=($(h3disp -i))
+	SCREEN_RESOLUTION=($(h3disp -i clean))
 	local LIST=()
 	for i in "${SCREEN_RESOLUTION[@]}"
 	do
