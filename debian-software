@@ -164,6 +164,9 @@ URBACKUP_STATUS="$((check_if_installed urbackup-server || check_if_installed urb
 alive_port "Client/server backup system" "51413" "boolean"
 LIST+=( "UrBackup" "$DESCRIPTION" "$URBACKUP_STATUS" )
 
+# Docker
+DOCKER_STATUS="$((check_if_installed docker-ce) && echo "on" || echo "off" )"
+LIST+=( "Docker" "Run applications by using containers" "$DOCKER_STATUS")
 
 # ISPconfig
 ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
@@ -1521,6 +1524,14 @@ while true; do
 			curl -L "https://install.pi-hole.net" | bash
 			selection=${selection//\"Pi hole\"/}
 		fi
+		
+		if [[ "$selection" == Docker && "$DOCKER_STATUS" != "on" ]]; then
+			curl -sSL https://get.docker.com | sh
+			systemctl enable docker
+			systemctl start docker
+                        selection=${selection//\"Docker\"/}
+                fi
+
 
 		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
 			install_transmission
