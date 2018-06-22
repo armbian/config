@@ -192,6 +192,9 @@ function jobs ()
 
 
 			fi
+		elif [[ "$LINUXFAMILY" = odroidc* ]]; then
+			get_odroidmodes
+			display_cmd="sed -i \"s/^setenv m .*/# &/\" /boot/boot.ini;sed -i '/setenv m \"$SCREEN_RESOLUTION\"/s/^# //g' /boot/boot.ini";
 		else
 			# a20 boards
 			get_a20modes

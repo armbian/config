@@ -74,7 +74,7 @@ while true; do
 	LIST+=( "Firmware" "Run apt update & apt upgrade" )
 	[[ "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" && \
 	-n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
-
+	[[ "$LINUXFAMILY" = odroidc* && "$BRANCH" = "default" ]] && LIST+=( "Display" "set the display resolution" )
 	# desktop
 	if [[ -n $DISPLAY_MANAGER ]]; then
 			LIST+=( "Desktop" "Disable desktop" )

@@ -383,6 +383,37 @@ function get_a20modes ()
 
 
 #
+# select video modes for odroid c1/c2
+#
+function get_odroidmodes ()
+{
+
+        IFS=$'\r\n'
+        GLOBIGNORE='*'
+        SCREEN_RESOLUTION=($(cat /boot/boot.ini | grep -w "# setenv" | grep "hz" | cut -d'"' -f 2))
+        local LIST=()
+        for i in "${SCREEN_RESOLUTION[@]}"
+        do
+                        LIST+=( "${i[0]//[[:blank:]]/}" "" )
+        done
+        LIST_LENGHT=$((${#LIST[@]}/2));
+        #echo $LIST_LENGHT
+        #exit
+        if [ "$LIST_LENGHT" -eq 1 ]; then
+                        SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
+        else
+                        exec 3>&1
+                        SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+                        --title "Select video mode" --clear --menu "" $((6+${LIST_LENGHT})) 25 $((1+${LIST_LENGHT})) "${LIST[@]}" 2>&1 1>&3)
+                        exec 3>&-
+        fi
+
+}
+
+
+
+
+#
 # select video modes for h3
 #
 function get_h3modes ()
@@ -409,6 +440,7 @@ function get_h3modes ()
 	fi
 
 }
+
 
 
 
