@@ -533,8 +533,10 @@ apt-get --allow-unauthenticated install openmediavault-keyring
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
 debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends \
 	-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install openmediavault postfix dirmngr
+# Fix multiple sources entry on ARM with OMV4
+sed -i '/stretch-backports/d' /etc/apt/sources.list
+# Install OMV-Extras
 FILE="${TEMP_DIR}/omv_extras.deb"; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE ; rm $FILE
-# /usr/sbin/omv-update
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get --yes --force-yes --fix-missing --auto-remove --allow-unauthenticated \
   --show-upgraded --option DPkg::Options::="--force-confold" dist-upgrade
@@ -580,20 +582,28 @@ done
 # Hardkernel Cloudshell 1 and 2 fixes, read the whole thread for details:
 # https://forum.openmediavault.org/index.php/Thread/17855
 lsusb | grep -q -i "05e3:0735" && sed -i "/exit 0/i echo 20 > /sys/class/block/sda/queue/max_sectors_kb" /etc/rc.local
-if [ "X${BOARD}" = "Xodroidxu4" ]; then
-	HMP_Fix='; taskset -c -p 4-7 $i '
-	apt install -y i2c-tools
-	/usr/sbin/i2cdetect -y 1 | grep -q "60: 60"
-	if [ $? -eq 0 ]; then
-		add-apt-repository -y ppa:kyle1117/ppa
-		sed -i 's/jessie/xenial/' /etc/apt/sources.list.d/kyle1117-ppa-jessie.list
-		apt install -y -q cloudshell-lcd odroid-cloudshell cloudshell2-fan &
-		lsusb -v | awk -F"__" '/RANDOM_/ {print $2}' | head -n1 | while read ; do
-			echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"disk\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}\"" >> /etc/udev/rules.d/99-cloudshell2.rules
-			echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"partition\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}-part%n\"" >> /etc/udev/rules.d/99-cloudshell2.rules
-		done
-	fi
-fi
+case ${BOARD} in
+	odroidxu4)
+		HMP_Fix='; taskset -c -p 4-7 $i '
+		apt install -y i2c-tools
+		/usr/sbin/i2cdetect -y 1 | grep -q "60: 60"
+		if [ $? -eq 0 ]; then
+			add-apt-repository -y ppa:kyle1117/ppa
+			sed -i 's/jessie/xenial/' /etc/apt/sources.list.d/kyle1117-ppa-jessie.list
+			apt install -y -q cloudshell-lcd odroid-cloudshell cloudshell2-fan &
+			lsusb -v | awk -F"__" '/RANDOM_/ {print $2}' | head -n1 | while read ; do
+				echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"disk\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}\"" >> /etc/udev/rules.d/99-cloudshell2.rules
+				echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"partition\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}-part%n\"" >> /etc/udev/rules.d/99-cloudshell2.rules
+			done
+		fi
+		;;
+	bananapim3|nanopifire3|nanopct3plus|nanopim3)
+		HMP_Fix='; taskset -c -p 4-7 $i '
+		;;
+	nanopct4|odroidn1|renegade-elite|rockpro64)
+		HMP_Fix='; taskset -c -p 4-5 $i '
+		;;
+esac
 
 # Add a cron job to make NAS processes more snappy
 systemctl status rsyslog >/dev/null 2>&1
@@ -603,6 +613,12 @@ if [ $? -eq 0 ]; then
 fi
 echo "* * * * * root for i in \`pgrep \"ftpd|nfsiod|smbd|afpd|cnid\"\` ; do ionice -c1 -p \$i ${HMP_Fix}; done >/dev/null 2>&1" >/etc/cron.d/make_nas_processes_faster
 chmod 600 /etc/cron.d/make_nas_processes_faster
+
+# Fix python bug upstream Debian 9 obviously ignores
+if [ /usr/lib/python3.5/weakref.py ]; then
+	wget -O /usr/lib/python3.5/weakref.py \
+	https://raw.githubusercontent.com/python/cpython/9cd7e17640a49635d1c1f8c2989578a8fc2c1de6/Lib/weakref.py
+fi
 
 /usr/sbin/omv-initsystem
 }
@@ -1554,5 +1570,3 @@ while true; do
 	# reread statuses
 	check_status
 done
-
-
