@@ -42,26 +42,33 @@
 # install_ISPConfig
 # check_if_installed
 
+
+
+
 #
 # load functions, local first
 #
 if  [[ -f debian-config-jobs ]]; then source debian-config-jobs;
-	elif  [[ -f /usr/lib/armbian-config/jobs.sh ]]; then source /usr/lib/armbian-config/jobs.sh;
+	elif  [[ -f /usr/lib/armbian-config/jobs.sh ]]; then \
+	source /usr/lib/armbian-config/jobs.sh;
 	else exit 1;
 fi
 
 if  [[ -f debian-config-submenu ]]; then source debian-config-submenu;
-	elif  [[ -f /usr/lib/armbian-config/submenu.sh ]]; then source /usr/lib/armbian-config/submenu.sh;
+	elif  [[ -f /usr/lib/armbian-config/submenu.sh ]]; then \
+	source /usr/lib/armbian-config/submenu.sh;
 	else exit 1;
 fi
 
 if  [[ -f debian-config-functions ]]; then source debian-config-functions;
-	elif  [[ -f /usr/lib/armbian-config/functions.sh ]]; then source /usr/lib/armbian-config/functions.sh;
+	elif  [[ -f /usr/lib/armbian-config/functions.sh ]]; then \
+	source /usr/lib/armbian-config/functions.sh;
 	else exit 1;
 fi
 
 if  [[ -f debian-config-functions-network ]]; then source debian-config-functions-network;
-	elif  [[ -f /usr/lib/armbian-config/functions-network.sh ]]; then source /usr/lib/armbian-config/functions-network.sh;
+	elif  [[ -f /usr/lib/armbian-config/functions-network.sh ]]; then \
+	source /usr/lib/armbian-config/functions-network.sh;
 	else exit 1;
 fi
 
@@ -82,95 +89,109 @@ function check_status
 # Check if service is already installed and show it's status
 #
 
-dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading install info ... " 5 28
-LIST=()
-LIST_CONST=3
+	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading install info ... " 5 28
+	LIST=()
+	LIST_CONST=24
 
-# Samba
-SAMBA_STATUS="$(check_if_installed samba && echo "on" || echo "off" )"
-alive_port "Windows compatible file sharing" "445" "boolean"
-LIST+=( "Samba" "$DESCRIPTION" "$SAMBA_STATUS" )
+	# Samba
+	SAMBA_STATUS="$(check_if_installed samba && echo "on" || echo "off" )"
+	alive_port "Windows compatible file sharing" "445" "boolean"
+	LIST+=( "Samba" "$DESCRIPTION" "$SAMBA_STATUS" )
 
-# CUPS
-CUPS_STATUS="$(check_if_installed cups && echo "on" || echo "off" )"
-alive_port "Common UNIX Printing System (CUPS)" "631" "boolean"
-LIST+=( "CUPS" "$DESCRIPTION" "$CUPS_STATUS" )
+	# CUPS
+	CUPS_STATUS="$(check_if_installed cups && echo "on" || echo "off" )"
+	alive_port "Common UNIX Printing System (CUPS)" "631" "boolean"
+	LIST+=( "CUPS" "$DESCRIPTION" "$CUPS_STATUS" )
 
-# TV headend
-TVHEADEND_STATUS="$(check_if_installed tvheadend && echo "on" || echo "off" )"
-alive_port "TV streaming server" "9981"
-LIST+=( "TV headend" "$DESCRIPTION" "$TVHEADEND_STATUS" )
+	# TV headend
+	TVHEADEND_STATUS="$(check_if_installed tvheadend && echo "on" || echo "off" )"
+	alive_port "TV streaming server" "9981"
+	LIST+=( "TV headend" "$DESCRIPTION" "$TVHEADEND_STATUS" )
 
-# Synthing
-SYNCTHING_STATUS="$([[ -d /usr/bin/syncthing ]] && echo "on" || echo "off" )"
-alive_port "Personal cloud @syncthing.net" "8384" "boolean"
-LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
+	# Synthing
+	SYNCTHING_STATUS="$([[ -d /usr/bin/syncthing ]] && echo "on" || echo "off" )"
+	alive_port "Personal cloud @syncthing.net" "8384" "boolean"
+	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
-# Exagear
-if [[ "$(check_if_installed xserver-xorg && echo "on")" == "on" && "$family" == "Ubuntu" ]]; then
-	EXAGEAR_STATUS="$(check_if_installed exagear-armbian && echo "on" || echo "off" )"
-	LIST+=( "ExaGear" "32bit x86 Linux/Windows emulator trial" "$EXAGEAR_STATUS" )
-fi
+	# Exagear
+	if [[ "$(check_if_installed xserver-xorg && echo "on")" == "on" && "$family" == "Ubuntu" ]]; then
+		EXAGEAR_STATUS="$(check_if_installed exagear-armbian && echo "on" || echo "off" )"
+		LIST+=( "ExaGear" "32bit x86 Linux/Windows emulator trial" "$EXAGEAR_STATUS" )
+		LIST_CONST=$((LIST_CONST + 1))
+	fi
 
-if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
-	LIST_CONST=2
-	# vpn server
-	VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
-	LIST+=( "VPN server" "Softether VPN server" "$VPN_SERVER_STATUS" )
-	# vpn client
-	VPN_CLIENT_STATUS="$([[ -d /usr/local/vpnclient ]] && echo "on" || echo "off" )"
-	LIST+=( "VPN client" "Softether VPN client" "$VPN_CLIENT_STATUS" )
-fi
-# NCP
-NCP_STATUS="$( [[ -d /var/www/nextcloud ]] && echo "on" || echo "off" )"
-[[ "$family" != "Ubuntu" ]] && LIST+=( "NCP" "Nextcloud personal cloud" "$NCP_STATUS" )
-# OMV
-OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
-[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) && LIST_CONST=3
+	# VPN
+	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then		
+		# vpn server
+		VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
+		LIST+=( "VPN server" "Softether VPN server" "$VPN_SERVER_STATUS" )
+		# vpn client
+		VPN_CLIENT_STATUS="$([[ -d /usr/local/vpnclient ]] && echo "on" || echo "off" )"
+		LIST+=( "VPN client" "Softether VPN client" "$VPN_CLIENT_STATUS" )
+		LIST_CONST=$((LIST_CONST + 1))
+	fi
+	
+	# NCP
+	NCP_STATUS="$( [[ -d /var/www/nextcloud ]] && echo "on" || echo "off" )"
+	[[ "$family" != "Ubuntu" ]] && LIST+=( "NCP" "Nextcloud personal cloud" "$NCP_STATUS" ) \
+	&& LIST_CONST=$((LIST_CONST + 1))
+	
+	# OMV
+	OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
+	[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) \
+	&& LIST_CONST=$((LIST_CONST + 1))
 
-# Plex media server
-PLEX_STATUS="$((check_if_installed plexmediaserver || check_if_installed plexmediaserver-installer) && echo "on" || echo "off" )"
-alive_port "Plex media server" "32400"
-LIST+=( "Plex" "$DESCRIPTION" "$PLEX_STATUS" )
+	# Plex media server
+	PLEX_STATUS="$((check_if_installed plexmediaserver || check_if_installed plexmediaserver-installer) \
+	&& echo "on" || echo "off" )"
+	alive_port "Plex media server" "32400"
+	LIST+=( "Plex" "$DESCRIPTION" "$PLEX_STATUS" )
 
-# Radarr
-RADARR_STATUS="$([[ -d /opt/Radarr ]] && echo "on" || echo "off" )"
-alive_port "Movies downloading server" "7878"
-LIST+=( "Radarr" "$DESCRIPTION" "$RADARR_STATUS" )
+	# Radarr
+	RADARR_STATUS="$([[ -d /opt/Radarr ]] && echo "on" || echo "off" )"
+	alive_port "Movies downloading server" "7878"
+	LIST+=( "Radarr" "$DESCRIPTION" "$RADARR_STATUS" )
 
-# Sonarr
-SONARR_STATUS="$([[ -d /opt/NzbDrone ]] && echo "on" || echo "off" )"
-alive_port "TV shows downloading server" "8989"
-LIST+=( "Sonarr" "$DESCRIPTION" "$SONARR_STATUS" )
+	# Sonarr
+	SONARR_STATUS="$([[ -d /opt/NzbDrone ]] && echo "on" || echo "off" )"
+	alive_port "TV shows downloading server" "8989"
+	LIST+=( "Sonarr" "$DESCRIPTION" "$SONARR_STATUS" )
 
-# MINIdlna
-MINIDLNA_STATUS="$(check_if_installed minidlna && echo "on" || echo "off" )"
-alive_port "Lightweight DLNA/UPnP-AV server" "8200" "boolean"
-LIST+=( "Minidlna" "$DESCRIPTION" "$MINIDLNA_STATUS" )
+	# MINIdlna
+	MINIDLNA_STATUS="$(check_if_installed minidlna && echo "on" || echo "off" )"
+	alive_port "Lightweight DLNA/UPnP-AV server" "8200" "boolean"
+	LIST+=( "Minidlna" "$DESCRIPTION" "$MINIDLNA_STATUS" )
 
-# Pi hole
-PI_HOLE_STATUS="$([[ -d /etc/pihole ]] && echo "on" || echo "off" )"
-alive_process "Ad blocker" "pihole-FTL"
-LIST+=( "Pi hole" "$DESCRIPTION" "$PI_HOLE_STATUS" )
+	# Pi hole
+	PI_HOLE_STATUS="$([[ -d /etc/pihole ]] && echo "on" || echo "off" )"
+	alive_process "Ad blocker" "pihole-FTL"
+	LIST+=( "Pi hole" "$DESCRIPTION" "$PI_HOLE_STATUS" )
 
-# Transmission
-TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
-alive_port "Torrent download server" "9091" "boolean"
-LIST+=( "Transmission" "$DESCRIPTION" "$TRANSMISSION_STATUS" )
+	# Transmission
+	TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
+	alive_port "Torrent download server" "9091" "boolean"
+	LIST+=( "Transmission" "$DESCRIPTION" "$TRANSMISSION_STATUS" )
 
 
-# UrBackup
-URBACKUP_STATUS="$((check_if_installed urbackup-server || check_if_installed urbackup-server-dbg) && echo "on" || echo "off" )"
-alive_port "Client/server backup system" "51413" "boolean"
-LIST+=( "UrBackup" "$DESCRIPTION" "$URBACKUP_STATUS" )
+	# UrBackup
+	URBACKUP_STATUS="$((check_if_installed urbackup-server || check_if_installed urbackup-server-dbg) \
+	&& echo "on" || echo "off" )"
+	alive_port "Client/server backup system" "51413" "boolean"
+	LIST+=( "UrBackup" "$DESCRIPTION" "$URBACKUP_STATUS" )
 
-# Docker
-DOCKER_STATUS="$((check_if_installed docker-ce) && echo "on" || echo "off" )"
-LIST+=( "Docker" "Run applications by using containers" "$DOCKER_STATUS")
+	# Mayan EDMS
+	curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
+	MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
+	LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
 
-# ISPconfig
-ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
-LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
+	# Docker
+	DOCKER_STATUS="$((check_if_installed docker-ce) && echo "on" || echo "off" )"
+	LIST+=( "Docker" "Run applications by using containers" "$DOCKER_STATUS")
+
+	# ISPconfig
+	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
+	LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
+	
 }
 
 
@@ -1436,7 +1457,7 @@ while true; do
 	LISTLENGHT="$((${#LIST[@]}/2))"
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "Installing to $family $distribution" --colors --clear --cancel-label \
-	"Exit" --checklist "\nChoose what you want to install:\n " $(($LISTLENGHT+$LIST_CONST)) 70 15 "${LIST[@]}" 2>&1 1>&3)
+	"Exit" --checklist "\nChoose what you want to install:\n " $LIST_CONST 70 18 "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 	case $exit_status in
@@ -1564,7 +1585,12 @@ while true; do
 			install_urbackup
 			selection=${selection//UrBackup/}
 		fi
-
+		
+		if [[ "$selection" == *Mayan* && "$MAYAN_STATUS" != "on" ]]; then
+			curl -sSL get.mayan-edms.com | bash
+			selection=${selection//Mayan/}
+		fi
+		
 		i=$[$i+1]
 	done
 	# reread statuses
