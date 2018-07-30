@@ -47,6 +47,8 @@ Login as root and type:
 		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
 		- [PI hole](https://pi-hole.net) *(ad blocker)*
 		- [UrBackup](https://www.urbackup.org/) *(client/server backup system)*
+		- [Docker](https://www.docker.com) *(Docker CE engine)*
+		- [Mayan EDMS](https://www.mayan-edms.com/) *(Document management system within Docker)*
 		- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)*
 	- monitoring tools
 	- create diagnostics report
