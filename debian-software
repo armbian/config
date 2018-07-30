@@ -179,14 +179,16 @@ function check_status
 	alive_port "Client/server backup system" "51413" "boolean"
 	LIST+=( "UrBackup" "$DESCRIPTION" "$URBACKUP_STATUS" )
 
-	# Mayan EDMS
-	curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
-	MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
-	LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
-
 	# Docker
 	DOCKER_STATUS="$((check_if_installed docker-ce) && echo "on" || echo "off" )"
 	LIST+=( "Docker" "Run applications by using containers" "$DOCKER_STATUS")
+
+	# Mayan EDMS docker install
+	if [[ "$DOCKER_STATUS" == "on" ]]; then
+		curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
+		MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
+		LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
+	fi
 
 	# ISPconfig
 	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
