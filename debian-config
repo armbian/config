@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2018 Igor Pecovnik, igor.pecovnik@gma**.com
+# Copyright (c) Authors: http://www.armbian.com/authors, info@armbian.com
 #
 # This file is licensed under the terms of the GNU General Public
 # License version 2. This program is licensed "as is" without any
@@ -9,14 +9,8 @@
 
 
 
-# define sane $PATH
-export PATH=/usr/sbin:/usr/bin:/sbin:/bin
-
-
-
-
 #
-# check for root
+# check for root priveleges
 #
 if [[ $EUID != 0 ]]; then
 	echo "This tool requires root privileges. Try again with \"sudo \" please ..." >&2
@@ -28,7 +22,7 @@ fi
 
 
 #
-# check if we have internet connection to install dependencies
+# check for internet connection to install dependencies
 #
 echo -e "GET http://github.com HTTP/1.0\n\n" | nc github.com 80 > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
@@ -87,8 +81,8 @@ do
 	# count number of menu items to adjust window size
 	LISTLENGHT="$((11+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
-	MENUTITLE="Configure $DISTRO $DISTROID based \Z1Armbian\Z0 "
-	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE"for the \Z1${BOARD_NAME}\Z0 "
+	MENUTITLE="Configure $DISTRO $DISTROID "
+	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE" based \Z1Armbian\Z0 for the \Z1${BOARD_NAME}\Z0 "
 
 	# main dialog routine
 	DIALOG_CANCEL=1
@@ -99,14 +93,15 @@ do
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
-	--cancel-label "Cancel" --menu "\n$MENUTITLE \n \nSupport: \Z1https://www.armbian.com\Z0\n " \
+	--cancel-label "Cancel" --menu "\n$MENUTITLE \n \nSupport: \Z1https://forum.armbian.com\Z0\n " \
 	$LISTLENGHT ${TITLELENGHT} $BOXLENGHT "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 
 	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && exit
 
-	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
+	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox \
+	"\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
 
 	case $selection in
 
@@ -127,10 +122,13 @@ do
 		;;
 
 		"Help" )
-			show_box "Info" "This tool provides a straightforward way of configuring. \
-			\n \nAlthough it can be run at any time, some of the options may have difficulties if you alter system settings manually.\n\
-			\n\Z1Documentation:\Z0     https://docs.armbian.com\n\n\Z1Support:\Z0           https://forum.armbian.com\n
-			\n\Z1Sources:\Z0           https://git.armbian.com" "18"
+			t="This tool provides a straightforward way of configuring."
+			t=$t"\n \nAlthough it can be run at any time, some of the"
+			t=$t" options may have difficulties if you alter system settings manually.\n"
+			t=$t"\n\Z1Documentation:\Z0     https://docs.armbian.com"
+			t=$t"\n\n\Z1Support:\Z0           https://forum.armbian.com\n"
+			t=$t"\n\Z1Sources:\Z0           https://github.com/armbian/config"
+			show_box "Info" "$t" "18"
 		;;
 	esac
-done
+done	

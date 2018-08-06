@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2017 Igor Pecovnik, igor.pecovnik@gma**.com
+# Copyright (c) Authors: http://www.armbian.com/authors, info@armbian.com
 #
 # This file is licensed under the terms of the GNU General Public
 # License version 2. This program is licensed "as is" without any
@@ -38,7 +38,8 @@ function main(){
 	[[ -z "${ARMBIAN// }" ]] && ARMBIAN="$DISTRO $DISTROID"
 	DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
 	LOCALIPADD=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
-	BACKTITLE="Configuration utility, $ARMBIAN, $LOCALIPADD"
+	BACKTITLE="Configuration utility, $ARMBIAN"
+	[[ -n "$LOCALIPADD" ]] && BACKTITLE=$BACKTITLE", "$LOCALIPADD
 	TITLE="$BOARD_NAME "
 	[[ -z "${DEFAULT_ADAPTER// }" ]] && DEFAULT_ADAPTER="lo"
 	OVERLAYDIR="/boot/dtb/overlay";
@@ -118,9 +119,13 @@ function check_desktop()
 DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
 check_if_installed nodm && DESKTOP_INSTALLED="nodm";
 check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
+check_if_installed lightdm && DESKTOP_INSTALLED="gnome";
 [[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
 [[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
+[[ -n $(service gdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="gdm"
 }
+
+
 
 
 #
@@ -241,7 +246,6 @@ function show_box ()
 
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
 #
 # show description for MOTD files
 #
