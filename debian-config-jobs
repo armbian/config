@@ -1281,7 +1281,7 @@ function jobs ()
 
 					# install new boot script
 					[[ -f /usr/share/armbian/boot.cmd ]] && cp /usr/share/armbian/boot.cmd /boot/boot.cmd && mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr
-					[[ -f /usr/share/armbian/boot.ini ]] && cp /usr/share/armbian/boot.ini /boot/boot.ini
+					[[ -f /usr/share/armbian/boot.ini ]] && cp /usr/share/armbian/boot.ini /boot/boot.ini && sed "s/setenv rootdev.*/setenv rootdev \""$(sed -e 's/^.*root=//' -e 's/ .*$//' < /proc/cmdline)"\" /" /boot/boot.ini
 					# create armbianEnv.txt
 					[[ ! -f /boot/armbianEnv.txt ]] && printf "verbosity=1\nrootdev=$(sed -e 's/^.*root=//' -e 's/ .*$//' < /proc/cmdline)" > /boot/armbianEnv.txt
 
