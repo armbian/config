@@ -765,8 +765,10 @@ function jobs ()
 		if [[ $? = 0 ]]; then
 		TARGET_BRANCH=$BRANCH
 		exceptions "$BRANCH"
-		PACKAGE_LIST="linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD"
-
+		PACKAGE_LIST="linux-image${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD"
+		if check_if_installed "linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"; then
+                        PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
+                fi
 		[[ $BRANCH != "default" ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 
 		local words=( $PACKAGE_LIST )
