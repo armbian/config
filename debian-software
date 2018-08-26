@@ -1589,7 +1589,7 @@ while true; do
 		fi
 		
 		if [[ "$selection" == *Mayan* && "$MAYAN_STATUS" != "on" ]]; then
-			curl -sSL get.mayan-edms.com | bash
+			wget -o https://gitlab.com/mayan-edms/mayan-edms/raw/master/contrib/scripts/install/docker.sh | bash
 			selection=${selection//Mayan/}
 		fi
 		
