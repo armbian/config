@@ -286,6 +286,19 @@ function description
 
 
 #
+# kernel descriptions in more human friendly format
+#
+function kernel_desc ()
+{
+        [[ "$1" == "dev" ]]     && echo "development, unstable"
+        [[ "$1" == "next" ]]    && echo "mainline or 2nd generation"
+        [[ "$1" == "default" ]] && echo "legacy, stock, 1st build"
+}
+
+
+
+
+#
 # check if board has alternative kernels
 #
 function aval_kernel ()
@@ -298,7 +311,9 @@ function aval_kernel ()
 	local LIST=()
 	for i in "${AVAL_KERNEL[@]}"
 	do
-			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+		VALUE="${i[0]//[[:blank:]]/}"
+		DESC=$(kernel_desc $VALUE)
+		LIST+=( "$VALUE" "$DESC" )
 	done
 	LIST_LENGHT=$((${#LIST[@]}/2));
 	if [ "$LIST_LENGHT" -eq 0 ]; then
@@ -309,7 +324,7 @@ function aval_kernel ()
 			if [[ -n $ACKNOWLEDGEMENT ]]; then
 				exec 3>&1
 				TARGET_BRANCH=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-				--title "Upgrade from $BRANCH to:" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+				--title "Switch to alternative kernels" --clear --menu "\nSwitch from $(kernel_desc $BRANCH) to:\n \n" $((9+${LIST_LENGHT})) 60 25 "${LIST[@]}" 2>&1 1>&3)
 				exitstatus=$?;
 				exec 3>&-
 			fi
