@@ -524,6 +524,10 @@ function configure_desktop ()
 
 		# install desktop package
 		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop
+		
+		# in case previous install was interrupted
+		[[ $? -eq 130 ]] && dpkg --configure -a
+		
 		# strectch workaround
 		[[ ${DISTROID} == stretch ]] && debconf-apt-progress -- apt -y purge lightdm
 		# install display manager
