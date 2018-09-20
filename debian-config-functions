@@ -548,6 +548,13 @@ function configure_desktop ()
 			sed "s/^parport_pc/#parport_pc/" -i /etc/modules-load.d/cups-filters.conf
 		fi
 
+		# enable show windows content on stronger boards
+		cpu_cores=$(grep -c '^processor' /proc/cpuinfo | sed 's/^0$/1/')
+		if [[ ${cpu_cores} -gt 2 && -f /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml ]]; then
+			sed -i 's/<property name="box_move" type="bool" value=".*/<property name="box_move" type="bool" value="false"\/>/g' \
+			/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfwm4.xml
+		fi
+
 		# fix for gksu in Xenial
 		touch /home/${CHOSEN_USER}/.Xauthority
 		cp -R /etc/skel/. /home/${CHOSEN_USER}
