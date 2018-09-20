@@ -1212,10 +1212,10 @@ function jobs ()
 				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
 				# if test download is ok, remove old kernel
 				if [[ $? = 0 ]]; then
-					aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log
-					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log
-					aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log
-					aptitude remove ~nlinux-$(lsb_release -cs)-root --quiet=100 -y >> /var/log/upgrade.log
+					aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-$(lsb_release -cs)-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
 				fi
 				# install new packages
 				INSTALL_DTB=""
@@ -1269,9 +1269,9 @@ function jobs ()
 					linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
 					# if test download is ok, remove old kernel
 					if [[ $? = 0 ]]; then
-						aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log
-						aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log
-						aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log
+						aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log 2>&1
+						aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
+						aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
 					fi
 					# install new packages
 					INSTALL_DTB=""
