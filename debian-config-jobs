@@ -787,8 +787,10 @@ function jobs ()
 			dialog --title " Desktop is enabled and running " --backtitle "$BACKTITLE" \
 			--yes-label "Stop" --no-label "Cancel" --yesno "\nDo you want to stop and disable this service?" 7 50
 			exitstatus=$?;
-			[[ $exitstatus = 0 ]] && service nodm stop >/dev/null 2>&1 && service lightdm stop >/dev/null 2>&1 && \
-			sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
+			if [[ $exitstatus = 0 ]]; then 
+				service nodm stop >/dev/null 2>&1 && sed -i "s/^NODM_ENABLED=.*/NODM_ENABLED=false/" /etc/default/nodm
+				service lightdm stop >/dev/null 2>&1 && systemctl disable lightdm.service >/dev/null 2>&1
+			fi
 		else
 			if ! is_package_manager_running; then
 				if [[ -n $DESKTOP_INSTALLED ]]; then
