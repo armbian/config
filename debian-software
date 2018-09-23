@@ -109,7 +109,7 @@ function check_status
 	LIST+=( "TV headend" "$DESCRIPTION" "$TVHEADEND_STATUS" )
 
 	# Synthing
-	SYNCTHING_STATUS="$([[ -d /usr/bin/syncthing ]] && echo "on" || echo "off" )"
+	SYNCTHING_STATUS="$([[ -f /usr/bin/syncthing ]] && echo "on" || echo "off" )"
 	alive_port "Personal cloud @syncthing.net" "8384" "boolean"
 	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
