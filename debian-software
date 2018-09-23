@@ -675,6 +675,17 @@ debconf-apt-progress -- apt-get -y install $pkglist
 
 
 
+install_docker ()
+{
+echo "deb https://download.docker.com/linux/${family,,} $distribution edge" > /etc/apt/sources.list.d/docker.list
+curl -fsSL "https://download.docker.com/linux/${family,,}/gpg" | apt-key add -qq - >/dev/null
+debconf-apt-progress -- apt-get update
+debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce
+}
+
+
+
+
 install_urbackup ()
 {
 #
@@ -1565,13 +1576,10 @@ while true; do
 			selection=${selection//\"Pi hole\"/}
 		fi
 		
-		if [[ "$selection" == Docker && "$DOCKER_STATUS" != "on" ]]; then
-			curl -sSL https://get.docker.com | sh
-			systemctl enable docker
-			systemctl start docker
-                        selection=${selection//\"Docker\"/}
+                if [[ "$selection" == Docker && "$DOCKER_STATUS" != "on" ]]; then
+                       install_docker
+                       selection=${selection//\"Docker\"/}
                 fi
-
 
 		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
 			install_transmission
