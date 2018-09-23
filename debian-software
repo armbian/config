@@ -778,15 +778,14 @@ elif [ "$(dpkg --print-architecture | grep arm64)" == "arm64" ]; then
 else
 	local filename="linux-amd64"
 fi
-mkdir -p /usr/bin/syncthing
 wgeturl=$(curl -s "https://api.github.com/repos/syncthing/syncthing/releases" | grep $filename | grep 'browser_download_url' | head -1 | cut -d \" -f 4)
 fancy_wget "$wgeturl" "-O ${TEMP_DIR}/syncthing.tgz"
 wgeturl=$(curl -s "https://api.github.com/repos/syncthing/syncthing-inotify/releases" | grep $filename | grep 'browser_download_url' | head -1 | cut -d \" -f 4)
 fancy_wget "$wgeturl" "-O ${TEMP_DIR}/syncthing-inotify.tgz"
 tar xf ${TEMP_DIR}/syncthing.tgz -C ${TEMP_DIR}
 tar xf ${TEMP_DIR}/syncthing-inotify.tgz -C /usr/bin
-cp -R ${TEMP_DIR}/syncthing-*/syncthing /usr/bin
-cp ${TEMP_DIR}/syncthing-*/etc/linux-systemd/system/syncthing* /etc/systemd/system/
+cp -R ${TEMP_DIR}/syncthing-linux*/syncthing* /usr/bin/
++cp ${TEMP_DIR}/syncthing-linux*/etc/linux-systemd/system/syncthing* /etc/systemd/system/
 cp /etc/systemd/system/syncthing@.service /etc/systemd/system/syncthing-inotify@.service
 
 # adjust service for inotify
@@ -800,6 +799,8 @@ if !(grep -qs "fs.inotify.max_user_watches=204800" "/etc/sysctl.conf");then
 	echo -e "fs.inotify.max_user_watches=204800" | tee -a /etc/sysctl.conf
 fi
 add_choose_user
+mv /etc/systemd/system/syncthing@.service /etc/systemd/system/syncthing@${CHOSEN_USER}.service
+mv /etc/systemd/system/syncthing-inotify@.service /etc/systemd/system/syncthing-inotify@${CHOSEN_USER}.service
 systemctl enable syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
 systemctl start syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
 systemctl enable syncthing-inotify@${CHOSEN_USER}.service >/dev/null 2>&1
