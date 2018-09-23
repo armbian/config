@@ -785,7 +785,7 @@ fancy_wget "$wgeturl" "-O ${TEMP_DIR}/syncthing-inotify.tgz"
 tar xf ${TEMP_DIR}/syncthing.tgz -C ${TEMP_DIR}
 tar xf ${TEMP_DIR}/syncthing-inotify.tgz -C /usr/bin
 cp -R ${TEMP_DIR}/syncthing-linux*/syncthing* /usr/bin/
-+cp ${TEMP_DIR}/syncthing-linux*/etc/linux-systemd/system/syncthing* /etc/systemd/system/
+cp ${TEMP_DIR}/syncthing-linux*/etc/linux-systemd/system/syncthing* /etc/systemd/system/
 cp /etc/systemd/system/syncthing@.service /etc/systemd/system/syncthing-inotify@.service
 
 # adjust service for inotify
