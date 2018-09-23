@@ -1576,7 +1576,7 @@ while true; do
 			selection=${selection//\"Pi hole\"/}
 		fi
 		
-                if [[ "$selection" == Docker && "$DOCKER_STATUS" != "on" ]]; then
+                if [[ "$selection" == *Docker* && "$DOCKER_STATUS" != "on" ]]; then
                        install_docker
                        selection=${selection//\"Docker\"/}
                 fi
