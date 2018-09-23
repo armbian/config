@@ -660,7 +660,7 @@ if [ ! -f /etc/apt/sources.list.d/tvheadend.list ]; then
 fi
 
 if [[ $distribution == "stretch" ]]; then
-	URL="http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u8_"$(dpkg --print-architecture)".deb"
+	URL="http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u9_"$(dpkg --print-architecture)".deb"
 	fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
 	dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
 	local pkglist="libssl-doc zlib1g-dev tvheadend xmltv-util"
