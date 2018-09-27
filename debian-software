@@ -191,8 +191,9 @@ function check_status
 	fi
 
 	# ISPconfig
+	alive_port "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "8080" "ssl"
 	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
-	LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
+	LIST+=( "ISPConfig" "$DESCRIPTION" "$ISPCONFIG_STATUS" )
 
 }
 
@@ -289,6 +290,8 @@ LOCALIPADD=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cu
 if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
 	if [[ $3 == boolean ]]; then
 		DESCRIPTION="$1 is \Z1active\Z0";
+	   elif [[ $3 == ssl ]]; then
+		DESCRIPTION="Active on https://${LOCALIPADD}:\Z1$2\Z0";
 		else
 		DESCRIPTION="Active on http://${LOCALIPADD}:\Z1$2\Z0";
 	fi
@@ -1390,10 +1393,8 @@ install_ISPConfig (){
 cd ${TEMP_DIR}
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd ${TEMP_DIR}/ispconfig3_install/install/
-#apt-get -y install php5-cli php5-mysql
-php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php
-echo "Admin panel: https://$serverIP:8080"
-echo "PHPmyadmin: http://$serverIP:8081/phpmyadmin"
+php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php >> /var/log/ispconfig_config.log
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " ww " --clear --msgbox "\nAdmin panel: https://$serverIP:8080\n\nUsername: admin\nPassword: 1234" 10 56
 }
 
 
@@ -1522,7 +1523,6 @@ while true; do
 			create_ispconfig_configuration;install_PureFTPD;
 			install_Jailkit; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 			install_ISPConfig
-			read -n 1 -s -p "Press any key to continue"
 			selection=${selection//ISPConfig/}
 		fi
 
