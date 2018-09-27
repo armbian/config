@@ -1449,7 +1449,8 @@ TTY_X=$(($(stty size | awk '{print $2}')-6)) # determine terminal width
 TTY_Y=$(($(stty size | awk '{print $1}')-6)) # determine terminal height
 distribution=$(lsb_release -cs)
 family=$(lsb_release -is)
-serverIP=$(ip route get 8.8.8.8 | awk '{ print $NF; exit }')
+DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
+serverIP=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
 set ${serverIP//./ }
 SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
