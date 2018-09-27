@@ -1394,7 +1394,7 @@ cd ${TEMP_DIR}
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd ${TEMP_DIR}/ispconfig3_install/install/
 php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php >> /var/log/ispconfig_config.log
-dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " ww " --clear --msgbox "\nAdmin panel: https://$serverIP:8080\n\nUsername: admin\nPassword: 1234" 10 56
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " ISPconfig " --clear --msgbox "\nAdmin panel: https://$serverIP:8080\n\nUsername: admin\nPassword: 1234" 10 56
 }
 
 
