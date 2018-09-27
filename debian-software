@@ -198,7 +198,7 @@ function check_status
 	# PHPmyadmin
 	if [[ $ISPCONFIG_STATUS == on ]]; then
 	LIST_CONST=$((LIST_CONST + 1))
-	alive_port "MYSQL administration" "8081"
+	alive_port "MYSQL administration" "8081" "" "/phpmyadmin"
 	PHPMYADMIN_STATUS="on"
 	LIST+=( "PHPmyadmin" "$DESCRIPTION" "$PHPMYADMIN_STATUS" )
 	fi
@@ -290,7 +290,7 @@ echo ""
 alive_port ()
 {
 #
-# Displays URL to the service $1 on port $2 or just that is active if $3 = boolean
+# Displays URL to the service $1 on port $2 or just that is active if $3 = boolean $4 = path
 #
 DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
 LOCALIPADD=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
@@ -298,9 +298,9 @@ if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
 	if [[ $3 == boolean ]]; then
 		DESCRIPTION="$1 is \Z1active\Z0";
 	   elif [[ $3 == ssl ]]; then
-		DESCRIPTION="Active on https://${LOCALIPADD}:\Z1$2\Z0";
+		DESCRIPTION="Active on https://${LOCALIPADD}:\Z1$2\Z0$4";
 		else
-		DESCRIPTION="Active on http://${LOCALIPADD}:\Z1$2\Z0";
+		DESCRIPTION="Active on http://${LOCALIPADD}:\Z1$2\Z0$4";
 	fi
 else
 DESCRIPTION="$1";
@@ -1535,7 +1535,7 @@ while true; do
 	LISTLENGHT="$((${#LIST[@]}/2))"
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "Installing to $family $distribution" --colors --clear --cancel-label \
-	"Exit" --checklist "\nChoose what you want to install:\n " $LIST_CONST 70 18 "${LIST[@]}" 2>&1 1>&3)
+	"Exit" --checklist "\nChoose what you want to install:\n " $LIST_CONST 71 18 "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 	case $exit_status in
