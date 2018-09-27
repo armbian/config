@@ -1213,7 +1213,6 @@ a2enmod actions proxy_fcgi setenvif fastcgi alias httpoxy suexec rewrite ssl act
 			a2enconf php7.2-fpm >/dev/null 2>&1
 	                ;;
 	        esac
-	}
 service apache2 restart >> /dev/null
 }
 
