@@ -121,7 +121,7 @@ function check_status
 	fi
 
 	# VPN
-	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then		
+	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
 		# vpn server
 		VPN_SERVER_STATUS="$([[ -d /usr/local/vpnserver ]] && echo "on" || echo "off" )"
 		LIST+=( "VPN server" "Softether VPN server" "$VPN_SERVER_STATUS" )
@@ -130,12 +130,12 @@ function check_status
 		LIST+=( "VPN client" "Softether VPN client" "$VPN_CLIENT_STATUS" )
 		LIST_CONST=$((LIST_CONST + 1))
 	fi
-	
+
 	# NCP
 	NCP_STATUS="$( [[ -d /var/www/nextcloud ]] && echo "on" || echo "off" )"
 	[[ "$family" != "Ubuntu" ]] && LIST+=( "NCP" "Nextcloud personal cloud" "$NCP_STATUS" ) \
 	&& LIST_CONST=$((LIST_CONST + 1))
-	
+
 	# OMV
 	OMV_STATUS="$(check_if_installed openmediavault && echo "on" || echo "off" )"
 	[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) \
@@ -193,7 +193,7 @@ function check_status
 	# ISPconfig
 	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
 	LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
-	
+
 }
 
 
@@ -231,24 +231,16 @@ function server_conf
 #
 # Add some reqired date for installation
 #
-exec 3>&1
-dialog --title "Server configuration" --separate-widget $'\n' --ok-label "Install" --backtitle "$BACKTITLE" \
---form "\nPlease fill out this form:\n " \
-12 70 0 \
-"Your FQDN for $serverip:"	1 1 "$hostnamefqdn"         1 31 32 0 \
-"Mysql root password:" 	  	2 1 "$mysql_pass"       			2 31 32 0 \
-2>&1 1>&3 | {
-
-read -r hostnamefqdn
-read -r mysql_pass
-echo $mysql_pass > ${TEMP_DIR}/mysql_pass
-echo $hostnamefqdn > ${TEMP_DIR}/hostnamefqdn
-# end
-}
-exec 3>&-
-# read variables back
-read MYSQL_PASS < ${TEMP_DIR}/mysql_pass
-read HOSTNAMEFQDN < ${TEMP_DIR}/hostnamefqdn
+HOSTNAMEFQDN=$(\
+  dialog --title "Server configuration" \
+		 --ok-label "Install" \
+		 --backtitle "$BACKTITLE" \
+         --inputbox "\nSet FQDN for $serverIP:" 10 50 \
+		 "$(hostname).example.com" \
+  3>&1 1>&2 2>&3 3>&- \
+)
+# create random password for mysql
+MYSQL_PASS=$(< /dev/urandom tr -dc A-Z-a-z-0-9 | head -c16)
 }
 
 
@@ -1118,9 +1110,11 @@ install_Virus ()
 #
 # Install Amavisd-new, SpamAssassin, And Clamav
 #
-install_packet "amavisd-new spamassassin clamav clamav-daemon zoo unzip bzip2 arj p7zip unrar-free ripole rpm nomarch lzop \
+packets="amavisd-new spamassassin clamav clamav-daemon unzip bzip2 arj p7zip unrar-free ripole rpm nomarch lzop \
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
-libnet-ident-perl zip libnet-dns-perl postgrey" "amavisd, spamassassin, clamav"
+libnet-ident-perl zip libnet-dns-perl postgrey"
+if [[ $distribution != "bionic" ]]; then packets=$packets" zoo"; fi
+install_packet "$packets" "amavisd, spamassassin, clamav"
 sed -i "s/^AllowSupplementaryGroups.*/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
 service spamassassin stop >/dev/null 2>&1
 systemctl disable spamassassin >/dev/null 2>&1
@@ -1176,6 +1170,11 @@ local pkg_xenial="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql
 apache2-suexec-pristine php-auth php7.0-mcrypt php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
 php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php7.0-opcache php-apcu \
 libapache2-mod-fastcgi php7.0-fpm letsencrypt"
+
+local pkg_bionic="apache2 apache2-doc apache2-utils libapache2-mod-php php7.2 php7.2-common php7.2-gd php7.2-mysql php7.2-imap \
+phpmyadmin php7.2-cli php7.2-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear mcrypt  imagemagick libruby libapache2-mod-python \
+php7.2-curl php7.2-intl php7.2-pspell php7.2-recode php7.2-sqlite3 php7.2-tidy php7.2-xmlrpc php7.2-xsl memcached php-memcache \
+php-imagick php-gettext php7.2-zip php7.2-mbstring php-soap php7.2-soap"
 
 local pkg_stretch="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi libapache2-mod-fcgid \
 apache2-suexec-pristine php7.0-mcrypt libapache2-mod-python php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 \
@@ -1576,7 +1575,7 @@ while true; do
 			curl -L "https://install.pi-hole.net" | bash
 			selection=${selection//\"Pi hole\"/}
 		fi
-		
+
                 if [[ "$selection" == *Docker* && "$DOCKER_STATUS" != "on" ]]; then
                        install_docker
                        selection=${selection//Docker/}
@@ -1597,12 +1596,12 @@ while true; do
 			install_urbackup
 			selection=${selection//UrBackup/}
 		fi
-		
+
 		if [[ "$selection" == *Mayan* && "$MAYAN_STATUS" != "on" ]]; then
 			wget -o https://gitlab.com/mayan-edms/mayan-edms/raw/master/contrib/scripts/install/docker.sh | bash
 			selection=${selection//Mayan/}
 		fi
-		
+
 		i=$[$i+1]
 	done
 	# reread statuses
