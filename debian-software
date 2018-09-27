@@ -1199,7 +1199,7 @@ local pkg="apache2 apache2-doc apache2-utils libapache2-mod-fcgid php-pear mcryp
 local pkg_xenial="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
 apache2-suexec-pristine php-auth php7.0-mcrypt php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
 php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php7.0-opcache php-apcu \
-libapache2-mod-fastcgi php7.0-fpm certbot"
+libapache2-mod-fastcgi php7.0-fpm"
 
 local pkg_bionic="apache2 apache2-doc apache2-utils libapache2-mod-php php7.2 php7.2-common php7.2-gd php7.2-mysql php7.2-imap \
 phpmyadmin php7.2-cli php7.2-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear mcrypt  imagemagick libruby libapache2-mod-python \
