@@ -91,7 +91,7 @@ function check_status
 
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading install info ... " 5 28
 	LIST=()
-	LIST_CONST=24
+	LIST_CONST=23
 
 	# Samba
 	SAMBA_STATUS="$(check_if_installed samba && echo "on" || echo "off" )"
@@ -195,6 +195,13 @@ function check_status
 	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
 	LIST+=( "ISPConfig" "$DESCRIPTION" "$ISPCONFIG_STATUS" )
 
+	# PHPmyadmin
+	if [[ $ISPCONFIG_STATUS == on ]]; then
+	LIST_CONST=$((LIST_CONST + 1))
+	alive_port "MYSQL administration" "8081"
+	PHPMYADMIN_STATUS="on"
+	LIST+=( "PHPmyadmin" "$DESCRIPTION" "$PHPMYADMIN_STATUS" )
+	fi
 }
 
 
@@ -1213,7 +1220,6 @@ a2enmod actions proxy_fcgi setenvif fastcgi alias httpoxy suexec rewrite ssl act
 			a2enconf php7.2-fpm >/dev/null 2>&1
 	                ;;
 	        esac
-	}
 service apache2 restart >> /dev/null
 }
 
