@@ -1094,7 +1094,7 @@ install_MySQLDovecot ()
 echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
 echo "postfix postfix/mailname string $HOSTNAMEFQDN" | debconf-set-selections
 install_packet "postfix postfix-mysql postfix-doc openssl getmail4 rkhunter binutils dovecot-imapd dovecot-pop3d dovecot-mysql \
-dovecot-sieve sudo libsasl2-modules" "postfix, dovecot, saslauthd, rkhunter, binutils"
+dovecot-sieve sudo libsasl2-modules dovecot-lmtpd" "postfix, dovecot, saslauthd, rkhunter, binutils"
 #Uncommenting some Postfix configuration files
 cp /etc/postfix/master.cf /etc/postfix/master.cf.backup
 sed -i 's|#submission inet n       -       -       -       -       smtpd|submission inet n       -       -       -       -       smtpd|' /etc/postfix/master.cf
@@ -1127,6 +1127,16 @@ install_packet "$packets" "amavisd, spamassassin, clamav"
 sed -i "s/^AllowSupplementaryGroups.*/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
 service spamassassin stop >/dev/null 2>&1
 systemctl disable spamassassin >/dev/null 2>&1
+# amavisd-new program has currently a bug in Ubuntu 18.04
+if [[ $distribution == bionic ]]; then
+	cd ${TEMP_DIR}
+	wget https://git.ispconfig.org/ispconfig/ispconfig3/raw/stable-3.1/helper_scripts/ubuntu-amavisd-new-2.11.patch
+	cd /usr/sbin
+	cp -pf amavisd-new amavisd-new_bak
+	patch < ${TEMP_DIR}/ubuntu-amavisd-new-2.11.patch
+fi
+freshclam  >> /var/log/ispconfig_config.log
+service clamav-daemon start >/dev/null 2>&1
 }
 
 
@@ -1162,6 +1172,17 @@ echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-sel
 echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
 debconf-apt-progress -- apt-get install -y phpmyadmin
 fi
+# Apache2 needs additional hack
+WWW_RECONFIG=$(expect -c "
+set timeout 3
+spawn dpkg-reconfigure -f readline phpmyadmin
+expect \"Reinstall database for phpmyadmin?\"
+send \"No\r\"
+expect \"Web server to reconfigure automatically:\"
+send \"1\r\"
+expect eof
+")
+echo "${WWW_RECONFIG}" >> /dev/null
 }
 
 
@@ -1178,12 +1199,12 @@ local pkg="apache2 apache2-doc apache2-utils libapache2-mod-fcgid php-pear mcryp
 local pkg_xenial="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
 apache2-suexec-pristine php-auth php7.0-mcrypt php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
 php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php7.0-opcache php-apcu \
-libapache2-mod-fastcgi php7.0-fpm letsencrypt"
+libapache2-mod-fastcgi php7.0-fpm certbot"
 
 local pkg_bionic="apache2 apache2-doc apache2-utils libapache2-mod-php php7.2 php7.2-common php7.2-gd php7.2-mysql php7.2-imap \
 phpmyadmin php7.2-cli php7.2-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear mcrypt  imagemagick libruby libapache2-mod-python \
 php7.2-curl php7.2-intl php7.2-pspell php7.2-recode php7.2-sqlite3 php7.2-tidy php7.2-xmlrpc php7.2-xsl memcached php-memcache \
-php-imagick php-gettext php7.2-zip php7.2-mbstring php-soap php7.2-soap php7.2-fpm letsencrypt"
+php-imagick php-gettext php7.2-zip php7.2-mbstring php-soap php7.2-soap php7.2-fpm php-apcu certbot"
 
 local pkg_stretch="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi libapache2-mod-fcgid \
 apache2-suexec-pristine php7.0-mcrypt libapache2-mod-python php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 \
@@ -1312,7 +1333,9 @@ install_Bind ()
 #
 # Install BIND DNS Server
 #
-install_packet "bind9 dnsutils" "Install BIND DNS Server"
+install_packet "bind9 dnsutils haveged" "Install BIND DNS Server"
+systemctl enable haveged
+systemctl start haveged
 }
 
 
