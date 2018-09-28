@@ -1130,10 +1130,10 @@ systemctl disable spamassassin >/dev/null 2>&1
 # amavisd-new program has currently a bug in Ubuntu 18.04
 if [[ $distribution == bionic ]]; then
 	cd ${TEMP_DIR}
-	wget https://git.ispconfig.org/ispconfig/ispconfig3/raw/stable-3.1/helper_scripts/ubuntu-amavisd-new-2.11.patch
+	wget -q https://git.ispconfig.org/ispconfig/ispconfig3/raw/stable-3.1/helper_scripts/ubuntu-amavisd-new-2.11.patch
 	cd /usr/sbin
 	cp -pf amavisd-new amavisd-new_bak
-	patch < ${TEMP_DIR}/ubuntu-amavisd-new-2.11.patch
+	patch  --silent < ${TEMP_DIR}/ubuntu-amavisd-new-2.11.patch >> /dev/null 2>&1
 fi
 freshclam  >> /var/log/ispconfig_config.log
 service clamav-daemon start >/dev/null 2>&1
@@ -1463,7 +1463,7 @@ if [[ $? == 0 ]]; then
 dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
 curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip  2> /dev/null
 unzip -qq master.zip
-bash LE4ISPC-master/${server}/le4ispc.sh  2> /dev/null
+bash LE4ISPC-master/${server}/le4ispc.sh 2>&1
 fi
 }
 
