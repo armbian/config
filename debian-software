@@ -342,7 +342,7 @@ if [[ $family == "Ubuntu" ]]; then
 	# set hostname in Ubuntu
 	hostnamectl set-hostname $HOSTNAMESHORT
 	# disable AppArmor
-	if [[ -n $(service apparmor status | grep -w active | grep -w running) ]]; then
+	if [[ -n $(service apparmor status  2> /dev/null | grep -w active | grep -w running) ]]; then
 		service apparmor stop
 		update-rc.d -f apparmor remove
 		apt-get -y -qq remove apparmor apparmor-utils
@@ -1461,9 +1461,9 @@ php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php &>> /var/log/ispconfig
 dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Auto updating SSL certificate " --clear --yesno "\nDo you want to secure ISPConfig control panel and all services with free Let's Encrypt SSL certificate?" 8 80
 if [[ $? == 0 ]]; then
 dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
-curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip
-unzip master.zip
-bash LE4ISPC-master/${server}/le4ispc.sh
+curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip  2> /dev/null
+unzip -qq master.zip
+bash LE4ISPC-master/${server}/le4ispc.sh  2> /dev/null
 fi
 }
 
