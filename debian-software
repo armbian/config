@@ -1458,9 +1458,10 @@ cd ${TEMP_DIR}
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd ${TEMP_DIR}/ispconfig3_install/install/
 php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php &>> /var/log/ispconfig_config.log
-dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Installing SSL certificate " --clear --yesno "\nSecuring ISPConfig control panel and all services with free Let's Encrypt SSL certificate and auto update is possible this way:\n\n\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > Add new website\n\nWrite: \Z1$(hostname -f)\Z0 into \"Domain\", set Auto-Subdomain to \Z1None\Z0, enable \Z1SSL\Z0 and \Z1Let's Encrypt SSL\Z0, Save, Logout.\n\n\n3. Wait. It can take up to a few minutes.\n\n\n4. Check if SSL is working \Z1https://$(hostname -f):8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n4. Go to Tools > Password and language\n\nChange ISPConfig control panel password. Enjoy!" 34 80
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Auto updating SSL certificate " --clear --yesno "\nDo you want to secure ISPConfig control panel and all services with free Let's Encrypt SSL certificate?" 8 80
 if [[ $? == 0 ]]; then
-curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
+curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip
 unzip master.zip
 bash LE4ISPC-master/${server}/le4ispc.sh
 fi
