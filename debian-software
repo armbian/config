@@ -1334,8 +1334,8 @@ install_Bind ()
 # Install BIND DNS Server
 #
 install_packet "bind9 dnsutils haveged" "Install BIND DNS Server"
-systemctl enable haveged
-systemctl start haveged
+systemctl enable haveged >/dev/null 2>&1
+systemctl start haveged >/dev/null 2>&1
 }
 
 
@@ -1347,6 +1347,7 @@ install_Stats ()
 # Install Vlogger, Webalizer, And AWstats
 #
 install_packet "vlogger webalizer awstats geoip-database libclass-dbi-mysql-perl" "vlogger, webalizer, awstats"
+sed -i "s/MAILTO=root/#MAILTO=root/" /etc/cron.d/awstats
 sed -i "s/*/10 * * * * www-data/#*/10 * * * * www-data/" /etc/cron.d/awstats
 sed -i "s/10 03 * * * www-data/#10 03 * * * www-data/" /etc/cron.d/awstats
 }
@@ -1456,8 +1457,9 @@ install_ISPConfig (){
 cd ${TEMP_DIR}
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd ${TEMP_DIR}/ispconfig3_install/install/
-php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php >> /var/log/ispconfig_config.log
-dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " ISPconfig " --clear --msgbox "\nAdmin panel: https://$serverIP:8080\n\nUsername: admin\nPassword: 1234" 10 56
+php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php &>> /var/log/ispconfig_config.log
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " ISPconfig " --clear --msgbox \
+"\nAdmin panel: https://$serverIP:8080\n\nUsername: admin\nPassword: 1234 \n\nMySQL admin: http://$serverIP:8081/phpmyadmin" 12 56
 }
 
 
@@ -1583,7 +1585,7 @@ while true; do
 			choose_webserver; install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server;
 			install_phpmyadmin
 			[[ -z "$(dpkg --print-architecture | grep arm)" ]] && install_hhvm
-			create_ispconfig_configuration;install_PureFTPD;
+			create_ispconfig_configuration;install_PureFTPD;install_Stats;install_Bind;
 			install_Jailkit; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 			install_ISPConfig
 			selection=${selection//ISPConfig/}
