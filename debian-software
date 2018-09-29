@@ -184,11 +184,9 @@ function check_status
 	LIST+=( "Docker" "Run applications by using containers" "$DOCKER_STATUS")
 
 	# Mayan EDMS docker install
-	if [[ "$DOCKER_STATUS" == "on" ]]; then
-		curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
-		MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
-		LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
-	fi
+	curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
+	MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
+	LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
 
 	# ISPconfig
 	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
@@ -1598,7 +1596,10 @@ while true; do
 		fi
 
 		if [[ "$selection" == *Mayan* && "$MAYAN_STATUS" != "on" ]]; then
-			wget -o https://gitlab.com/mayan-edms/mayan-edms/raw/master/contrib/scripts/install/docker.sh | bash
+			if [[ "$DOCKER_STATUS" == "off" ]]; then
+			install_docker
+			fi
+			curl -fsSL https://get.mayan-edms.com | bash
 			selection=${selection//Mayan/}
 		fi
 
