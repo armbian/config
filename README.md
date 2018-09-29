@@ -67,3 +67,23 @@ Login as root and type:
 	cd config
 	bash debian-config
 
+# Software testings
+
+|Application name|Stretch|Bionic|Test install|
+|:--|:--:|:--:|--:|
+|TV headend (IPTV server)|:x:|:x:|29.09.2018|
+|Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|SoftEther VPN server (VPN server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|ExaGear desktop (x86 emulator)|n/a|:question:|:question:|
+|Plex (Plex media server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|Radarr (Movie downloading server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|NCP (Nextcloud personal cloud)|:heavy_check_mark:|n/a|29.09.2018|
+|Openmediavault NAS (NAS server)|:heavy_check_mark:|n/a|29.09.2018|
+|PI hole (ad blocker)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|UrBackup (client/server backup system)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|Docker (Docker CE engine)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|Mayan EDMS (Document management system within Docker)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|MiniDLNA (Media sharing)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
