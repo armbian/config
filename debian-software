@@ -133,7 +133,8 @@ function check_status
 
 	# NCP
 	NCP_STATUS="$( [[ -d /var/www/nextcloud ]] && echo "on" || echo "off" )"
-	[[ "$family" != "Ubuntu" ]] && LIST+=( "NCP" "Nextcloud personal cloud" "$NCP_STATUS" ) \
+	alive_port "Nextcloud personal cloud" "443"
+	[[ "$family" != "Ubuntu" ]] && LIST+=( "NCP" "$DESCRIPTION" "$NCP_STATUS" ) \
 	&& LIST_CONST=$((LIST_CONST + 1))
 
 	# OMV
