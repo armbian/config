@@ -71,7 +71,7 @@ Login as root and type:
 
 |Application name|Stretch|Bionic|Test install|
 |:--|:--:|:--:|--:|
-|TV headend (IPTV server)|:x:|:x:|29.09.2018|
+|TV headend (IPTV server)|:x:|:heavy_check_mark:|29.09.2018|
 |Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |SoftEther VPN server (VPN server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |ExaGear desktop (x86 emulator)|n/a|:question:|:question:|
