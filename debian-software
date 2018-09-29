@@ -91,7 +91,7 @@ function check_status
 
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading install info ... " 5 28
 	LIST=()
-	LIST_CONST=24
+	LIST_CONST=23
 
 	# Samba
 	SAMBA_STATUS="$(check_if_installed samba && echo "on" || echo "off" )"
@@ -189,9 +189,17 @@ function check_status
 	LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
 
 	# ISPconfig
+	alive_port "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "8080" "ssl"
 	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
-	LIST+=( "ISPConfig" "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "$ISPCONFIG_STATUS" )
+	LIST+=( "ISPConfig" "$DESCRIPTION" "$ISPCONFIG_STATUS" )
 
+	# PHPmyadmin
+	if [[ $ISPCONFIG_STATUS == on ]]; then
+	LIST_CONST=$((LIST_CONST + 1))
+	alive_port "MYSQL administration" "8081" "" "/phpmyadmin"
+	PHPMYADMIN_STATUS="on"
+	LIST+=( "PHPmyadmin" "$DESCRIPTION" "$PHPMYADMIN_STATUS" )
+	fi
 }
 
 
@@ -280,15 +288,17 @@ echo ""
 alive_port ()
 {
 #
-# Displays URL to the service $1 on port $2 or just that is active if $3 = boolean
+# Displays URL to the service $1 on port $2 or just that is active if $3 = boolean $4 = path
 #
 DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
 LOCALIPADD=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
 if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
 	if [[ $3 == boolean ]]; then
 		DESCRIPTION="$1 is \Z1active\Z0";
+	   elif [[ $3 == ssl ]]; then
+		DESCRIPTION="Active on https://${LOCALIPADD}:\Z1$2\Z0$4";
 		else
-		DESCRIPTION="Active on http://${LOCALIPADD}:\Z1$2\Z0";
+		DESCRIPTION="Active on http://${LOCALIPADD}:\Z1$2\Z0$4";
 	fi
 else
 DESCRIPTION="$1";
@@ -330,7 +340,7 @@ if [[ $family == "Ubuntu" ]]; then
 	# set hostname in Ubuntu
 	hostnamectl set-hostname $HOSTNAMESHORT
 	# disable AppArmor
-	if [[ -n $(service apparmor status | grep -w active | grep -w running) ]]; then
+	if [[ -n $(service apparmor status  2> /dev/null | grep -w active | grep -w running) ]]; then
 		service apparmor stop
 		update-rc.d -f apparmor remove
 		apt-get -y -qq remove apparmor apparmor-utils
@@ -354,7 +364,6 @@ cat > ${TEMP_DIR}/isp.conf.php <<EOF
 <?php
 \$autoinstall['language'] = 'en'; // de, en (default)
 \$autoinstall['install_mode'] = 'standard'; // standard (default), expert
-
 \$autoinstall['hostname'] = '$HOSTNAMEFQDN'; // default
 \$autoinstall['mysql_hostname'] = 'localhost'; // default: localhost
 \$autoinstall['mysql_root_user'] = 'root'; // default: root
@@ -1083,7 +1092,7 @@ install_MySQLDovecot ()
 echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
 echo "postfix postfix/mailname string $HOSTNAMEFQDN" | debconf-set-selections
 install_packet "postfix postfix-mysql postfix-doc openssl getmail4 rkhunter binutils dovecot-imapd dovecot-pop3d dovecot-mysql \
-dovecot-sieve sudo libsasl2-modules" "postfix, dovecot, saslauthd, rkhunter, binutils"
+dovecot-sieve sudo libsasl2-modules dovecot-lmtpd" "postfix, dovecot, saslauthd, rkhunter, binutils"
 #Uncommenting some Postfix configuration files
 cp /etc/postfix/master.cf /etc/postfix/master.cf.backup
 sed -i 's|#submission inet n       -       -       -       -       smtpd|submission inet n       -       -       -       -       smtpd|' /etc/postfix/master.cf
@@ -1116,6 +1125,16 @@ install_packet "$packets" "amavisd, spamassassin, clamav"
 sed -i "s/^AllowSupplementaryGroups.*/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
 service spamassassin stop >/dev/null 2>&1
 systemctl disable spamassassin >/dev/null 2>&1
+# amavisd-new program has currently a bug in Ubuntu 18.04
+if [[ $distribution == bionic ]]; then
+	cd ${TEMP_DIR}
+	wget -q https://git.ispconfig.org/ispconfig/ispconfig3/raw/stable-3.1/helper_scripts/ubuntu-amavisd-new-2.11.patch
+	cd /usr/sbin
+	cp -pf amavisd-new amavisd-new_bak
+	patch  --silent < ${TEMP_DIR}/ubuntu-amavisd-new-2.11.patch >> /dev/null 2>&1
+fi
+freshclam  >> /var/log/ispconfig_config.log
+service clamav-daemon start >/dev/null 2>&1
 }
 
 
@@ -1151,6 +1170,17 @@ echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-sel
 echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
 debconf-apt-progress -- apt-get install -y phpmyadmin
 fi
+# Apache2 needs additional hack
+WWW_RECONFIG=$(expect -c "
+set timeout 3
+spawn dpkg-reconfigure -f readline phpmyadmin
+expect \"Reinstall database for phpmyadmin?\"
+send \"No\r\"
+expect \"Web server to reconfigure automatically:\"
+send \"1\r\"
+expect eof
+")
+echo "${WWW_RECONFIG}" >> /dev/null
 }
 
 
@@ -1167,12 +1197,12 @@ local pkg="apache2 apache2-doc apache2-utils libapache2-mod-fcgid php-pear mcryp
 local pkg_xenial="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
 apache2-suexec-pristine php-auth php7.0-mcrypt php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
 php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php7.0-opcache php-apcu \
-libapache2-mod-fastcgi php7.0-fpm letsencrypt"
+libapache2-mod-fastcgi php7.0-fpm"
 
 local pkg_bionic="apache2 apache2-doc apache2-utils libapache2-mod-php php7.2 php7.2-common php7.2-gd php7.2-mysql php7.2-imap \
 phpmyadmin php7.2-cli php7.2-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear mcrypt  imagemagick libruby libapache2-mod-python \
 php7.2-curl php7.2-intl php7.2-pspell php7.2-recode php7.2-sqlite3 php7.2-tidy php7.2-xmlrpc php7.2-xsl memcached php-memcache \
-php-imagick php-gettext php7.2-zip php7.2-mbstring php-soap php7.2-soap"
+php-imagick php-gettext php7.2-zip php7.2-mbstring php-soap php7.2-soap php7.2-fpm php-apcu certbot"
 
 local pkg_stretch="libapache2-mod-php php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi libapache2-mod-fcgid \
 apache2-suexec-pristine php7.0-mcrypt libapache2-mod-python php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 \
@@ -1195,7 +1225,20 @@ cat <<EOT > /etc/apache2/conf-available/httpoxy.conf
 EOT
 
 a2enmod actions proxy_fcgi setenvif fastcgi alias httpoxy suexec rewrite ssl actions include dav_fs dav auth_digest cgi headers >/dev/null 2>&1
-a2enconf php7.0-fpm >/dev/null 2>&1
+	case $distribution in
+	        jessie)
+			a2enconf php5-fpm >/dev/null 2>&1
+	                ;;
+	        xenial)
+			a2enconf php7.0-fpm >/dev/null 2>&1
+	                ;;
+	        stretc)
+			a2enconf php7.0-fpm >/dev/null 2>&1
+	                ;;
+	        bionic)
+			a2enconf php7.2-fpm >/dev/null 2>&1
+	                ;;
+	        esac
 service apache2 restart >> /dev/null
 }
 
@@ -1211,29 +1254,50 @@ local pkg="nginx php-pear memcached fcgiwrap"
 
 local pkg_xenial="php7.0-fpm php7.0-opcache php7.0-fpm php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
 php7.0-mcrypt mcrypt imagemagick libruby php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
-php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php-apcu"
+php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php-apcu letsencrypt"
 
 local pkg_stretch="php7.0-fpm php7.0-opcache php7.0-fpm php7.0 php7.0-common php7.0-gd php7.0-mysql php7.0-imap php7.0-cli php7.0-cgi \
 php7.0-mcrypt mcrypt imagemagick libruby php7.0-curl php7.0-intl php7.0-pspell php7.0-recode php7.0-sqlite3 php7.0-tidy \
-php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php-apcu"
+php7.0-xmlrpc php7.0-xsl php-memcache php-imagick php-gettext php7.0-zip php7.0-mbstring php-apcu letsencrypt"
 
 local pkg_jessie="php5-fpm php5-mysql php5-curl php5-gd php5-intl php5-imagick php5-imap php5-mcrypt php5-memcache \
 php5-memcached php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl php-apc"
 
+local pkg_bionic="php7.2-fpm php7.2-opcache php7.2-fpm php7.2 php7.2-common php7.2-gd php7.2-mysql php7.2-imap php7.2-cli php7.2-cgi \
+imagemagick libruby php7.2-curl php7.2-intl php7.2-pspell php7.2-recode php7.2-sqlite3 php7.2-tidy \
+php7.2-xmlrpc php7.2-xsl php-memcache php-imagick php-gettext php7.2-zip php7.2-mbstring php-apcu letsencrypt"
+
 local temp="pkg_${distribution}"
 install_packet "${pkg} ${!temp}" "Nginx for $family $distribution"
 
-phpenmod mcrypt mbstring
-
-if [[ -f /etc/php/7.0/fpm/php.ini ]]; then
-	tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-	sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
-	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
-	service php7.0-fpm reload >> /dev/null
-else
-	debconf-apt-progress -- apt-get install -y python-certbot -t jessie-backports
-	service php5-fpm reload >> /dev/null
-fi
+case $distribution in
+        jessie)
+		phpenmod mcrypt mbstring
+		debconf-apt-progress -- apt-get install -y python-certbot -t jessie-backports
+        	service php5-fpm reload >> /dev/null
+                ;;
+	xenial)
+		phpenmod mcrypt mbstring
+		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
+        	sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
+        	service php7.0-fpm reload >> /dev/null
+		;;
+	stretc)
+		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
+	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
+        	service php7.0-fpm reload >> /dev/null
+		phpenmod mcrypt mbstring
+		;;
+	bionic)
+		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
+	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.2/fpm/php.ini
+        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.2/fpm/php.ini
+        	service php7.2-fpm reload >> /dev/null
+		phpenmod mbstring
+		;;
+        esac
 }
 
 
@@ -1267,7 +1331,9 @@ install_Bind ()
 #
 # Install BIND DNS Server
 #
-install_packet "bind9 dnsutils" "Install BIND DNS Server"
+install_packet "bind9 dnsutils haveged" "Install BIND DNS Server"
+systemctl enable haveged >/dev/null 2>&1
+systemctl start haveged >/dev/null 2>&1
 }
 
 
@@ -1279,6 +1345,7 @@ install_Stats ()
 # Install Vlogger, Webalizer, And AWstats
 #
 install_packet "vlogger webalizer awstats geoip-database libclass-dbi-mysql-perl" "vlogger, webalizer, awstats"
+sed -i "s/MAILTO=root/#MAILTO=root/" /etc/cron.d/awstats
 sed -i "s/*/10 * * * * www-data/#*/10 * * * * www-data/" /etc/cron.d/awstats
 sed -i "s/10 03 * * * www-data/#10 03 * * * www-data/" /etc/cron.d/awstats
 }
@@ -1388,10 +1455,14 @@ install_ISPConfig (){
 cd ${TEMP_DIR}
 wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd ${TEMP_DIR}/ispconfig3_install/install/
-#apt-get -y install php5-cli php5-mysql
-php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php
-echo "Admin panel: https://$serverIP:8080"
-echo "PHPmyadmin: http://$serverIP:8081/phpmyadmin"
+php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php &>> /var/log/ispconfig_config.log
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Auto updating SSL certificate " --clear --yesno "\nDo you want to secure ISPConfig control panel and all services with free Let's Encrypt SSL certificate?" 8 80
+if [[ $? == 0 ]]; then
+dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
+curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip  2> /dev/null
+unzip -qq master.zip
+bash LE4ISPC-master/${server}/le4ispc.sh 2>&1
+fi
 }
 
 
@@ -1469,7 +1540,7 @@ while true; do
 	LISTLENGHT="$((${#LIST[@]}/2))"
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "Installing to $family $distribution" --colors --clear --cancel-label \
-	"Exit" --checklist "\nChoose what you want to install:\n " $LIST_CONST 70 18 "${LIST[@]}" 2>&1 1>&3)
+	"Exit" --checklist "\nChoose what you want to install:\n " $LIST_CONST 71 18 "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 	case $exit_status in
@@ -1517,10 +1588,9 @@ while true; do
 			choose_webserver; install_basic; install_DashNTP; install_MySQL; install_MySQLDovecot; install_Virus; install_$server;
 			install_phpmyadmin
 			[[ -z "$(dpkg --print-architecture | grep arm)" ]] && install_hhvm
-			create_ispconfig_configuration;install_PureFTPD;
+			create_ispconfig_configuration;install_PureFTPD;install_Stats;install_Bind;
 			install_Jailkit; install_Fail2BanDovecot; install_Fail2BanRulesDovecot;
 			install_ISPConfig
-			read -n 1 -s -p "Press any key to continue"
 			selection=${selection//ISPConfig/}
 		fi
 
