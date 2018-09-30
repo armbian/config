@@ -1523,7 +1523,7 @@ set ${serverIP//./ }
 SUBNET="$1.$2.$3."
 hostnamefqdn=$(hostname -f)
 mysql_pass=""
-BACKTITLE="Softy - Armbian post deployment scripts, http://www.armbian.com"
+BACKTITLE="Softy - Armbian post deployment scripts, https://www.armbian.com"
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 #check_status
