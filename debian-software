@@ -238,6 +238,33 @@ function server_conf
 #
 # Add some reqired date for installation
 #
+if [[ "$(curl -s ipinfo.io/ip)" != "$serverIP" ]]; then
+table="\Z2Application     Protocol      Port\n
+\Z0----------------------------------\n
+FTP                  TCP        20\n
+FTP                  TCP        21\n
+SSH/SFTP             TCP        22\n
+Mail (SMTP)          TCP        25\n
+DNS                  TCP        53\n
+Web (HTTP)           TCP        80\n
+Mail (POP3)          TCP       110\n
+Mail (IMAP)          TCP       143\n
+Web (HTTPS)          TCP       443\n
+Mail (SMTPS)         TCP       465\n
+Mail (SMTP)          TCP       587\n
+Mail (IMAPS)         TCP       993\n
+Mail (POP3S)         TCP       995\n
+Database             TCP      3306\n
+Chat (XMPP)          TCP      5222\n
+ISPConfig            TCP      8080\n
+ISPConfig            TCP      8081\n
+ISPConfig            TCP     10000\n
+DNS                  UDP        53\n
+Database             UDP      3306\n
+";
+dialog --colors --title "Warning" --msgbox "\nYour internal and external IP addresses are different which seems that you are behing a router. \n\nMake sure \Z1$serverIP\Z0 is a static IP address. Then forward external ports to those services which you plan to use.\n\n\n$table" 38 38
+fi
+#
 HOSTNAMEFQDN=$(\
   dialog --title "Server configuration" \
 		 --ok-label "Install" \
