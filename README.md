@@ -18,6 +18,7 @@ Login as root and type:
 	- adjust SSH daemon features
 	- 3G/4G LTE modem management
 	- run apt update and upgrade
+	- toogle BASH/ZSH with [Oh My ZSH](https://ohmyz.sh/) and [tmux](https://en.wikipedia.org/wiki/Tmux)
 	- toggle desktop and login manager (desktop builds)
 	- adjusting the display resolution (some boards)
 	- enabling read only root filesystem (Ubuntu)

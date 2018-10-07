@@ -72,6 +72,14 @@ while true; do
 
 	LIST+=( "SSH" "Reconfigure SSH daemon" )
 	LIST+=( "Firmware" "Run apt update & apt upgrade" )
+
+	if [[ "$SHELL" != "/bin/bash" ]]; then
+		LIST+=( "BASH" "Revert to stock BASH shell" )
+		else
+		LIST+=( "ZSH" "Install ZSH with most used plugins and tmux" )
+	fi
+
+
 	[[ "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" && \
 	-n $(bin2fex </boot/script.bin 2>/dev/null | grep -w "hdmi_used = 1") ]] && LIST+=( "Display" "set the display resolution" )
 	[[ "$LINUXFAMILY" = odroidc* && "$BRANCH" = "default" ]] && LIST+=( "Display" "set the display resolution" )
