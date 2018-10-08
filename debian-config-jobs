@@ -1101,7 +1101,7 @@ function jobs ()
 
 		while read line
 		do
-				STATUS=$([[ -x ${HOME}${line} ]] && echo "on")
+			STATUS=$([[ -x ${HOME}${line} ]] && echo "on")
 			DESC=$(description "$line")
 			MOTD+=( "$line" "$DESC" "$STATUS")
 			LINES[ $j ]=$line
@@ -1109,7 +1109,7 @@ function jobs ()
 		done < <(ls -1 $HOME)
 
 				LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
-				[[ $LISTLENGHT -lt 9 ]]; LISTLENGHT=9
+				[[ $LISTLENGHT -lt 9 ]] && LISTLENGHT=9
 				exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle motd executing scripts" --clear --cancel-label \
 				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
