@@ -16,6 +16,7 @@
 # beta_disclaimer
 # show_box
 # description
+# reload_bsp
 # aval_kernel
 # aval_dtbs
 # get_a20modes
@@ -293,6 +294,42 @@ function kernel_desc ()
         [[ "$1" == "dev" ]]     && echo "development, unstable"
         [[ "$1" == "next" ]]    && echo "mainline or 2nd generation"
         [[ "$1" == "default" ]] && echo "legacy, stock, 1st build"
+}
+
+
+
+#
+# reload kernel, bsp and armbian-config
+#
+function reload_bsp(){
+        debconf-apt-progress -- apt-get update
+        # test install packages
+        TARGET_BRANCH=$BRANCH
+        exceptions "$INSTALL_KERNEL"
+        dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nTest install ..." 5 36
+        apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+        linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+        linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
+        # if test download is ok, remove old packages
+        if [[ $? = 0 ]]; then
+                dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
+                aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log 2>&1
+                aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
+                aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
+                aptitude remove ~nlinux-$(lsb_release -cs)-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
+                aptitude remove ~narmbian-config --quiet=100 -y >> /var/log/upgrade.log 2>&1
+                # install packages
+                INSTALL_DTB=""
+                [[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
+                INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+                debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+                -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
+                linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
+                linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD armbian-config $INSTALL_DTB
+                dialog --title "Switching to $1" --backtitle "$BACKTITLE" --yes-label "Reboot" \
+		--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
+                if [[ $? = 0 ]]; then reboot; fi
+        fi
 }
 
 

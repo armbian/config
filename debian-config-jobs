@@ -1266,23 +1266,21 @@ function jobs ()
 	# Switch to daily builds
 	#
 	"Nightly" )
+
 		if ! is_package_manager_running; then
-			dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
+			dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" \
+			--no-label "Cancel" --yesno \
 			"\nYou are switching to untested auto-build repository which might break your system.\n\nAre you fine with that?" 10 48
 
 			if [[ $? = 0 ]]; then
 				sed -i 's/apt.armbian.com/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
-				debconf-apt-progress -- apt-get update
-				debconf-apt-progress -- apt-get -y upgrade
-				dialog --title "Switching to nightly" --backtitle "$BACKTITLE" --yes-label "Reboot" \
-				--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
-				if [[ $? = 0 ]]; then reboot; fi
+				reload_bsp "nightly"
 			fi
 		fi
 	;;
 
 
-	# Switch to stable builds and reinstall armbian packages
+	# Switch to stable builds
 	#
 	"Stable" )
 
@@ -1290,35 +1288,10 @@ function jobs ()
 			dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "OK" \
 			--no-label "Cancel" --yesno \
 			"\nYou are switching back to stable respository where you are going to get future updates. Are you fine with that?" 9 44
+
 			if [[ $? = 0 ]]; then
 				sed -i 's/beta.armbian.com/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
-				debconf-apt-progress -- apt-get update
-				# remove nighlty packages and install stable
-				TARGET_BRANCH=$BRANCH
-				exceptions "$INSTALL_KERNEL"
-				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current nightly kernel." 5 36
-				apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
-				# if test download is ok, remove old kernel
-				if [[ $? = 0 ]]; then
-					aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log 2>&1
-					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
-					aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
-					aptitude remove ~nlinux-$(lsb_release -cs)-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
-				fi
-				# install new packages
-				INSTALL_DTB=""
-				[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
-				INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-				debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
-				-y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-				linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-				linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD $INSTALL_DTB
-
-				dialog --title "Switching to stable" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno \
-				"\nReboot to apply new settings?" 7 34
-				if [[ $? = 0 ]]; then reboot; fi
+				reload_bsp "stable"
 			fi
 		fi
 
