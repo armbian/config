@@ -145,7 +145,7 @@ function jobs ()
 			TARGET_BRANCH=$BRANCH
 			exceptions "$BRANCH"
 			REMOVE_PKG="linux-headers-*"
-			if [[ -d /etc/armbian ]]; then
+			if [[ -f /etc/armbian-release ]]; then
 				INSTALL_PKG="linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}";
 				else
 				INSTALL_PKG="linux-headers-$(uname -r | sed 's/'-$(dpkg --print-architecture)'//')";
