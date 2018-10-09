@@ -1094,7 +1094,7 @@ function jobs ()
 		HOME="/etc/update-motd.d/"
 		MOTD=()
 		LINES=()
-		LIST_CONST=6
+		LIST_CONST=9
 		j=0
 		DIALOG_CANCEL=1
 		DIALOG_ESC=255
@@ -1108,8 +1108,7 @@ function jobs ()
 			(( j++ ))
 		done < <(ls -1 $HOME)
 
-				LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/2))"
-				[[ $LISTLENGHT -lt 9 ]] && LISTLENGHT=9
+				LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/3))"
 				exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle motd executing scripts" --clear --cancel-label \
 				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
