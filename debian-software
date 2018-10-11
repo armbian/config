@@ -766,7 +766,7 @@ if [ ${wmem_actual} -lt ${wmem_recommended} ]; then
 		sed -i "s/net.core.wmem_max =.*/net.core.wmem_max = ${wmem_recommended}/" /etc/sysctl.conf || \
 		echo "net.core.wmem_max = ${wmem_recommended}" >> /etc/sysctl.conf
 fi
-/sbin/sysctl -p
+/sbin/sysctl -p >/dev/null 2>&1
 # create cron job for daily sync with official Armbian torrents
 cat > /etc/cron.daily/seed-armbian-torrent <<"EOF"
 #!/bin/bash
