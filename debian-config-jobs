@@ -1324,16 +1324,16 @@ function jobs ()
 				"\nSwitching to \Z1linux-image${TARGET_BRANCH}-${TARGET_FAMILY}\Z0 \n\nWarning: another kernel might not provide\
 				the same functionality or can be broken!\n\nBoard config will be reverted to defaults." 12 50
 				if [[ $? = 0 ]]; then
-					# remove old
+					# test install new and remove old if this is successfull
 					dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel." 5 28
 					apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
 					linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
 					linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
 					# if test download is ok, remove old kernel
 					if [[ $? = 0 ]]; then
-						aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log 2>&1
-						aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
-						aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
+						if [[ $BRANCH == "default" ]]; then BRANCH=""; else BRANCH="-"$BRANCH; fi
+						debconf-apt-progress -- apt -y purge linux-image${BRANCH}-${LINUXFAMILY} linux-headers${BRANCH}-${LINUXFAMILY}
+						debconf-apt-progress -- apt -y purge linux-dtb${BRANCH}-${LINUXFAMILY}
 					fi
 					# install new packages
 					INSTALL_DTB=""
