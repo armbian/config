@@ -779,6 +779,9 @@ cat > /etc/cron.daily/seed-armbian-torrent <<"EOF"
 # armbian torrents auto update
 #
 # download latest torrent pack
+TEMP_DIR=$(mktemp -d || exit 1)
+chmod 700 ${TEMP_DIR}
+trap "rm -rf \"${TEMP_DIR}\" ; exit 0" 0 1 2 3 15
 wget -qO- -O ${TEMP_DIR}/armbian-torrents.zip https://dl.armbian.com/torrent/all-torrents.zip
 # test zip for corruption
 unzip -t ${TEMP_DIR}/armbian-torrents.zip >/dev/null 2>&1
