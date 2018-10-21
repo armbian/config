@@ -181,7 +181,7 @@ function is_package_manager_running() {
   if [[ $? = 0 ]]; then
     # 0 = true
 	dialog --colors --title " \Z1Error\Z0 " --backtitle "$BACKTITLE" --no-collapse --msgbox \
-	"\n\Z1Package manager is running in the background. \n\nCan't proceed. Try again later." 9 53
+	"\n\Z0Package manager is running in the background. \n\nCan't install dependencies. Try again later." 9 53
     return 0
   else
     # 1 = false
@@ -561,10 +561,10 @@ function configure_desktop ()
 
 		# install desktop package
 		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop
-		
+
 		# in case previous install was interrupted
 		[[ $? -eq 130 ]] && dpkg --configure -a
-		
+
 		# strectch workaround
 		[[ ${DISTROID} == stretch ]] && debconf-apt-progress -- apt -y purge lightdm
 		# install display manager

@@ -164,9 +164,9 @@ function jobs ()
 
 
 	#
-        # Install kernel source
-        #
-        "Source" )
+	# Install kernel source
+	#
+	"Source" )
                 if ! is_package_manager_running; then
                         if [[ -n $(dpkg -l | grep $SOURCE_PKG) ]]; then
                                         debconf-apt-progress -- apt-get -y purge ${SOURCE_PKG}
@@ -326,6 +326,7 @@ function jobs ()
 	# Connect to 3G/4G network
 	#
 	"LTE" )
+	if ! is_package_manager_running; then
 			if [[ $LTE_MODEM == *online* ]]; then
 				dialog --title " LTE modem is connected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Disconnect" --yesno "\n\Z1Disconnect:\Z0 kill mobile connection\n\n" 7 42
 				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "off"
@@ -333,6 +334,7 @@ function jobs ()
 				dialog --title " LTE modem is disconnected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Connect" --yesno "\n\Z1Connect:\Z0 dial mobile connection\n\n" 7 42
 				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "on"
 			fi
+	fi
 	;;
 
 
@@ -1131,8 +1133,14 @@ function jobs ()
 	# Toggle sshd options
 	#
 	"SSH" )
+	if ! is_package_manager_running; then
 		while true; do
-
+			if ! check_if_installed libpam-google-authenticator ; then
+				debconf-apt-progress -- apt-get -y install libpam-google-authenticator
+			fi
+			if ! check_if_installed qrencode ; then
+				debconf-apt-progress -- apt-get -y install qrencode
+			fi
 			DIALOG_CANCEL=2
 			DIALOG_ESC=255
 			LIST_CONST=7
@@ -1193,12 +1201,6 @@ function jobs ()
 
 									# phone
 									if [[ " ${my_array[*]} " == *" PhoneAuthentication "* ]]; then
-										if ! check_if_installed libpam-google-authenticator ; then
-											debconf-apt-progress -- apt-get -y install libpam-google-authenticator
-										fi
-										if ! check_if_installed qrencode ; then
-											debconf-apt-progress -- apt-get -y install qrencode
-										fi
 										MergeParameter="keyboard-interactive"
 										sed -i "s/^#\?ChallengeResponseAuthentication.*/ChallengeResponseAuthentication yes/" /etc/ssh/sshd_config
 										sed -i -n '/password updating/{p;:a;N;/@include common-password/!ba;s/.*\n/auth required pam_google_authenticator.so nullok\n/};p' /etc/pam.d/sshd
@@ -1258,6 +1260,7 @@ function jobs ()
 				;;
 				esac
 		done
+	fi
 	;;
 
 

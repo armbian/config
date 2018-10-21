@@ -185,8 +185,13 @@ function check_status
 	LIST+=( "Docker" "Run applications by using containers" "$DOCKER_STATUS")
 
 	# Mayan EDMS docker install
-	curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
-	MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
+	if [[ "$DOCKER_STATUS" == "on" ]]; then
+		curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
+		MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
+		else
+		MAYAN_STATUS="off"
+	fi
+
 	LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
 
 	# ISPconfig
@@ -692,7 +697,7 @@ else
 	fi
 	URL="http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u9_"$(dpkg --print-architecture)".deb"
 	fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
-	dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1	
+	dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install libssl-doc zlib1g-dev tvheadend xmltv-util
 fi
@@ -1536,7 +1541,7 @@ while fuser /var/lib/dpkg/lock >/dev/null 2>&1 ; do
 	((i=i+1))
 done
 
-apt-get -qq -y --no-install-recommends install debconf-utils html2text apt-transport-https dialog whiptail lsb-release bc expect > /dev/null
+apt-get -qq -y --no-install-recommends install curl debconf-utils html2text apt-transport-https dialog whiptail lsb-release bc expect > /dev/null
 
 # gather some info
 #
@@ -1579,7 +1584,7 @@ while true; do
 
 	# cycle trought all install options
 	i=0
-
+if ! is_package_manager_running; then
 	while [ "$i" -lt "$LISTLENGHT" ]; do
 
 		if [[ "$selection" == *Samba* && "$SAMBA_STATUS" != "on" ]]; then
@@ -1702,6 +1707,9 @@ while true; do
 
 		i=$[$i+1]
 	done
+
+fi
+
 	# reread statuses
 	check_status
 done
