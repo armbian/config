@@ -17,6 +17,7 @@
 # show_box
 # description
 # reload_bsp
+# other_kernel_version
 # aval_kernel
 # aval_dtbs
 # get_a20modes
@@ -351,7 +352,6 @@ function other_kernel_version ()
 		if [[ ${LIST[$n]} == $CURRENT_VERSION  ]]; then
 			n=$(( $n + 1 ))
 	        else
-			echo ${LIST[$n]}
 			new_list+=( "${LIST[$n]}" )
 	fi
 	done
@@ -367,10 +367,10 @@ function other_kernel_version ()
                         if [[ -n $ACKNOWLEDGEMENT ]]; then
                                 exec 3>&1
                                 TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-                                --title "Switch to other kernel versions" --clear --menu "\nSwitch from package (${CURRENT_VERSION}) to:\n \n" $((9+${LIST_LENGHT})) 60 25 "${LIST[@]}" 2>&1 1>&3)
+                                --title "Switch to other kernel versions" --clear --menu "\nSwitch from package ${CURRENT_VERSION} / $(uname -r) to:\n \n" $((9+${LIST_LENGHT})) 60 25 "${LIST[@]}" 2>&1 1>&3)
                                 exitstatus=$?;
                                 exec 3>&-
-				if [[ $? = 0 ]]; then
+				if [[ $exitstatus = 0 ]]; then
 	                        # install packages
 			        INSTALL_DTB=""
 			        [[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$LINUXFAMILY") ]] && INSTALL_DTB="linux-dtb$TARGET_BRANCH-$LINUXFAMILY=$TARGET_VERSION"
