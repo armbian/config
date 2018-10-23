@@ -333,6 +333,56 @@ function reload_bsp(){
 }
 
 
+function other_kernel_version ()
+{
+
+        IFS=$'\r\n'
+        GLOBIGNORE='*'
+	TARGET_BRANCH="-"${BRANCH}
+	[[ $BRANCH == "default" ]] && TARGET_BRANCH=""
+	CURRENT_VERSION=$(apt-cache policy linux-image${TARGET_BRANCH}-${LINUXFAMILY} | grep Installed| sed -n -e 's/^.*Installed: //p')
+	LIST=($(apt-cache show linux-image${TARGET_BRANCH}-${LINUXFAMILY} | grep -E  "version: |Version:"  | sed -n -e 's/^.*ersion: //p' | sed 's/\.$//g' | head -20))
+
+	# make a temporally array
+	new_list=()
+	for ((n=0;n<$((${#LIST[@]}));n++));
+	do
+		# skip currently installed package
+		if [[ ${LIST[$n]} == $CURRENT_VERSION  ]]; then
+			n=$(( $n + 1 ))
+	        else
+			echo ${LIST[$n]}
+			new_list+=( "${LIST[$n]}" )
+	fi
+	done
+
+	# copy back to main array
+	LIST=("${new_list[@]}")
+	LIST_LENGHT=$((${#LIST[@]}/2));
+
+        if [ "$LIST_LENGHT" -eq 0 ]; then
+                        dialog --backtitle "$BACKTITLE" --title " linux-image${TARGET_BRANCH}-${LINUXFAMILY} " --msgbox  "\nOther versions are not available!" 7 38
+        else
+                        beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot."
+                        if [[ -n $ACKNOWLEDGEMENT ]]; then
+                                exec 3>&1
+                                TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+                                --title "Switch to other kernel versions" --clear --menu "\nSwitch from package (${CURRENT_VERSION}) to:\n \n" $((9+${LIST_LENGHT})) 60 25 "${LIST[@]}" 2>&1 1>&3)
+                                exitstatus=$?;
+                                exec 3>&-
+				if [[ $? = 0 ]]; then
+	                        # install packages
+			        INSTALL_DTB=""
+			        [[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$LINUXFAMILY") ]] && INSTALL_DTB="linux-dtb$TARGET_BRANCH-$LINUXFAMILY=$TARGET_VERSION"
+			        debconf-apt-progress -- apt-get -y -qq --allow-downgrades --no-install-recommends install linux-image${TARGET_BRANCH}-${LINUXFAMILY}=$TARGET_VERSION $INSTALL_DTB
+			        dialog --title "Switching to $TARGET_VERSION" --backtitle "$BACKTITLE" --yes-label "Reboot"  --no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
+		                if [[ $? = 0 ]]; then reboot; fi
+				fi
+
+			fi
+        fi
+}
+
 
 
 #
@@ -343,8 +393,8 @@ function aval_kernel ()
 
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
-	AVAL_KERNEL=($(apt-cache search --names-only '^linux-'$(lsb_release	 -cs)'-root.*.'$BOARD'*' \
-	| grep -w "$BOARD " | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | grep -v "$BRANCH" ))
+	 AVAL_KERNEL=($(apt-cache search --names-only '^linux-'$(lsb_release      -cs)'-root.*.'$BOARD'*' \
+        | grep -w "$BOARD " | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | grep -v "$BRANCH" ))
 	local LIST=()
 	for i in "${AVAL_KERNEL[@]}"
 	do

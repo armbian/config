@@ -870,6 +870,15 @@ function jobs ()
 	;;
 
 
+	# Switch to other kernel versions
+	"Other")
+	if ! is_package_manager_running; then
+		other_kernel_version
+	fi
+	;;
+
+
+
 	# Enable or disable desktop
 	#
 	"Desktop" )

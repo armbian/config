@@ -67,8 +67,12 @@ while true; do
 	testvercomp "$(uname -r | sed 's/-.*//')" "4.10.0" ">"
 	[[ "$LINUXFAMILY" = odroidxu4 && $? == 0 ]] && LIST+=( "DTB" "Select optimised board configuration" )
 	[[ -f /usr/bin/bin2fex && "$LINUXFAMILY" = sun*i && "$BRANCH" = "default" ]] && LIST+=( "Fexedit" "Board (fex) settings editor" )
+
+	[[ -z ${mark} ]] && [[ -f /etc/apt/sources.list.d/armbian.list ]] && [[ -n $(grep -w apt /etc/apt/sources.list.d/armbian.list) ]] \
+	&& LIST+=( "Other" "Switch to other kernel versions" )
+
 	[[ $(apt-cache search --names-only '^linux-'$(lsb_release  -cs)'-root.*.'$BOARD'' | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' \
-	| wc -l) -gt 1 && -z "${mark}" ]] && LIST+=( "Switch" "Switch to alternative kernels" )
+	| wc -l) -gt 1 && -z "${mark}" ]] && LIST+=( "Switch" "Switch to alternative kernel branches" )
 
 	LIST+=( "SSH" "Reconfigure SSH daemon" )
 	LIST+=( "Firmware" "Run apt update & apt upgrade" )
