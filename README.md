@@ -44,7 +44,7 @@ Login as root and type:
 		- [Sonarr](https://sonarr.tv/) *(TV shows downloading server)*
 		- [Transmission](https://transmissionbt.com/) *(torrent server)*
 		- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
-		- [NCP](https://ownyourbits.com/nextcloudplus/) *(Nextcloud personal cloud)*
+		- [NCP](https://nextcloudpi.com) *(Nextcloud personal cloud)*
 		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
 		- [PI hole](https://pi-hole.net) *(ad blocker)*
 		- [UrBackup](https://www.urbackup.org/) *(client/server backup system)*
