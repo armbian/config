@@ -97,6 +97,16 @@ function jobs ()
 		sleep 2
 	;;
 
+        # SBC-becn
+        #
+        "Benchmarking" )
+		if [[ ! -f /usr/local/bin/sbc-benc ]]; then
+			wget -q -O /usr/local/bin/sbc-bench https://raw.githubusercontent.com/ThomasKaiser/sbc-bench/master/sbc-bench.sh
+			chmod +x /usr/local/bin/sbc-bench
+		fi
+		sbc-bench
+        ;;
+
 
 	# Send diagnostics
 	#

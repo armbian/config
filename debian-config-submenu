@@ -331,6 +331,7 @@ while true; do
 	[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && \
 	LIST+=( "Consumption" "Control board consumption" )
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Monitor" "Simple CLI board monitoring" )
+	LIST+=( "Benchmarking" "sbc-bench board benchmarking" )
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
 
 	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else \
