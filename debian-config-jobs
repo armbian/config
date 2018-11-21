@@ -105,6 +105,8 @@ function jobs ()
 			chmod +x /usr/local/bin/sbc-bench
 		fi
 		sbc-bench
+		echo ""
+		read -n 1 -s -p "Press any key to continue"
         ;;
 
 
