@@ -587,7 +587,7 @@ if [ ${SPACE_AVAIL} -lt ${SPACE_NEEDED} ]; then
 fi
 apt-get --allow-unauthenticated install openmediavault-keyring
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
-DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends \
+debconf-apt-progress -- apt-get -y --allow-unauthenticated --fix-missing --no-install-recommends \
 	-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install openmediavault postfix dirmngr
 # Fix multiple sources entry on ARM with OMV4
 sed -i '/stretch-backports/d' /etc/apt/sources.list
@@ -600,7 +600,7 @@ debconf-apt-progress -- apt-get --yes --force-yes --fix-missing --auto-remove --
 # Install flashmemory plugin and netatalk by default, use nice logo for the latter,
 # disable OMV monitoring by default
 . /usr/share/openmediavault/scripts/helper-functions
-DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y --fix-missing --no-install-recommends --auto-remove install openmediavault-flashmemory openmediavault-netatalk
+debconf-apt-progress -- apt-get -y --fix-missing --no-install-recommends --auto-remove install openmediavault-flashmemory openmediavault-netatalk
 AFP_Options="mimic model = Macmini"
 SMB_Options="min receivefile size = 16384\nwrite cache size = 524288\ngetwd cache = yes\nsocket options = TCP_NODELAY IPTOS_LOWDELAY"
 xmlstarlet ed -L -u "/config/services/afp/extraoptions" -v "$(echo -e "${AFP_Options}")" ${OMV_CONFIG_FILE}
