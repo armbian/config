@@ -929,12 +929,12 @@ function jobs ()
 							echo "autologin-user=$CHOSEN_USER" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
 							echo "autologin-user-timeout=0" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
 							echo "user-session=xfce" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
-							systemctl enable lightdm.service >/dev/null 2>&1
+							ln -s /lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service >/dev/null 2>&1
 							service lightdm start >/dev/null 2>&1
 						fi
 					else
 						rm /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf >/dev/null 2>&1
-						systemctl enable lightdm.service >/dev/null 2>&1
+						ln -s /lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service >/dev/null 2>&1
 						service lightdm start >/dev/null 2>&1
 					fi
 				fi
