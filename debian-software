@@ -323,15 +323,13 @@ alive_port ()
 #
 # Displays URL to the service $1 on port $2 or just that is active if $3 = boolean $4 = path
 #
-DEFAULT_ADAPTER=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)')
-LOCALIPADD=$(ip -4 addr show dev $DEFAULT_ADAPTER | awk '/inet/ {print $2}' | cut -d'/' -f1)
 if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
 	if [[ $3 == boolean ]]; then
 		DESCRIPTION="$1 is \Z1active\Z0";
 	   elif [[ $3 == ssl ]]; then
-		DESCRIPTION="Active on https://${LOCALIPADD}:\Z1$2\Z0$4";
+		DESCRIPTION="Active on https://${serverIP}:\Z1$2\Z0$4";
 		else
-		DESCRIPTION="Active on http://${LOCALIPADD}:\Z1$2\Z0$4";
+		DESCRIPTION="Active on http://${serverIP}:\Z1$2\Z0$4";
 	fi
 else
 DESCRIPTION="$1";
