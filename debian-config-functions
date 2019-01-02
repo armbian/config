@@ -274,6 +274,12 @@ function description
 		*uk.armbian.com*)
 			echo "United Kingdom"
 		;;
+		*mirrors.tuna.tsinghua.edu.cn/armbian/*)
+			echo "China"
+		;;
+		*mirror.cyberbits.eu/armbian/apt*)
+			echo "France"
+		;;
 		*.armbian.com*)
 			echo "Estonia"
 		;;

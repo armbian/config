@@ -1083,8 +1083,14 @@ function jobs ()
 		GLOBIGNORE='*'
 		LIST_CONST=3
 		BEFORE="$(cat /etc/apt/sources.list.d/armbian.list | sed 's/http/\nhttp/g' | grep ^http | sed 's/\(^http[^ <]*\)\(.*\)/\1/g' | sed 's/https\?:\/\///')"
+		BEFORE_DESC=$(description "${BEFORE}")
 		PREFIX="$(echo $BEFORE | cut -f1 -d".")"
-		AVAL_MIRROR=("${PREFIX}.armbian.com" "${PREFIX}.uk.armbian.com")
+		AVAL_MIRROR=()
+		if [[ $PREFIX == beta ]]; then
+			AVAL_MIRROR=("beta.armbian.com")
+			else
+			AVAL_MIRROR+=("apt.armbian.com" "mirrors.tuna.tsinghua.edu.cn/armbian/" "mirror.cyberbits.eu/armbian/apt")
+		fi
 		local LIST=()
 		for i in "${AVAL_MIRROR[@]}"
 			do
@@ -1098,13 +1104,13 @@ function jobs ()
 		else
 			exec 3>&1
 			TARGET_MIRROR=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Change repository location" --colors --clear --menu "\nfrom \Z1$BEFORE\Z0 to:\n " $((6+${LIST_LENGHT})) 60 15 "${LIST[@]}" 2>&1 1>&3)
+			--title "Change repository location" --colors --clear --menu "\nfrom \Z1$BEFORE_DESC\Z0 to:\n " $((6+${LIST_LENGHT})) 60 15 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 		fi
 
 		if [[ $exitstatus == 0 ]]; then
-			sed -i "s/$BEFORE/$TARGET_MIRROR/" /etc/apt/sources.list.d/armbian.list
+			sed -i "s~$BEFORE~$TARGET_MIRROR~" /etc/apt/sources.list.d/armbian.list
 			dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nArmbian package repository was switched to:\n\n\Z1$TARGET_MIRROR\Z0" 9 47
 		fi
 	;;

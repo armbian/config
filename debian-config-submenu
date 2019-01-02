@@ -304,7 +304,9 @@ while true; do
 	LIST+=( "Locales" "Reconfigure language \Z5($(locale | grep LANGUAGE | cut -d= -f2 | cut -d_ -f1))\Z0 and character set" )
 	LIST+=( "Keyboard" "Change console keyboard layout (\Z5$(cat /etc/default/keyboard | grep XKBLAYOUT | grep -o '".*"' | sed 's/"//g')\Z0)")
 	LIST+=( "Hostname" "Change your hostname \Z5($(cat /etc/hostname))\Z0" )
-	[[ -f /etc/apt/sources.list.d/armbian.list ]] && LIST+=( "Mirror" "Change repository server" )
+	BEFORE="$(cat /etc/apt/sources.list.d/armbian.list | sed 's/http/\nhttp/g' | grep ^http | sed 's/\(^http[^ <]*\)\(.*\)/\1/g' | sed 's/https\?:\/\///')"
+	BEFORE_DESC=$(description "${BEFORE}")
+	[[ -f /etc/apt/sources.list.d/armbian.list ]] && LIST+=( "Mirror" "Change repository server \Z5(${BEFORE_DESC})\Z0" )
 	LIST+=( "Welcome" "Toggle welcome screen items" )
 
 	# count number of menu items to adjust window sizee
