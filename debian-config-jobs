@@ -1350,7 +1350,7 @@ function jobs ()
 	#
 	"Overlayroot" )
 		if ! is_package_manager_running; then
-			if [[ -n $(mount | grep -w overlay) ]]; then
+			if [[ -n $(mount | grep -w overlay | grep -v chromium) ]]; then
 				dialog --title " Root overlay " --backtitle "$BACKTITLE" --yes-label "Disable" \
 				--no-label "Cancel" \
 				--yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
