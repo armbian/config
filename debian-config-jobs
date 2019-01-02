@@ -1098,7 +1098,10 @@ function jobs ()
 			[[ "${i[0]}" != "$BEFORE" ]] && LIST+=( "${i[0]//[[:blank:]]/}" "$DESC" )
 		done
 		LIST_LENGHT=$(($LIST_CONST+${#LIST[@]}/2));
-		if [ "$LIST_LENGHT" -eq 1 ]; then
+		echo "$LIST_LENGHT $BEFORE"
+
+		read
+		if [ "$LIST_LENGHT" -le 3 ]; then
 			TARGET_MIRROR=${AVAL_MIRROR[0]}
 			dialog --backtitle "$BACKTITLE" --title "Please wait" --colors --msgbox "\nThere are no mirrors available!" 7 35
 		else

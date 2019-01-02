@@ -116,7 +116,7 @@ while true; do
 	LISTLENGHT="$((6+${#LIST[@]}/2))"
 	BOXLENGHT=${#LIST[@]}
 	temp_rc=$(mktemp)
-	if [[ -n ${mark} ]]; then
+	if [[ -n ${mark} || -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]]; then
 			cat <<-'EOF' > $temp_rc
 			dialog_color = (RED,WHITE,OFF)
 			screen_color = (WHITE,RED,ON)

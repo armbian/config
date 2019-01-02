@@ -327,7 +327,7 @@ function reload_bsp(){
 
 		# reinstall headers only if they are already installed
 		check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
-
+		IFS=" "
 		[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 		PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
         apt-get -s -y --no-install-recommends install $PACKAGE_LIST > /tmp/reload_bsp.log 2>&1
