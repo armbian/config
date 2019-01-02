@@ -655,7 +655,7 @@ function configure_desktop ()
 
 		# set up profile sync daemon on desktop systems
 		which psd >/dev/null 2>&1
-		if [ $? -eq 0 ]; then
+		if [[ $? -eq 0 && -z $(grep overlay-helper /etc/sudoers) ]]; then
 			echo "${CHOSEN_USER} ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper" >> /etc/sudoers
 			touch /home/${CHOSEN_USER}/.activate_psd
 		fi
