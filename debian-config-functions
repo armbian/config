@@ -612,21 +612,20 @@ function configure_desktop ()
 		# update packages
 		debconf-apt-progress -- apt-get update
 
+		# install new package if exists
+		unset PACKAGE_SUFIX
+		[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}-desktop-xfce$") ]] && PACKAGE_SUFIX="-xfce"
+
 		# remove desktop package to secure proper install
 		if check_if_installed armbian-${DISTROID}-desktop ; then
-			debconf-apt-progress -- apt-get -y remove armbian-${DISTROID}-desktop
+			debconf-apt-progress -- apt-get -y remove armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
 		fi
 
 		# install desktop package
-		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop
+		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
 
 		# in case previous install was interrupted
 		[[ $? -eq 130 ]] && dpkg --configure -a
-
-		# strectch workaround
-		[[ ${DISTROID} == stretch ]] && debconf-apt-progress -- apt -y purge lightdm
-		# install display manager
-		DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y -qq install nodm
 
 		# clean apt cache
 		apt-get clean
@@ -661,13 +660,13 @@ function configure_desktop ()
 			touch /home/${CHOSEN_USER}/.activate_psd
 		fi
 
-		sed -i "s/NODM_USER=\(.*\)/NODM_USER=${CHOSEN_USER}/" /etc/default/nodm
-		sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
-		chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/.
-		sleep 3
-		service nodm stop
-		sleep 1
-		service nodm start
+		mkdir -p /etc/lightdm/lightdm.conf.d
+		echo "[Seat:*]" > /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		echo "autologin-user=$CHOSEN_USER" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		echo "autologin-user-timeout=0" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		echo "user-session=xfce" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		ln -s /lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service >/dev/null 2>&1
+		service lightdm start >/dev/null 2>&1
 	fi
 
 }
