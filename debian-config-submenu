@@ -125,7 +125,9 @@ while true; do
 			tag_selected_color = (WHITE,RED,ON)
 			tag_key_selected_color = (WHITE,RED,ON)
 			EOF
-			local sys_title=" Warning - firmware packages frozen"
+			[[ -n ${mark} ]] && local sys_title=" Warning - firmware packages frozen"
+			[[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && local sys_title=" Warning - attached to beta repository"
+			[[ -n ${mark} && -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && sys_title=" Warning - frozen & attached to beta repository"
 		else
 			local sys_title=" System settings "
 			echo > $temp_rc
