@@ -368,7 +368,7 @@ function other_kernel_version ()
 	CURRENT_VERSION=$(echo $CURRENT_VERSION_TEMP | awk '{print $2}')"="$(echo $CURRENT_VERSION_TEMP | awk '{print $3}')
 
 	# check what is available from the repository
-	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|version:|Version:"  | sed -n -e 's/^.*: //p' | sed 's/\.$//g' | head -40))
+	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|version:|Version:"  | sed -n -e 's/^.*: //p' | sed 's/\.$//g'))
 	new_list=()
 
 	#printf '%s\n' "${LIST[@]}"
