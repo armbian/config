@@ -18,7 +18,6 @@
 # description
 # reload_bsp
 # other_kernel_version
-# aval_kernel
 # aval_dtbs
 # get_a20modes
 # get_h3modes
@@ -275,6 +274,12 @@ function description
 		*uk.armbian.com*)
 			echo "United Kingdom"
 		;;
+		*mirrors.tuna.tsinghua.edu.cn/armbian/*)
+			echo "China"
+		;;
+		*mirror.cyberbits.eu/armbian/apt*)
+			echo "France"
+		;;
 		*.armbian.com*)
 			echo "Estonia"
 		;;
@@ -307,29 +312,47 @@ function reload_bsp(){
         # test install packages
         TARGET_BRANCH=$BRANCH
         exceptions "$INSTALL_KERNEL"
-        dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nTest install ..." 5 36
-        apt-get -s -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-        linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-        linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD > /dev/null 2>&1
+        dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nProbing test install ..." 5 28
+		unset PACKAGE_LIST
+
+		[[ -n $(apt-cache search --names-only "^armbian-${LINUXFAMILY}$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${LINUXFAMILY}"
+		[[ -n $(apt-cache search --names-only "^armbian-${BOARD}$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${BOARD}"
+		[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}"
+		[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}-desktop-xfce$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop-xfce"
+
+		# if new packages are absent, reinstall old ones
+		if [[ -z $PACKAGE_LIST ]]; then
+			PACKAGE_LIST="linux-${DISTROID}-root$TARGET_BRANCH-$BOARD"
+		fi
+
+		# reinstall headers only if they are already installed
+		check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
+		IFS=" "
+		[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+		PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
+        apt-get -s -y --no-install-recommends install $PACKAGE_LIST > /tmp/reload_bsp.log 2>&1
+
         # if test download is ok, remove old packages
         if [[ $? = 0 ]]; then
                 dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
-                aptitude remove ~nlinux-image --quiet=100 -y >> /var/log/upgrade.log 2>&1
+                aptitude remove ~nlinux-image*${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
                 aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
                 aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
-                aptitude remove ~nlinux-$(lsb_release -cs)-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
+                aptitude remove ~nlinux-${DISTROID}-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
                 aptitude remove ~narmbian-config --quiet=100 -y >> /var/log/upgrade.log 2>&1
+				aptitude remove ~narmbian-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+				aptitude remove ~narmbian-${BOARD} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+				aptitude remove ~narmbian-${DISTROID} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+				aptitude remove ~narmbian-${DISTROID}-desktop-xfce --quiet=100 -y >> /var/log/upgrade.log 2>&1
                 # install packages
-                INSTALL_DTB=""
-                [[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
-                INSTALL_DTB="linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+				echo $PACKAGE_LIST >> /var/log/upgrade.log
                 debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
-                -y -qq --no-install-recommends install linux-image${TARGET_BRANCH}-${TARGET_FAMILY} \
-                linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} linux-u-boot-${BOARD}-${UBOOT_BRANCH} \
-                linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD armbian-config $INSTALL_DTB
+                -y -qq --no-install-recommends install $PACKAGE_LIST armbian-config
                 dialog --title "Switching to $1" --backtitle "$BACKTITLE" --yes-label "Reboot" \
-		--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
+				--no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
                 if [[ $? = 0 ]]; then reboot; fi
+		else
+			dialog --backtitle "$BACKTITLE" --title "Warning" --msgbox "\nTest install failed. Can't change firmware \n\nCheck /tmp/reload_bsp.log" 9 48
         fi
 }
 
@@ -337,88 +360,73 @@ function reload_bsp(){
 function other_kernel_version ()
 {
 
-        IFS=$'\r\n'
-        GLOBIGNORE='*'
-	TARGET_BRANCH="-"${BRANCH}
-	[[ $BRANCH == "default" ]] && TARGET_BRANCH=""
-	CURRENT_VERSION=$(apt-cache policy linux-image${TARGET_BRANCH}-${LINUXFAMILY} | grep Installed| sed -n -e 's/^.*Installed: //p')
-	LIST=($(apt-cache show linux-image${TARGET_BRANCH}-${LINUXFAMILY} | grep -E  "version: |Version:"  | sed -n -e 's/^.*ersion: //p' | sed 's/\.$//g' | head -20))
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
 
-	# make a temporally array
+	# get current kernel information
+	CURRENT_VERSION_TEMP=$(dpkg -l | grep '^ii' | grep linux-image)
+	CURRENT_VERSION=$(echo $CURRENT_VERSION_TEMP | awk '{print $2}')"="$(echo $CURRENT_VERSION_TEMP | awk '{print $3}')
+
+	# check what is available from the repository
+	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|version:|Version:"  | sed -n -e 's/^.*: //p' | sed 's/\.$//g'))
 	new_list=()
+
+	#printf '%s\n' "${LIST[@]}"
+	#read
+
+	# create a human readable menu
 	for ((n=0;n<$((${#LIST[@]}));n++));
 	do
-		# skip currently installed package
-		if [[ ${LIST[$n]} == $CURRENT_VERSION  ]]; then
-			n=$(( $n + 1 ))
-	        else
-			new_list+=( "${LIST[$n]}" )
-	fi
+        m=$(( $n + 1 ))
+        prvi=$((3*$m - 3))
+        drugi=$((3*$m - 2))
+        tretji=$((3*$m - 1))
+        [[ -z ${LIST[$prvi]} ]] && break
+		if [[ $CURRENT_VERSION != "${LIST[$prvi]}=${LIST[$drugi]}" ]]; then
+			new_list+=( "${LIST[$prvi]}=${LIST[$drugi]}" )
+			new_list+=( ${LIST[$tretji]} )
+		fi
 	done
 
 	# copy back to main array
 	LIST=("${new_list[@]}")
 	LIST_LENGHT=$((${#LIST[@]}/2));
 
-        if [ "$LIST_LENGHT" -eq 0 ]; then
-                        dialog --backtitle "$BACKTITLE" --title " linux-image${TARGET_BRANCH}-${LINUXFAMILY} " --msgbox  "\nOther versions are not available!" 7 38
-        else
-                        beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot."
-                        if [[ -n $ACKNOWLEDGEMENT ]]; then
-                                exec 3>&1
-                                TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-                                --title "Switch to other kernel versions" --clear --menu "\nSwitch from package ${CURRENT_VERSION} / $(uname -r) to:\n \n" $((9+${LIST_LENGHT})) 60 25 "${LIST[@]}" 2>&1 1>&3)
-                                exitstatus=$?;
-                                exec 3>&-
-				if [[ $exitstatus = 0 ]]; then
-	                        # install packages
-			        INSTALL_DTB=""
-			        [[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$LINUXFAMILY") ]] && INSTALL_DTB="linux-dtb$TARGET_BRANCH-$LINUXFAMILY=$TARGET_VERSION"
-			        debconf-apt-progress -- apt-get -y -qq --allow-downgrades --no-install-recommends install linux-image${TARGET_BRANCH}-${LINUXFAMILY}=$TARGET_VERSION $INSTALL_DTB
-			        dialog --title "Switching to $TARGET_VERSION" --backtitle "$BACKTITLE" --yes-label "Reboot"  --no-label "Cancel" --yesno "\nReboot to apply new settings?" 7 34
-		                if [[ $? = 0 ]]; then reboot; fi
-				fi
-
-			fi
-        fi
-}
-
-
-
-#
-# check if board has alternative kernels
-#
-function aval_kernel ()
-{
-
-	IFS=$'\r\n'
-	GLOBIGNORE='*'
-	 AVAL_KERNEL=($(apt-cache search --names-only '^linux-'$(lsb_release      -cs)'-root.*.'$BOARD'*' \
-        | grep -w "$BOARD " | sed 's/.*(\(.*\))/\1/' | awk '{print $1}' | grep -v "$BRANCH" ))
-	local LIST=()
-	for i in "${AVAL_KERNEL[@]}"
-	do
-		VALUE="${i[0]//[[:blank:]]/}"
-		DESC=$(kernel_desc $VALUE)
-		LIST+=( "$VALUE" "$DESC" )
-	done
-	LIST_LENGHT=$((${#LIST[@]}/2));
 	if [ "$LIST_LENGHT" -eq 0 ]; then
-			TARGET_BRANCH=${AVAL_KERNEL[0]}
-			dialog --backtitle "$BACKTITLE" --title " Info " --msgbox  "\nNo alternative kernels available!" 7 38
-	else
-			beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot."
-			if [[ -n $ACKNOWLEDGEMENT ]]; then
-				exec 3>&1
-				TARGET_BRANCH=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-				--title "Switch to alternative kernels" --clear --menu "\nSwitch from $(kernel_desc $BRANCH) to:\n \n" $((9+${LIST_LENGHT})) 60 25 "${LIST[@]}" 2>&1 1>&3)
-				exitstatus=$?;
-				exec 3>&-
+		dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox  "\nNo other kernels available!" 7 32
+        else
+		beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot."
+		if [[ -n $ACKNOWLEDGEMENT ]]; then
+			exec 3>&1
+            TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+			--title "Switch from" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" $((9+${LIST_LENGHT})) 62 25 "${LIST[@]}" 2>&1 1>&3)
+			exitstatus=$?;
+			exec 3>&-
+			if [[ $exitstatus = 0 ]]; then
+				IFS=" "
+				# install packages
+				PACKAGE_LIST="$TARGET_VERSION"
+				TARGET_VERSION_DTB=${TARGET_VERSION/image/dtb}
+				TARGET_VERSION_PRE=$(echo $TARGET_VERSION_DTB | cut -f1 -d"=")
+				TARGET_VERSION_SUB=$(echo $TARGET_VERSION_DTB | cut -f2 -d"=")
+				[[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]] && PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
+				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
+				apt-get -s -y --allow-downgrades --no-install-recommends install $PACKAGE_LIST >> /tmp/switch_kernel.log 2>&1
+				if [[ $? = 0 ]]; then
+					# remove old kernel
+					dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
+					aptitude remove ~nlinux-image*${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					debconf-apt-progress --	apt-get -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
+					dialog --title "Switching kernel to" --backtitle "$BACKTITLE" --yes-label "Reboot"  --no-label "Cancel" --yesno "\n$TARGET_VERSION?" 7 48
+					if [[ $? = 0 ]]; then reboot; fi
+				else
+					dialog --backtitle "$BACKTITLE" --title "Warning" --msgbox "\nTest install failed. Can't change firmware \n\nCheck /tmp/switch_kernel.log" 9 48
+				fi
 			fi
+		fi
 	fi
-
 }
-
 
 
 
@@ -604,21 +612,20 @@ function configure_desktop ()
 		# update packages
 		debconf-apt-progress -- apt-get update
 
+		# install new package if exists
+		unset PACKAGE_SUFIX
+		[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}-desktop-xfce$") ]] && PACKAGE_SUFIX="-xfce"
+
 		# remove desktop package to secure proper install
 		if check_if_installed armbian-${DISTROID}-desktop ; then
-			debconf-apt-progress -- apt-get -y remove armbian-${DISTROID}-desktop
+			debconf-apt-progress -- apt-get -y remove armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
 		fi
 
 		# install desktop package
-		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop
+		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
 
 		# in case previous install was interrupted
 		[[ $? -eq 130 ]] && dpkg --configure -a
-
-		# strectch workaround
-		[[ ${DISTROID} == stretch ]] && debconf-apt-progress -- apt -y purge lightdm
-		# install display manager
-		DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y -qq install nodm
 
 		# clean apt cache
 		apt-get clean
@@ -648,18 +655,18 @@ function configure_desktop ()
 
 		# set up profile sync daemon on desktop systems
 		which psd >/dev/null 2>&1
-		if [ $? -eq 0 ]; then
+		if [[ $? -eq 0 && -z $(grep overlay-helper /etc/sudoers) ]]; then
 			echo "${CHOSEN_USER} ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper" >> /etc/sudoers
 			touch /home/${CHOSEN_USER}/.activate_psd
 		fi
 
-		sed -i "s/NODM_USER=\(.*\)/NODM_USER=${CHOSEN_USER}/" /etc/default/nodm
-		sed -i "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" /etc/default/nodm
-		chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/.
-		sleep 3
-		service nodm stop
-		sleep 1
-		service nodm start
+		mkdir -p /etc/lightdm/lightdm.conf.d
+		echo "[Seat:*]" > /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		echo "autologin-user=$CHOSEN_USER" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		echo "autologin-user-timeout=0" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		echo "user-session=xfce" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
+		ln -s /lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service >/dev/null 2>&1
+		service lightdm start >/dev/null 2>&1
 	fi
 
 }
