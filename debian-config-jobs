@@ -915,9 +915,12 @@ function jobs ()
 			exitstatus=$?;
 			if [[ $exitstatus = 0 ]]; then
 				service lightdm stop >/dev/null 2>&1 && systemctl disable lightdm.service >/dev/null 2>&1
+				service nodm stop >/dev/null 2>&1 && systemctl disable nodm.service >/dev/null 2>&1
 			fi
 		else
 			if ! is_package_manager_running; then
+				# install lightdm = backward compatibility
+				[[ -z $(dpkg -l | grep lightdm) ]] && debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm
 				if [[ -n $DESKTOP_INSTALLED ]]; then
 					dialog --title " Display manager " --backtitle "$BACKTITLE" --yesno "\nDo you want to enable autologin?" 7 36
 					exitstatus=$?;
