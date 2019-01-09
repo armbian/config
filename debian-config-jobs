@@ -919,7 +919,8 @@ function jobs ()
 			fi
 		else
 			if ! is_package_manager_running; then
-				# install lightdm = backward compatibility
+				# remove nodm and install lightdm = backward compatibility
+				[[ -n $(dpkg -l | grep nodm) ]] && debconf-apt-progress -- apt-get -y purge nodm
 				[[ -z $(dpkg -l | grep lightdm) ]] && debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" -y --no-install-recommends install lightdm-gtk-greeter lightdm
 				if [[ -n $DESKTOP_INSTALLED ]]; then
 					dialog --title " Display manager " --backtitle "$BACKTITLE" --yesno "\nDo you want to enable autologin?" 7 36
