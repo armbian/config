@@ -277,8 +277,8 @@ function description
 		*mirrors.tuna.tsinghua.edu.cn/armbian/*)
 			echo "China"
 		;;
-		*mirror.cyberbits.eu/armbian/apt*)
-			echo "France"
+		*http://mirrors.netix.net/armbian/apt/*)
+			echo "Bulgarija"
 		;;
 		*.armbian.com*)
 			echo "Estonia"

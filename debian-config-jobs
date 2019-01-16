@@ -1091,9 +1091,9 @@ function jobs ()
 		PREFIX="$(echo $BEFORE | cut -f1 -d".")"
 		AVAL_MIRROR=()
 		if [[ $PREFIX == beta ]]; then
-			AVAL_MIRROR=("beta.armbian.com")
+			AVAL_MIRROR=("beta.armbian.com" "http://mirrors.netix.net/armbian/apt/")
 			else
-			AVAL_MIRROR+=("apt.armbian.com" "mirrors.tuna.tsinghua.edu.cn/armbian/" "mirror.cyberbits.eu/armbian/apt")
+			AVAL_MIRROR+=("apt.armbian.com" "mirrors.tuna.tsinghua.edu.cn/armbian/" "http://mirrors.netix.net/armbian/apt/")
 		fi
 		local LIST=()
 		for i in "${AVAL_MIRROR[@]}"
