@@ -805,9 +805,8 @@ function jobs ()
 		sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" /etc/skel/.zshrc
 		# define theme
 		sed -i 's/^ZSH_THEME=.*/ZSH_THEME="risto"/' /etc/skel/.zshrc
-		# remove default plugins
-		sed -i '/^  git.*/ d' /etc/skel/.zshrc
-		sed -i "/^plugins=.*/a git git-extras debian tmux screen history extract colorize web-search docker" /etc/skel/.zshrc
+		# define default plugins
+		sed -i 's/^plugins=.*/plugins=(git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc		
 		# change shell for root
 		chsh -s $(grep /zsh$ /etc/shells | tail -1)
 		# copy cache directory
