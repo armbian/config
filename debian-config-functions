@@ -666,6 +666,8 @@ function configure_desktop ()
 		echo "autologin-user-timeout=0" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
 		echo "user-session=xfce" >> /etc/lightdm/lightdm.conf.d/22-armbian-autologin.conf
 		ln -s /lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service >/dev/null 2>&1
+		# fix permissions
+		chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/.
 		service lightdm start >/dev/null 2>&1
 	fi
 
