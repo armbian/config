@@ -113,13 +113,6 @@ function check_status
 	alive_port "Personal cloud @syncthing.net" "8384" "boolean"
 	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
-	# Exagear
-	if [[ "$(check_if_installed xserver-xorg && echo "on")" == "on" && "$family" == "Ubuntu" ]]; then
-		EXAGEAR_STATUS="$(check_if_installed exagear-armbian && echo "on" || echo "off" )"
-		LIST+=( "ExaGear" "32bit x86 Linux/Windows emulator trial" "$EXAGEAR_STATUS" )
-		LIST_CONST=$((LIST_CONST + 1))
-	fi
-
 	# VPN
 	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
 		# vpn server
@@ -1641,12 +1634,6 @@ if ! is_package_manager_running; then
 		if [[ "$selection" == *Syncthing* && "$SYNCTHING_STATUS" != "on" ]]; then
 			install_syncthing
 			selection=${selection//Syncthing/}
-		fi
-
-		if [[ "$selection" == *ExaGear* && "$EXAGEAR_STATUS" != "on" ]]; then
-			debconf-apt-progress -- apt-get update
-			debconf-apt-progress -- apt-get -y install exagear-armbian exagear-desktop exagear-dsound-server exagear-guest-ubuntu-1604
-			selection=${selection//ExaGear/}
 		fi
 
 		if [[ "$selection" == *server* && "$VPN_SERVER_STATUS" != "on" ]]; then
