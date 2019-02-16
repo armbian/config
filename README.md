@@ -38,7 +38,6 @@ Login as root and type:
 		- [TV headend](https://tvheadend.org/) *(IPTV server)*
 		- [Syncthing](https://syncthing.net/) *(personal cloud)*
 		- [SoftEther VPN server](https://www.softether.org/) *(VPN server)*
-		- [ExaGear desktop](https://eltechs.com/product/exagear-desktop) *(x86 emulator)*
 		- [Plex](https://www.plex.tv/) *(Plex media server)*
 		- [Radarr](https://radarr.video/) *(Movie downloading server)*
 		- [Sonarr](https://sonarr.tv/) *(TV shows downloading server)*
@@ -74,7 +73,6 @@ Login as root and type:
 |TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|30.09.2018|
 |Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |SoftEther VPN server (VPN server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|ExaGear desktop (x86 emulator)|n/a|:question:|:question:|
 |Plex (Plex media server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |Radarr (Movie downloading server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
