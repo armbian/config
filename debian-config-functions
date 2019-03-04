@@ -279,7 +279,10 @@ function description
 		;;
 		*mirrors.netix.net/armbian/apt/*)
 			echo "Bulgarija"
-		;;
+		;;		
+		*mirrors.dotsrc.org/armbian-apt/*)
+			echo "Denmark"
+		;;		
 		*.armbian.com*)
 			echo "Estonia"
 		;;
