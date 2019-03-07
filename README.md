@@ -77,13 +77,13 @@ Login as root and type:
 |Plex (Plex media server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |Radarr (Movie downloading server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |NCP (Nextcloud personal cloud)|:heavy_check_mark:|n/a|29.09.2018|
 |Openmediavault NAS (NAS server)|:heavy_check_mark:|n/a|29.09.2018|
 |OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |PI hole (ad blocker)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|UrBackup (client/server backup system)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|UrBackup (client/server backup system)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |Docker (Docker CE engine)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |Mayan EDMS (Document management system within Docker)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |MiniDLNA (Media sharing)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|

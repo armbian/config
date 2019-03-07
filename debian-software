@@ -176,7 +176,7 @@ function check_status
 	# UrBackup
 	URBACKUP_STATUS="$((check_if_installed urbackup-server || check_if_installed urbackup-server-dbg) \
 	&& echo "on" || echo "off" )"
-	alive_port "Client/server backup system" "51413" "boolean"
+	alive_port "Client/server backup system" "55414"
 	LIST+=( "UrBackup" "$DESCRIPTION" "$URBACKUP_STATUS" )
 
 	# Docker
