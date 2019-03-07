@@ -825,6 +825,7 @@ echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/s
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get install -y openhab2 openhab2-addons default-jre
 service openhab2 start
+dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
 }
 
 
