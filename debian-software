@@ -752,7 +752,11 @@ install_packet "transmission-cli transmission-common transmission-daemon" "Insta
 # https://forum.armbian.com/index.php?/topic/4017-programs-does-not-start-automatically-at-boot/
 sed -e 's/exit 0//g' -i /etc/rc.local
 	cat >> /etc/rc.local <<"EOF"
-service transmission-daemon restart
+service transmission-daemon stop
+local A=(${serverIP//./ })
+local  servernetwork="${A[0]}.${A[1]}.*.*"
+sed "s/\"rpc-whitelist\": \"127.0.0.1.*/\"rpc-whitelist\": \"127.0.0.1,$servernetwork\"/" -i /etc/transmission-daemon/settings.json
+service transmission-daemon start
 exit 0
 EOF
 }
