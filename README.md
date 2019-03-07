@@ -45,6 +45,7 @@ Login as root and type:
 		- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
 		- [NCP](https://nextcloudpi.com) *(Nextcloud personal cloud)*
 		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
+		- [OpenHab2](https://www.openhab.org) *(Smarthome suite)*
 		- [PI hole](https://pi-hole.net) *(ad blocker)*
 		- [UrBackup](https://www.urbackup.org/) *(client/server backup system)*
 		- [Docker](https://www.docker.com) *(Docker CE engine)*
@@ -70,18 +71,19 @@ Login as root and type:
 
 |Application name|Stretch|Bionic|Test install|
 |:--|:--:|:--:|--:|
-|TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|30.09.2018|
-|Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
+|Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |SoftEther VPN server (VPN server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|Plex (Plex media server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|Radarr (Movie downloading server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|Plex (Plex media server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
+|Radarr (Movie downloading server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
+|Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |NCP (Nextcloud personal cloud)|:heavy_check_mark:|n/a|29.09.2018|
 |Openmediavault NAS (NAS server)|:heavy_check_mark:|n/a|29.09.2018|
+|OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |PI hole (ad blocker)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |UrBackup (client/server backup system)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |Docker (Docker CE engine)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |Mayan EDMS (Document management system within Docker)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|MiniDLNA (Media sharing)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|MiniDLNA (Media sharing)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|

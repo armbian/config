@@ -837,7 +837,7 @@ install_syncthing ()
 # Install Personal cloud https://syncthing.net/
 #
 
-curl -s https://syncthing.net/release-key.txt | apt-key add -
+curl -s https://syncthing.net/release-key.txt | apt-key add - >/dev/null 2>&1
 echo "deb https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get -y install syncthing
@@ -849,7 +849,7 @@ fi
 add_choose_user
 
 # change to server IP
-sed -i "s/127.0.0.1/${serverIP}/" /home/${CHOSEN_USER}/.config/config.xml
+sed -i "s/127.0.0.1/${serverIP}/" /home/${CHOSEN_USER}/.config/syncthing/config.xml
 # create startup files
 mv /lib/systemd/system/syncthing@.service /lib/systemd/system/syncthing@${CHOSEN_USER}.service
 systemctl enable syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
