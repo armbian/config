@@ -820,10 +820,10 @@ chmod +x /etc/cron.daily/seed-armbian-torrent
 
 install_openhab ()
 {
-wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add -
-echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list
+wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
+echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get -y openhab2 openhab2-addons default-jre
+debconf-apt-progress -- apt-get install -y openhab2 openhab2-addons default-jre
 service openhab2 start
 }
 
