@@ -31,6 +31,7 @@
 # install_Virus
 # install_hhvm
 # install_openhab
+# install_hass.io
 # install_phpmyadmin
 # install_apache
 # install_nginx
@@ -92,7 +93,7 @@ function check_status
 
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading install info ... " 5 28
 	LIST=()
-	LIST_CONST=25
+	LIST_CONST=26
 
 	# Samba
 	SAMBA_STATUS="$(check_if_installed samba && echo "on" || echo "off" )"
@@ -114,9 +115,14 @@ function check_status
 	alive_port "Personal cloud @syncthing.net" "8384" "boolean"
 	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
+	# Hass.io
+        HASS_STATUS="$([[ -f /etc/hassio.json ]] && echo "on" || echo "off" )"
+        alive_port "Home assistant smarthome suite" "8123"
+        LIST+=( "Hassio" "$DESCRIPTION" "$HASS_STATUS" )
+
 	# OpenHab
 	OPENHAB_STATUS="$([[ -f /usr/bin/openhab-cli ]] && echo "on" || echo "off" )"
-        alive_port "Smarthome suite" "8080"
+        alive_port "Openhab2 smarthome suite" "8080"
         LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
 
 	# VPN
@@ -823,8 +829,29 @@ chmod +x /etc/cron.daily/seed-armbian-torrent
 
 
 
+install_hassio ()
+{
+#
+# Install Home assitant smart home suite hass.io
+#
+
+install_docker
+debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates curl dbus jq network-manager socat software-properties-common
+local arch=$(dpkg --print-architecture)
+[[ "$arch" == "arm64" ]] && arch="aarch64"
+docker pull homeassistant/${arch}-homeassistant
+curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/hassio_install" > ${TEMP_DIR}/hass.io.bash
+bash ${TEMP_DIR}/hass.io.bash -m ${arch}
+}
+
+
+
+
 install_openhab ()
 {
+#
+# Install Openhab2 smart home suite openhab.org
+#
 wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
 echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
@@ -1641,6 +1668,11 @@ if ! is_package_manager_running; then
 		if [[ "$selection" == *Syncthing* && "$SYNCTHING_STATUS" != "on" ]]; then
 			install_syncthing
 			selection=${selection//Syncthing/}
+		fi
+
+		if [[ "$selection" == *Hassio* && "$HASS_STATUS" != "on" ]]; then
+			install_hassio
+			selection=${selection//Hassio/}
 		fi
 
                 if [[ "$selection" == *OpenHAB* && "$OPENHAB_STATUS" != "on" ]]; then
