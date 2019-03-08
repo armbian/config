@@ -842,6 +842,7 @@ local arch=$(dpkg --print-architecture)
 docker pull homeassistant/${arch}-homeassistant
 curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/hassio_install" > ${TEMP_DIR}/hass.io.bash
 bash ${TEMP_DIR}/hass.io.bash -m ${arch}
+dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
 }
 
 
