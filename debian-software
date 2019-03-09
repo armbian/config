@@ -112,7 +112,7 @@ function check_status
 
 	# Synthing
 	SYNCTHING_STATUS="$([[ -f /usr/bin/syncthing ]] && echo "on" || echo "off" )"
-	alive_port "Personal cloud @syncthing.net" "8384" "boolean"
+	alive_port "Personal cloud @syncthing.net" "8384"
 	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
 	# Hass.io
@@ -880,13 +880,23 @@ if !(grep -qs "fs.inotify.max_user_watches=204800" "/etc/sysctl.conf");then
 	echo -e "fs.inotify.max_user_watches=204800" | tee -a /etc/sysctl.conf
 fi
 add_choose_user
-
-# change to server IP
-sed -i "s/127.0.0.1/${serverIP}/" /home/${CHOSEN_USER}/.config/syncthing/config.xml
-# create startup files
 mv /lib/systemd/system/syncthing@.service /lib/systemd/system/syncthing@${CHOSEN_USER}.service
+
+# create startup files
 systemctl enable syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
 systemctl start syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
+systemctl stop syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
+systemctl start syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
+# wait until config file is created
+while :
+do
+    if [[ -f /home/${CHOSEN_USER}/.config/syncthing/config.xml ]]; then break; fi
+    sleep 1
+done
+# change to server IP
+sed -i "s/127.0.0.1/${serverIP}/" /home/${CHOSEN_USER}/.config/syncthing/config.xml
+systemctl restart syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
+dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take several minutes before Syncthing UI becomes available! " 7 70
 }
 
 
