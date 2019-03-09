@@ -46,7 +46,7 @@ Login as root and type:
 		- [NCP](https://nextcloudpi.com) *(Nextcloud personal cloud)*
 		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
 		- [OpenHab2](https://www.openhab.org) *(Smarthome suite)*
-		- [Home Assistant](https://www.home-assistant.io/hassio/) *(Smarthome suite)*
+		- [Home Assistant](https://www.home-assistant.io/hassio/) *(Smarthome suite within Docker)*
 		- [PI hole](https://pi-hole.net) *(ad blocker)*
 		- [UrBackup](https://www.urbackup.org/) *(client/server backup system)*
 		- [Docker](https://www.docker.com) *(Docker CE engine)*
