@@ -871,7 +871,7 @@ install_syncthing ()
 #
 
 curl -s https://syncthing.net/release-key.txt | apt-key add - >/dev/null 2>&1
-echo "deb https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list
+echo "deb https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get -y install syncthing
 
