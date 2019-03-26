@@ -1007,6 +1007,7 @@ function jobs ()
 		dialog --title " Edit u-boot environment " --ok-label "Save" \
 		--no-collapse --editbox /boot/armbianEnv.txt 30 0 2> /boot/armbianEnv.txt.out
 		[[ $? = 0 ]] && mv /boot/armbianEnv.txt.out /boot/armbianEnv.txt
+		sync
 	;;
 
 	# Edit boot script
@@ -1063,6 +1064,7 @@ function jobs ()
 					sed -i "s/^overlays=.*/overlays=$newoverlays/" /boot/armbianEnv.txt
 					if ! grep -q "overlays" /boot/armbianEnv.txt; then echo "overlays=$newoverlays" >> /boot/armbianEnv.txt; fi
 					if [[ -z $newoverlays ]]; then sed -i "/^overlays/d" /boot/armbianEnv.txt; fi
+					sync
 				;;
 				1)
 					if [[ "$CHANGES" == "true" ]]; then
