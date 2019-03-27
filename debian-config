@@ -8,7 +8,6 @@
 
 
 
-
 #
 # check for root priveleges
 #
@@ -93,7 +92,7 @@ do
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
-	--cancel-label "Cancel" --menu "\n$MENUTITLE \n \nSupport: \Z1https://forum.armbian.com\Z0\n " \
+	--cancel-label "Exit" --menu "\n$MENUTITLE \n \nSupport: \Z1https://forum.armbian.com\Z0\n " \
 	$LISTLENGHT ${TITLELENGHT} $BOXLENGHT "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
