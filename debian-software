@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2017 Igor Pecovnik, igor.pecovnik@gma**.com
+# Copyright (c) 2017 Igor Pečovnik, igor.pecovnik@gma**.com
 #
 # This file is licensed under the terms of the GNU General Public
 # License version 2. This program is licensed "as is" without any
@@ -246,7 +246,7 @@ esac
 function server_conf
 {
 #
-# Add some reqired date for installation
+# Add some required date for installation
 #
 if [[ "$(curl -s ipinfo.io/ip)" != "$serverIP" ]]; then
 table="\Z2Application     Protocol      Port\n
@@ -832,7 +832,7 @@ chmod +x /etc/cron.daily/seed-armbian-torrent
 install_hassio ()
 {
 #
-# Install Home assitant smart home suite hass.io
+# Install Home assistant smart home suite hass.io
 #
 
 install_docker
@@ -1109,11 +1109,11 @@ chmod 700 vpnclient
 install_DashNTP ()
 {
 #
-# Install DASH and ntp service
+# Install DASH and NTP service
 #
 echo "dash dash/sh boolean false" | debconf-set-selections
 dpkg-reconfigure -f noninteractive dash > /dev/null 2>&1
-install_packet "ntp ntpdate" "Install DASH and ntp service"
+install_packet "ntp ntpdate" "Install DASH and NTP service"
 }
 
 
@@ -1197,7 +1197,7 @@ service postfix restart >> /dev/null
 install_Virus ()
 {
 #
-# Install Amavisd-new, SpamAssassin, And Clamav
+# Install Amavisd-new, SpamAssassin, And ClamAV
 #
 packets="amavisd-new spamassassin clamav clamav-daemon unzip bzip2 arj p7zip unrar-free ripole rpm nomarch lzop \
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
@@ -1619,7 +1619,7 @@ while true; do
 
 	# prepare menu items
 	check_status
-	LISTLENGHT="$((${#LIST[@]}/2))"
+	LISTLENGTH="$((${#LIST[@]}/2))"
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "Installing to $family $distribution" --colors --clear --cancel-label \
 	"Cancel" --ok-label "Install" --checklist "\nChoose what you want to install:\n " $LIST_CONST 71 18 "${LIST[@]}" 2>&1 1>&3)
@@ -1632,10 +1632,10 @@ while true; do
 		;;
 	esac
 
-	# cycle trought all install options
+	# cycle through all install options
 	i=0
 if ! is_package_manager_running; then
-	while [ "$i" -lt "$LISTLENGHT" ]; do
+	while [ "$i" -lt "$LISTLENGTH" ]; do
 
 		if [[ "$selection" == *Samba* && "$SAMBA_STATUS" != "on" ]]; then
 			install_samba

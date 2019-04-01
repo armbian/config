@@ -48,7 +48,7 @@ function initialize_lte ()
 # Copyright (c) 2016 Stanislav Sinyagin <ssinyagin@k-open.com>.
 
 # This content is published under Creative Commons Attribution 4.0
-# International (CC BY 4.0) lincense.
+# International (CC BY 4.0) license.
 # Source repository: https://github.com/ssinyagin/wwan_udev_rules
 
 if ! check_if_installed ppp then; then
@@ -333,7 +333,7 @@ function check_channels ()
 
 
 #
-# edit ip address witing network manager
+# edit ip address within network manager
 #
 function nm_ip_editor ()
 {
@@ -527,14 +527,14 @@ function get_wlan_interface ()
 	do
 			LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
-	LIST_LENGHT=$((${#LIST[@]}/2));
+	LIST_LENGTH=$((${#LIST[@]}/2));
 
-	if [ "$LIST_LENGHT" -eq 1 ]; then
+	if [ "$LIST_LENGTH" -eq 1 ]; then
 			WIRELESS_ADAPTER=${WLAN_INTERFACES[0]}
 	else
 			exec 3>&1
 			WIRELESS_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select interface" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			--title "Select interface" --clear --menu "" $((6+${LIST_LENGTH})) 40 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 
@@ -558,15 +558,15 @@ function select_default_interface ()
 			local IPADDR=$(ip -4 addr show dev ${i[0]} | awk '/inet/ {print $2}' | cut -d'/' -f1)
 			[[ $IPADDR != "172.24.1.1" ]] && LIST+=( "${i[0]//[[:blank:]]/}" "${IPADDR}" )
 	done
-	LIST_LENGHT=$((${#LIST[@]}/2));
-	if [ "$LIST_LENGHT" -eq 0 ]; then
+	LIST_LENGTH=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGTH" -eq 0 ]; then
 			DEFAULT_ADAPTER="lo"
-	elif [ "$LIST_LENGHT" -eq 1 ]; then
+	elif [ "$LIST_LENGTH" -eq 1 ]; then
 			DEFAULT_ADAPTER=${ADAPTER[0]}
 	else
 			exec 3>&1
 			DEFAULT_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select default interface" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			--title "Select default interface" --clear --menu "" $((6+${LIST_LENGTH})) 40 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 
@@ -595,14 +595,14 @@ function connect_bt_interface ()
 			LIST+=( "$a" "$b")
 		done
 
-		LIST_LENGHT=$((${#LIST[@]}/2));
-		if [ "$LIST_LENGHT" -eq 0 ]; then
+		LIST_LENGTH=$((${#LIST[@]}/2));
+		if [ "$LIST_LENGTH" -eq 0 ]; then
 			BT_ADAPTER=${WLAN_INTERFACES[0]}
 			dialog --backtitle "$BACKTITLE" --title "Bluetooth" --msgbox "\nNo nearby Bluetooth devices were found!" 7 43
 		else
 			exec 3>&1
 			BT_ADAPTER=$(dialog --backtitle "$BACKTITLE" --no-collapse --title "Select interface" \
-			--clear --menu "" $((6+${LIST_LENGHT})) 50 15 "${LIST[@]}" 2>&1 1>&3)
+			--clear --menu "" $((6+${LIST_LENGTH})) 50 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 			if [[ $BT_ADAPTER != "" ]]; then
 				dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nConnecting to $BT_ADAPTER " 5 35
