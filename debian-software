@@ -1622,7 +1622,7 @@ while true; do
 	LISTLENGHT="$((${#LIST[@]}/2))"
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "Installing to $family $distribution" --colors --clear --cancel-label \
-	"Exit" --checklist "\nChoose what you want to install:\n " $LIST_CONST 71 18 "${LIST[@]}" 2>&1 1>&3)
+	"Cancel" --ok-label "Install" --checklist "\nChoose what you want to install:\n " $LIST_CONST 71 18 "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 	case $exit_status in
@@ -1738,9 +1738,9 @@ if ! is_package_manager_running; then
 		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
 			install_transmission
 			selection=${selection//Transmission/}
-			dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "Cancel" --yesno "\
-			\nDo you want to help community and seed armbian torrent files? It will ensure faster download for everyone.\
-			\n\nWe need around 80Gb of your space." 11 44
+			dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "No" --yesno "\
+			\nDo you want to help the community and seed armbian torrent files? It will ensure faster downloads for everyone.\
+			\n\nApproximately 80GB disk space is required." 11 44
 				if [[ $? = 0 ]]; then
 					install_transmission_seed_armbian_torrents
 				fi

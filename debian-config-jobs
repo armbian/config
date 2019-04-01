@@ -377,7 +377,7 @@ function jobs ()
 
 			else
 				dialog --title " Hostapd service is running " --colors --backtitle "$BACKTITLE" --help-button \
-				--help-label "Cancel" --yes-label  "Stop" --no-label "Edit" --yesno \
+				--help-label "Cancel" --yes-label "Stop" --no-label "Edit" --yesno \
 				"\n\Z1Stop:\Z0 stop providing Access Point\n\n\Z1Edit:\Z0 change basic parameters: SSID, password and channel" 9 70
 			fi
 			exitstatus=$?;
@@ -838,11 +838,11 @@ function jobs ()
 			exec 3>&-
 			mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//');mon_x=$(( $mon_x / 2 ))
 			mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//');
-			dialog --title " Update " --backtitle "$BACKTITLE" --no-label "Cancel" --yesno "\nDo you want to update board firmware?" 7 41
+			dialog --title " Update " --backtitle "$BACKTITLE" --no-label "No" --yesno "\nDo you want to update board firmware?" 7 41
 			if [[ $? = 0 ]]; then
 				debconf-apt-progress -- apt-get update
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
-				dialog --title " Firmware update " --colors --no-label "Cancel" --backtitle "$BACKTITLE" --yesno \
+				dialog --title " Firmware update " --colors --no-label "No" --backtitle "$BACKTITLE" --yesno \
 				"\nFirmware has been updated. Reboot?   " 7 39
 				if [[ $? = 0 ]]; then reboot; fi
 			fi
@@ -1049,7 +1049,7 @@ function jobs ()
 
 			exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --colors --title "Toggle hardware configuration" --clear --cancel-label \
-				"Exit" --ok-label "Save" --checklist "\nUse \Z1<space>\Z0 to toggle functions and save them. Exit when you are done.\n " \
+				"Back" --ok-label "Save" --checklist "\nUse \Z1<space>\Z0 to toggle functions and save them. Exit when you are done.\n " \
 				$LISTLENGHT 80 $LISTLENGHT "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 			exec 3>&-
@@ -1144,7 +1144,7 @@ function jobs ()
 				LISTLENGHT="$(($LIST_CONST+${#MOTD[@]}/3))"
 				exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --title "Toggle motd executing scripts" --clear --cancel-label \
-				"Exit" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
+				"Back" --ok-label "Save" --checklist "\nChoose what you want to enable or disable:\n " \
 				$LISTLENGHT 80 15 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 				exec 3>&-
