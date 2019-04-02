@@ -1,6 +1,7 @@
 # Armbian configuration utility
 
-Utility for configuring your board, adjusting services and installing applications. It comes with Armbian by default.
+Utility for configuring your board, adjusting services and installing applications.
+It comes with Armbian by default.
 
 Login as root and type:
 
@@ -11,21 +12,21 @@ Login as root and type:
 - **system**
 	- install to SATA, eMMC, NAND or USB
 	- freeze and unfreeze kernel and BSP upgrades
-	- switching between avaliable kernels and nightly builds
+	- switching between available kernels and nightly builds
 	- edit boot environment
 	- reconfigure board settings with DT overlays or FEX (Allwinner legacy)
-	- select dedicated DTB (Solidrun imx6 and Odroid XU4/HC1/HC2 boards)
+	- select dedicated DTB (Solidrun i.MX6 and Odroid XU4/HC1/HC2 boards)
 	- adjust SSH daemon features
 	- 3G/4G LTE modem management
 	- run apt update and upgrade
-	- toogle BASH/ZSH with [Oh My ZSH](https://ohmyz.sh/) and [tmux](https://en.wikipedia.org/wiki/Tmux)
+	- toggle BASH/ZSH with [Oh My ZSH](https://ohmyz.sh/) and [tmux](https://en.wikipedia.org/wiki/Tmux)
 	- toggle desktop and login manager (desktop builds)
 	- adjusting the display resolution (some boards)
 	- enabling read only root filesystem (Ubuntu)
 - **network**
 	- select dynamic or static IP address
 	- hotspot management. Automatic detection of: nl80211, realtek, 802.11n, 802.11a and 802.11ac
-	- iperf3. Toogle bandwidth measuring server
+	- iperf3. Toggle bandwidth measuring server
 	- connect to wireless
 	- install IR support
 	- install support, pair and connect Bluetooth devices
@@ -54,7 +55,7 @@ Login as root and type:
 		- [MiniDLNA](http://minidlna.sourceforge.net/) *(media sharing)*
 	- monitoring tools
 	- create diagnostics report
-	- toggle kernel headers, RDP service, Thunderbird and Libreoffice (desktop builds)
+	- toggle kernel headers, RDP service, Thunderbird and LibreOffice (desktop builds)
 - **help**
 	- Links to documentation, support and sources
 
@@ -81,7 +82,7 @@ Login as root and type:
 |Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |NCP (Nextcloud personal cloud)|:heavy_check_mark:|n/a|29.09.2018|
-|Openmediavault NAS (NAS server)|:heavy_check_mark:|n/a|29.09.2018|
+|OpenMediaVault NAS (NAS server)|:heavy_check_mark:|n/a|29.09.2018|
 |OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |Home Assistant (Smarthome suite within Docker)|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
 |PI hole (ad blocker)|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|

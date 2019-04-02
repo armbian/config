@@ -9,7 +9,7 @@
 
 
 #
-# check for root priveleges
+# check for root privileges
 #
 if [[ $EUID != 0 ]]; then
 	echo "This tool requires root privileges. Try again with \"sudo \" please ..." >&2
@@ -25,7 +25,7 @@ fi
 #
 wget -q --spider http://github.com
 if [[ $? -ne 0 ]]; then
-		read -n 1 -s -p "Warning. Configurator can't work properly without internet connection. \
+		read -n 1 -s -p "Warning: Configuration cannot work properly without a working internet connection. \
 		Press CTRL C to stop to stop or any key to ignore and continue."
 fi
 
@@ -78,22 +78,22 @@ do
 	LIST+=( "Help" "Documentation, support, sources" )
 
 	# count number of menu items to adjust window size
-	LISTLENGHT="$((11+${#LIST[@]}/2))"
-	BOXLENGHT=${#LIST[@]}
+	LISTLENGTH="$((11+${#LIST[@]}/2))"
+	BOXLENGTH=${#LIST[@]}
 	MENUTITLE="Configure $DISTRO $DISTROID "
 	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE" based \Z1Armbian\Z0 for the \Z1${BOARD_NAME}\Z0 "
 
 	# main dialog routine
 	DIALOG_CANCEL=1
 	DIALOG_ESC=255
-	TITLELENGHT=${#MENUTITLE}
+	TITLELENGTH=${#MENUTITLE}
 
-	[[ "$TITLELENGHT" -lt 60 ]] && TITLELENGHT="60"
+	[[ "$TITLELENGTH" -lt 60 ]] && TITLELENGTH="60"
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
 	--cancel-label "Exit" --menu "\n$MENUTITLE \n \nSupport: \Z1https://forum.armbian.com\Z0\n " \
-	$LISTLENGHT ${TITLELENGHT} $BOXLENGHT "${LIST[@]}" 2>&1 1>&3)
+	$LISTLENGTH ${TITLELENGTH} $BOXLENGTH "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
 
@@ -130,4 +130,4 @@ do
 			show_box "Info" "$t" "18"
 		;;
 	esac
-done	
+done

@@ -31,7 +31,7 @@ while true; do
 	# check update status of BSP packages
 	local mark=$(apt-mark showhold | egrep "linux|armbian")
 
-	# check if install targets are avaliable
+	# check if install targets are available
 	if [[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent 2> /dev/null) == mmcblk* \
 	&& -f /usr/sbin/nand-sata-install ]]; then
 		LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
@@ -111,9 +111,9 @@ while true; do
 		fi
 	fi
 
-	# count number of menu items to adjust window sizee
-	LISTLENGHT="$((6+${#LIST[@]}/2))"
-	BOXLENGHT=${#LIST[@]}
+	# count number of menu items to adjust window size
+	LISTLENGTH="$((6+${#LIST[@]}/2))"
+	BOXLENGTH=${#LIST[@]}
 	temp_rc=$(mktemp)
 	if [[ -n ${mark} || -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]]; then
 			cat <<-'EOF' > $temp_rc
@@ -135,7 +135,7 @@ while true; do
 
 	exec 3>&1
 	selection=$(DIALOGRC=$temp_rc dialog --colors --backtitle "$BACKTITLE" --title " $sys_title " --clear \
-	--cancel-label "Back" --menu "$disclaimer" $LISTLENGHT 68 $BOXLENGHT \
+	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 68 $BOXLENGTH \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
@@ -182,11 +182,11 @@ while true; do
 
 	fi
 
-	# toogle IPV6
+	# toggle IPv6
 	if [[ $(cat /proc/sys/net/ipv6/conf/all/disable_ipv6) == 1 ]]; then
-			LIST+=( "IPV6" "Enable IPV6 for APT and system" )
+			LIST+=( "IPV6" "Enable IPv6 for APT and system" )
 		else
-			LIST+=( "IPV6" "Disable IPV6 for APT and system" )
+			LIST+=( "IPV6" "Disable IPv6 for APT and system" )
 	fi
 
 	# network throughput test
@@ -229,9 +229,9 @@ while true; do
 	[[ $(ls -1 /etc/NetworkManager/system-connections 2> /dev/null) ]] && \
 	LIST+=( "Forget" "Disconnect and forget all wireless connections" )
 
-	# count number of menu items to adjust window sizee
-	LISTLENGHT="$((12+${#LIST[@]}/2))"
-	BOXLENGHT=${#LIST[@]}
+	# count number of menu items to adjust window size
+	LISTLENGTH="$((12+${#LIST[@]}/2))"
+	BOXLENGTH=${#LIST[@]}
 	WIFICONNECTED=$(LC_ALL=C nmcli -f NAME,TYPE connection show --active 2> /dev/null | grep wireless | awk 'NF{NF-=1};1')
 
 	local disclaimer=""
@@ -252,7 +252,7 @@ while true; do
 	disclaimer="$ifup"
 
 	if [[ -n $WIFICONNECTED ]]; then
-		LISTLENGHT=$((LISTLENGHT+2))
+		LISTLENGTH=$((LISTLENGTH+2))
 		local connected="\n\Z0Connected to SSID: \Z1${WIFICONNECTED}\n\Z0 "
 		disclaimer=$disclaimer"$connected"
 	fi
@@ -260,11 +260,11 @@ while true; do
 	if [[ -n $VPNSERVERIP ]]; then
 		local vpnserverip="\n\Z0Connected to VPN server: \Z1${VPNSERVERIP}\n\Z0 "
 		disclaimer=$disclaimer"$vpnserverip"
-		LISTLENGHT=$((LISTLENGHT+2))
+		LISTLENGTH=$((LISTLENGTH+2))
 	fi
 
 	if [[ -n $HOSTAPDINFO && -n $HOSTAPDSTATUS ]]; then
-		LISTLENGHT=$((LISTLENGHT+2))
+		LISTLENGTH=$((LISTLENGTH+2))
 		chpid=$(dmesg | grep $(grep ^interface /etc/hostapd.conf | sed 's/interface=//g') | head -1 | sed 's/\[.*\]//g' | awk '{print $1}')
 		disclaimer=$disclaimer$"\n\Z0Hotspot SSID: \Z1$HOSTAPDINFO\Zn Band:";
 		if [[ `grep ^hw_mode=a /etc/hostapd.conf` ]]; then local band="5Ghz"; else band="2.4Ghz"; fi
@@ -273,14 +273,14 @@ while true; do
 		disclaimer=$disclaimer$" \Z1${band} ${type}\Z0"
 		[[ ! "$chpid" =~ .*IPv6.* ]] && disclaimer=$disclaimer$"\n\nChip: \Z1${chpid}\Z0";
 		if [ "$HOSTAPDCLIENTS" -gt "0" ]; then disclaimer=$disclaimer$" Connected clients: \Z1$HOSTAPDCLIENTS\Zn"; fi
-		if [[ ! "$chpid" =~ .*IPv6.* ]]; then LISTLENGHT=$((LISTLENGHT+2)); fi
+		if [[ ! "$chpid" =~ .*IPv6.* ]]; then LISTLENGTH=$((LISTLENGTH+2)); fi
 		disclaimer=$disclaimer$"\n";
 	fi
-	disclaimer=$disclaimer"\n\Z1Note\Zn: This tool can be successful only when drivers are in good shape. If autodetection fails, you are on your own.\n "
+	disclaimer=$disclaimer"\n\Z1Note\Zn: This tool can be successful only when drivers are configured properly. If auto-detection fails, you are on your own.\n "
 
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --colors --title " Wired, Wireless, Bluetooth, Hotspot " --clear \
-	--cancel-label "Back" --menu "${disclaimer}" $LISTLENGHT 70 $BOXLENGHT \
+	--cancel-label "Back" --menu "${disclaimer}" $LISTLENGTH 70 $BOXLENGTH \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
@@ -311,12 +311,12 @@ while true; do
 	LIST+=( "Welcome" "Toggle welcome screen items" )
 
 	# count number of menu items to adjust window sizee
-	LISTLENGHT="$((6+${#LIST[@]}/2))"
-	BOXLENGHT=${#LIST[@]}
+	LISTLENGTH="$((6+${#LIST[@]}/2))"
+	BOXLENGTH=${#LIST[@]}
 
 	exec 3>&1
 	selection=$(dialog --colors --backtitle "$BACKTITLE" --title "Personal settings" --clear \
-	--cancel-label "Back" --menu "$disclaimer" $LISTLENGHT 70 $BOXLENGHT \
+	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 70 $BOXLENGTH \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-
@@ -389,12 +389,12 @@ while true; do
 	fi
 
 	# count number of menu items to adjust window sizee
-	LISTLENGHT="$((6+${#LIST[@]}/2))"
-	BOXLENGHT=${#LIST[@]}
+	LISTLENGTH="$((6+${#LIST[@]}/2))"
+	BOXLENGTH=${#LIST[@]}
 
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "System and 3rd party software" --clear \
-	--cancel-label "Back" --menu "$disclaimer" $LISTLENGHT 70 $BOXLENGHT \
+	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 70 $BOXLENGTH \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-

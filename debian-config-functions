@@ -158,7 +158,7 @@ function exceptions ()
 
 
 #
-# check dpkg status of $1 -- currently only 'not installed at all' case catched
+# check dpkg status of $1 -- currently only 'not installed at all' case caught
 #
 check_if_installed (){
 
@@ -206,7 +206,7 @@ stdbuf -i0 -o0 -e0 sed -rn 's/^.*\<([0-9]+)%\[.*$/\1/p' | dialog --backtitle "$B
 
 
 #
-# display qr code for google authemtication method
+# display qr code for authentication method
 #
 function display_qr_code()
 {
@@ -214,9 +214,9 @@ function display_qr_code()
 		SECRET=$(head -1 /root/.google_authenticator)
 		qrencode -d 9 -8 -t UTF8 "otpauth://totp/test?secret=$SECRET"
 		echo -e "\nSetting up your OTP-generator\
-		\nInstall Google Authenticator generator application on your mobile phone from Android market (e.g. FreeOTP) or from F-Droid.\
-		\nIn the applications menu click the corresponding button to create a new account and either scan the QR code, or enter the secret key manually:\
-		\n\n$SECRET \n\nNow you should see a new passcode token being generated every 60 seconds on your phone.\n"  | fold -sw 38
+		\nInstall a one-time password authenticator on your mobile device (e.g. FreeOTP) from the Android market or F-Droid.\
+		\nIn the application menu, click the corresponding button to create a new account and either scan the QR code or enter the secret key manually:\
+		\n\n$SECRET \n\nYou should now see a new passcode token being generated every 60 seconds on your phone.\n"  | fold -sw 38
 		read -n 1 -s -r -p "Press any key to continue"
 }
 
@@ -394,16 +394,16 @@ function other_kernel_version ()
 
 	# copy back to main array
 	LIST=("${new_list[@]}")
-	LIST_LENGHT=$((${#LIST[@]}/2));
+	LIST_LENGTH=$((${#LIST[@]}/2));
 
-	if [ "$LIST_LENGHT" -eq 0 ]; then
+	if [ "$LIST_LENGTH" -eq 0 ]; then
 		dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox  "\nNo other kernels available!" 7 32
         else
 		beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot."
 		if [[ -n $ACKNOWLEDGEMENT ]]; then
 			exec 3>&1
             TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Switch from" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" $((9+${LIST_LENGHT})) 62 25 "${LIST[@]}" 2>&1 1>&3)
+			--title "Switch from" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" $((9+${LIST_LENGTH})) 62 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 			if [[ $exitstatus = 0 ]]; then
@@ -453,13 +453,13 @@ function aval_dtbs ()
 	LIST=("xu4" "Odroid XU4" "xu3" "Odroid XU3" "xu3l" "Odroid XU3 Lite" "hc1" "Odroid HC1/HC2")
 	fi
 
-	LIST_LENGHT=$((${#LIST[@]}/2));
-	if [ "$LIST_LENGHT" -eq 1 ]; then
+	LIST_LENGTH=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGTH" -eq 1 ]; then
 			TARGET_BOARD=${AVAL_KERNEL[0]}
 	else
 			exec 3>&1
 			TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select optimised board configuration" --clear --menu "" $((6+${LIST_LENGHT})) ${width} 25 "${LIST[@]}" 2>&1 1>&3)
+			--title "Select optimised board configuration" --clear --menu "" $((6+${LIST_LENGTH})) ${width} 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 	fi
@@ -483,15 +483,15 @@ function get_a20modes ()
 	do
 			LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
-	LIST_LENGHT=$((${#LIST[@]}/2));
-	#echo $LIST_LENGHT
+	LIST_LENGTH=$((${#LIST[@]}/2));
+	#echo $LIST_LENGTH
 	#exit
-	if [ "$LIST_LENGHT" -eq 1 ]; then
+	if [ "$LIST_LENGTH" -eq 1 ]; then
 			SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
 	else
 			exec 3>&1
 			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGHT})) 25 $((1+${LIST_LENGHT})) "${LIST[@]}" 2>&1 1>&3)
+			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 
@@ -514,15 +514,15 @@ function get_odroidmodes ()
         do
                         LIST+=( "${i[0]//[[:blank:]]/}" "" )
         done
-        LIST_LENGHT=$((${#LIST[@]}/2));
-        #echo $LIST_LENGHT
+        LIST_LENGTH=$((${#LIST[@]}/2));
+        #echo $LIST_LENGTH
         #exit
-        if [ "$LIST_LENGHT" -eq 1 ]; then
+        if [ "$LIST_LENGTH" -eq 1 ]; then
                         SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
         else
                         exec 3>&1
                         SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-                        --title "Select video mode" --clear --menu "" $((6+${LIST_LENGHT})) 25 $((1+${LIST_LENGHT})) "${LIST[@]}" 2>&1 1>&3)
+                        --title "Select video mode" --clear --menu "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
                         exec 3>&-
         fi
 
@@ -545,15 +545,15 @@ function get_h3modes ()
 	do
 			LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
-	LIST_LENGHT=$((${#LIST[@]}/2));
-	#echo $LIST_LENGHT
+	LIST_LENGTH=$((${#LIST[@]}/2));
+	#echo $LIST_LENGTH
 	#exit
-	if [ "$LIST_LENGHT" -eq 1 ]; then
+	if [ "$LIST_LENGTH" -eq 1 ]; then
 			SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
 	else
 			exec 3>&1
 			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGHT})) 25 $((1+${LIST_LENGHT})) "${LIST[@]}" 2>&1 1>&3)
+			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 
@@ -577,9 +577,9 @@ function add_choose_user ()
 	do
 			LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
-	LIST_LENGHT=$((${#LIST[@]}/2));
+	LIST_LENGTH=$((${#LIST[@]}/2));
 
-	if [ "$LIST_LENGHT" -eq 0 ]; then
+	if [ "$LIST_LENGTH" -eq 0 ]; then
 		dialog --backtitle "$BACKTITLE" --title " Notice " --msgbox "\nWe didn't find any unprivileged user with sudo rights which is required to run this service.\
 		\n\nPress enter to create one!" 10 48
 		read -t 0 temp
@@ -589,12 +589,12 @@ function add_choose_user ()
 		[ -z "$CHOSEN_USER" ] && return
 		echo "Trying to add user $CHOSEN_USER"
 		adduser $CHOSEN_USER || return
-	elif [ "$LIST_LENGHT" -eq 1 ]; then
+	elif [ "$LIST_LENGTH" -eq 1 ]; then
 			CHOSEN_USER=${USERS[0]}
 	else
 			exec 3>&1
 			CHOSEN_USER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select unprivileged user" --clear --menu "" $((6+${LIST_LENGHT})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+			--title "Select unprivileged user" --clear --menu "" $((6+${LIST_LENGTH})) 40 15 "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 
