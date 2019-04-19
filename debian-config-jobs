@@ -355,10 +355,14 @@ function jobs ()
 	"Clear" )
 			# remove managed interfaces
 			systemctl daemon-reload
+			nmcli con delete $(nmcli --fields NAME,UUID,TYPE con | grep wifi | awk '{print $2}')
 			sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 			sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 			rm -f /etc/network/interfaces.d/armbian.ap.nat
 			rm -f /etc/network/interfaces.d/armbian.ap.bridge
+			rm -f /etc/dnsmasq.conf
+			rm -f /etc/iptables.ipv4.nat
+			rm -f /var/run/hostapd/* >/dev/null 2>&1
 			reload-nety
 	;;
 
@@ -391,6 +395,8 @@ function jobs ()
 				ifdown $WIRELESS_ADAPTER 2> /dev/null
 				rm -f /etc/network/interfaces.d/armbian.ap.nat
 				rm -f /etc/network/interfaces.d/armbian.ap.bridge
+				rm -f /etc/dnsmasq.conf
+				rm -f /etc/iptables.ipv4.nat
 				rm -f /var/run/hostapd/* >/dev/null 2>&1
 				sed -i '/^iptables/ d' /etc/rc.local
 				sed -i '/^service dnsmasq/ d' /etc/rc.local
@@ -500,7 +506,7 @@ function jobs ()
 				[[ ! -f /etc/network/interfaces ]] && echo "source /etc/network/interfaces.d/*" > /etc/network/interfaces
 
 				# select default interfaces if there is more than one
-				select_default_interface
+				#select_default_interface
 
 				NETWORK_CONF="/etc/network/interfaces"
 
@@ -707,7 +713,7 @@ function jobs ()
 	# Remove automatic wifi conections
 	#
 	"Forget" )
-		LC_ALL=C nmcli --fields UUID,TIMESTAMP-REAL,TYPE con show | grep wireless |  awk '{print $1}' | while read line; \
+		LC_ALL=C nmcli --fields UUID,TIMESTAMP-REAL,TYPE con show | grep wifi |  awk '{print $1}' | while read line; \
 		do nmcli con delete uuid  $line; done > /dev/null
 	;;
 
