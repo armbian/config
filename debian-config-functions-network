@@ -544,7 +544,7 @@ function get_wlan_interface ()
 
 
 #
-# select interface if there is more than one
+# select interface if there is more than one and adjust metric
 #
 function select_default_interface ()
 {
@@ -577,6 +577,31 @@ function select_default_interface ()
 				exec 3>&-
 		fi
 	fi
+
+	# set highest metric to default adaptor
+
+	HIGHEST_METRIC=$(nmcli -t -f UUID,TYPE,DEVICE connection show --active | grep $DEFAULT_ADAPTER | sed 's/:.*$//')
+	METRIC=100
+
+	# set metric to 100
+	nmcli connection modify $HIGHEST_METRIC ipv4.route-metric $METRIC
+
+	# set others wired
+	REMAINING=( `nmcli -t -f UUID,TYPE,DEVICE connection show --active | grep ethernet | grep -v $DEFAULT_ADAPTER | sed 's/:.*$//'` )
+	for i in "${REMAINING[@]}"
+	do
+		METRIC=$(( $METRIC + 1 ))
+		nmcli connection modify ${i} ipv4.route-metric $METRIC
+	done
+
+	# set other wireless
+	METRIC=1000
+	REMAINING=( `nmcli -t -f UUID,TYPE,DEVICE connection show --active | grep wireless | grep -v $DEFAULT_ADAPTER | sed 's/:.*$//'` )
+	for i in "${REMAINING[@]}"
+	do
+		METRIC=$(( $METRIC + 1 ))
+		nmcli connection modify ${i} ipv4.route-metric $METRIC
+	done
 }
 
 
