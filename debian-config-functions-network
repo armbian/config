@@ -555,7 +555,7 @@ function select_default_interface ()
 	else
 		IFS=$'\r\n'
 		GLOBIGNORE='*'
-		local ADAPTER=($(ls /sys/class/net | grep -E -v 'lo|tun|bonding_masters|dummy0|bond0|sit0|br0'))
+		local ADAPTER=($(nmcli -t -f DEVICE connection show --active))
 		local LIST=()
 		for i in "${ADAPTER[@]}"
 		do
@@ -573,35 +573,53 @@ function select_default_interface ()
 		else
 				exec 3>&1
 				DEFAULT_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-				--title "Select default interface" --clear --menu "" $((6+${LIST_LENGTH})) 0 15 "${LIST[@]}" 2>&1 1>&3)
+				--title "Select default interface" --clear --menu "" $((6+${LIST_LENGTH})) 74 14 "${LIST[@]}" 2>&1 1>&3)
 				exec 3>&-
 		fi
 	fi
 
 	# set highest metric to default adaptor
-
 	HIGHEST_METRIC=$(nmcli -t -f UUID,TYPE,DEVICE connection show --active | grep $DEFAULT_ADAPTER | sed 's/:.*$//')
-	METRIC=100
 
-	# set metric to 100
-	nmcli connection modify $HIGHEST_METRIC ipv4.route-metric $METRIC
+	# set metric to 50
+	nmcli connection modify $HIGHEST_METRIC ipv4.route-metric 50 2> /dev/null
 
+	METRIC=77
 	# set others wired
 	REMAINING=( `nmcli -t -f UUID,TYPE,DEVICE connection show --active | grep ethernet | grep -v $DEFAULT_ADAPTER | sed 's/:.*$//'` )
-	for i in "${REMAINING[@]}"
-	do
-		METRIC=$(( $METRIC + 1 ))
-		nmcli connection modify ${i} ipv4.route-metric $METRIC
-	done
+	if [[ ${#REMAINING[@]} -ge 1 ]]; then
+		for i in "${REMAINING[@]}"
+		do
+			METRIC=$(( $METRIC + 1 ))
+			nmcli connection modify ${i} ipv4.route-metric $METRIC
+		done
+	fi
 
 	# set other wireless
-	METRIC=1000
+	METRIC=88
 	REMAINING=( `nmcli -t -f UUID,TYPE,DEVICE connection show --active | grep wireless | grep -v $DEFAULT_ADAPTER | sed 's/:.*$//'` )
-	for i in "${REMAINING[@]}"
-	do
-		METRIC=$(( $METRIC + 1 ))
-		nmcli connection modify ${i} ipv4.route-metric $METRIC
-	done
+	if [[ ${#REMAINING[@]} -ge 1 ]]; then
+		for i in "${REMAINING[@]}"
+		do
+			METRIC=$(( $METRIC + 1 ))
+			nmcli connection modify ${i} ipv4.route-metric $METRIC
+		done
+	fi
+
+	# create default metrics file
+	cat <<-EOF > /etc/NetworkManager/conf.d/armbian-default-metric.conf
+	[connection-ethernet-gateway]
+	match-device=interface-name:$DEFAULT_ADAPTER
+	ipv4.route-metric=50
+
+	[connection-wifi-other]
+	match-device=type:wifi
+	ipv4.route-metric=88
+
+	[connection-ethernet-other]
+	match-device=type:ethernet
+	ipv4.route-metric=77
+EOF
 }
 
 

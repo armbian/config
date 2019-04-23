@@ -361,6 +361,7 @@ function jobs ()
 			rm -f /etc/network/interfaces.d/armbian.ap.nat
 			rm -f /etc/network/interfaces.d/armbian.ap.bridge
 			rm -f /etc/dnsmasq.conf
+			iptables -t nat -D POSTROUTING 1
 			rm -f /etc/iptables.ipv4.nat
 			rm -f /var/run/hostapd/* >/dev/null 2>&1
 			reload-nety
@@ -396,6 +397,7 @@ function jobs ()
 				rm -f /etc/network/interfaces.d/armbian.ap.nat
 				rm -f /etc/network/interfaces.d/armbian.ap.bridge
 				rm -f /etc/dnsmasq.conf
+				iptables -t nat -D POSTROUTING 1
 				rm -f /etc/iptables.ipv4.nat
 				rm -f /var/run/hostapd/* >/dev/null 2>&1
 				sed -i '/^iptables/ d' /etc/rc.local
@@ -536,6 +538,7 @@ function jobs ()
 
 						echo -e "# armbian NAT hostapd\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " > $TEMP_CONF
 						echo -e "\taddress 172.24.1.1\n\tnetmask 255.255.255.0\n\tnetwork 172.24.1.0\n\tbroadcast 172.24.1.255" >> $TEMP_CONF
+						echo -e "\tpost-up service dnsmasq start\tpost-up \n\tiptables-restore < /etc/iptables.ipv4.nat\n\tpost-down service dnsmasq stop" >> $TEMP_CONF
 						# create new configuration
 						echo "interface=$WIRELESS_ADAPTER				# Use interface $WIRELESS_ADAPTER" > /etc/dnsmasq.conf
 						echo "listen-address=172.24.1.1					# Explicitly specify the address to listen on" >> /etc/dnsmasq.conf
@@ -557,11 +560,11 @@ function jobs ()
 						# - Save IP tables, applied during ifup in /etc/network/interfaces.
 						iptables-save > /etc/iptables.ipv4.nat
 						sed -i 's/^bridge=.*/#&/' /etc/hostapd.conf
-						sed -e 's/exit 0//g' -i /etc/rc.local
+						#sed -e 's/exit 0//g' -i /etc/rc.local
 						# workaround if hostapd is too slow
-						echo "service dnsmasq start" >> /etc/rc.local
-						echo "iptables-restore < /etc/iptables.ipv4.nat" >> /etc/rc.local
-						echo "exit 0" >> /etc/rc.local
+						#echo "service dnsmasq start" >> /etc/rc.local
+						#echo "iptables-restore < /etc/iptables.ipv4.nat" >> /etc/rc.local
+						#echo "exit 0" >> /etc/rc.local
 					;;
 				3)exit;;
 
