@@ -630,7 +630,7 @@ function configure_desktop ()
 		fi
 
 		# install desktop package
-		debconf-apt-progress -- apt-get -y install $1 armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
+		debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y install $1 armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
 
 		# in case previous install was interrupted
 		[[ $? -eq 130 ]] && dpkg --configure -a
