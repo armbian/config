@@ -358,10 +358,13 @@ function jobs ()
 			nmcli con delete $(nmcli --fields NAME,UUID,TYPE con | grep wifi | awk '{print $2}')
 			sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 			sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
-			rm -f /etc/network/interfaces.d/armbian.ap.nat
-			rm -f /etc/network/interfaces.d/armbian.ap.bridge
+			rm -f /etc/network/interfaces.d/armbian.ap.*
 			rm -f /etc/dnsmasq.conf
+			systemctl stop dnsmasq
+			systemctl disable dnsmasq
 			iptables -t nat -D POSTROUTING 1 >/dev/null 2>&1
+			systemctl stop armbian-restore-iptables.service
+			systemctl disable armbian-restore-iptables.service
 			rm -f /etc/iptables.ipv4.nat
 			rm -f /var/run/hostapd/* >/dev/null 2>&1
 			reload-nety
@@ -394,12 +397,12 @@ function jobs ()
 				systemctl disable dnsmasq.service >/dev/null 2>&1
 
 				ifdown $WIRELESS_ADAPTER 2> /dev/null
-				rm -f /etc/network/interfaces.d/armbian.ap.nat
-				rm -f /etc/network/interfaces.d/armbian.ap.bridge
+				rm -f /etc/network/interfaces.d/armbian.ap.*
 				rm -f /etc/dnsmasq.conf
 				iptables -t nat -D POSTROUTING 1 >/dev/null 2>&1
 				rm -f /etc/iptables.ipv4.nat
-				rm -f /var/run/hostapd/* >/dev/null 2>&1
+				systemctl stop armbian-restore-iptables.service
+				systemctl disable armbian-restore-iptables.service				rm -f /var/run/hostapd/* >/dev/null 2>&1
 				sed -i '/^iptables/ d' /etc/rc.local
 				sed -i '/^service dnsmasq/ d' /etc/rc.local
 				sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
@@ -534,11 +537,11 @@ function jobs ()
 						# install dnsmas and iptables
 						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != "*ii*" ]]; then
 							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq;
+							systemctl enable dnsmasq
 						fi
 
 						echo -e "# armbian NAT hostapd\nallow-hotplug $WIRELESS_ADAPTER\niface $WIRELESS_ADAPTER inet static " > $TEMP_CONF
 						echo -e "\taddress 172.24.1.1\n\tnetmask 255.255.255.0\n\tnetwork 172.24.1.0\n\tbroadcast 172.24.1.255" >> $TEMP_CONF
-						echo -e "\tpost-up service dnsmasq start\n\tpost-up iptables-restore < /etc/iptables.ipv4.nat\n\tpost-down service dnsmasq stop" >> $TEMP_CONF
 						# create new configuration
 						echo "interface=$WIRELESS_ADAPTER				# Use interface $WIRELESS_ADAPTER" > /etc/dnsmasq.conf
 						echo "listen-address=172.24.1.1					# Explicitly specify the address to listen on" >> /etc/dnsmasq.conf
@@ -553,6 +556,8 @@ function jobs ()
 						# - Enable IPv4 forwarding
 						sed -i "/net.ipv4.ip_forward=/c\net.ipv4.ip_forward=1" /etc/sysctl.conf
 						echo 1 > /proc/sys/net/ipv4/ip_forward
+						# Clear iptables
+						iptables-save | awk '/^[*]/ { print $1 } /^:[A-Z]+ [^-]/ { print $1 " ACCEPT" ; } /COMMIT/ { print $0; }' | iptables-restore
 						# - Apply iptables
 						iptables -t nat -A POSTROUTING -o $DEFAULT_ADAPTER -j MASQUERADE
 						iptables -A FORWARD -i $DEFAULT_ADAPTER -o $WIRELESS_ADAPTER -m state --state RELATED,ESTABLISHED -j ACCEPT
@@ -565,6 +570,20 @@ function jobs ()
 						#echo "service dnsmasq start" >> /etc/rc.local
 						#echo "iptables-restore < /etc/iptables.ipv4.nat" >> /etc/rc.local
 						#echo "exit 0" >> /etc/rc.local
+						systemctl stop armbian-restore-iptables.service
+						systemctl disable armbian-restore-iptables.service
+						cat <<-EOF > /etc/systemd/system/armbian-restore-iptables.service
+						[Unit]
+						Description="Restore IP tables"
+						[Timer]
+						OnBootSec=20Sec
+						[Service]
+						Type=oneshot
+						ExecStart=/sbin/iptables-restore /etc/iptables.ipv4.nat
+						[Install]
+						WantedBy=sysinit.target
+						EOF
+						systemctl enable armbian-restore-iptables.service
 					;;
 				3)exit;;
 
