@@ -1073,12 +1073,10 @@ function jobs ()
 				(( j++ ))
 			done < <(ls -1 ${OVERLAYDIR}/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g' )
 
-			LISTLENGTH="$(($LIST_CONST+${#MOTD[@]}/2))"
-
 			exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --colors --title "Toggle hardware configuration" --clear --cancel-label \
 				"Back" --ok-label "Save" --checklist "\nUse \Z1<space>\Z0 to toggle functions and save them. Exit when you are done.\n " \
-				$LISTLENGTH 80 $LISTLENGTH "${MOTD[@]}" 2>&1 1>&3)
+				0 0 0 "${MOTD[@]}" 2>&1 1>&3)
 				exit_status=$?
 			exec 3>&-
 
