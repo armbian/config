@@ -59,6 +59,10 @@ while true; do
 	[[ -f /boot/armbianEnv.txt ]] && LIST+=( "Bootenv" "Edit boot environment" )
 	[[ -f /boot/boot.ini ]] && LIST+=( "Bootscript" "Edit boot script" )
 
+	if [[ -f /etc/default/cpufrequtils ]]; then
+		LIST+=( "CPU" "Set CPU speed and governor" )
+	fi
+
 	[[ -d ${OVERLAYDIR} ]] && \
 	LIST+=( "Hardware" "Toggle hardware configuration: UART, I2C, etc." )
 	[[ "$LINUXFAMILY" = cubox && "$BRANCH" = "next" ]] && LIST+=( "DTB" "Switch board .dtb configuration" )
@@ -135,7 +139,7 @@ while true; do
 
 	exec 3>&1
 	selection=$(DIALOGRC=$temp_rc dialog --colors --backtitle "$BACKTITLE" --title " $sys_title " --clear \
-	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 68 $BOXLENGTH \
+	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 0 $BOXLENGTH \
 	"${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
 	exec 3>&-

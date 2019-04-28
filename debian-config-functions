@@ -16,6 +16,7 @@
 # beta_disclaimer
 # show_box
 # description
+# generic_select
 # reload_bsp
 # other_kernel_version
 # aval_dtbs
@@ -292,6 +293,35 @@ function description
 		echo ""
 		;;
 	esac
+}
+
+
+#
+# Generic select box
+#
+function generic_select()
+{
+        IFS=$' '
+        PARAMETER=($1)
+        local LIST=()
+        for i in "${PARAMETER[@]}"
+        do
+                        if [[ -n $3 ]]; then
+                                [[ ${i[0]} -ge $3 ]] && \
+                                LIST+=( "${i[0]//[[:blank:]]/}" "" )
+                        else
+                                LIST+=( "${i[0]//[[:blank:]]/}" "" )
+                        fi
+        done
+        LIST_LENGTH=$((${#LIST[@]}/2));
+        if [ "$LIST_LENGTH" -eq 1 ]; then
+                        PARAMETER=${PARAMETER[0]}
+        else
+                        exec 3>&1
+                        PARAMETER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+                        --title "$2" --clear --menu "" $((6+${LIST_LENGTH})) 0 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+                        exec 3>&-
+        fi
 }
 
 
