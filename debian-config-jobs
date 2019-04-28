@@ -1031,11 +1031,13 @@ function jobs ()
 	# CPU speed and governor
 	#
 	"CPU" )
-		generic_select "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_frequencies)" "Select minimum CPU speed"
+		POLICY="policy0"
+	        [[ $(grep -c '^processor' /proc/cpuinfo) -ge 4 ]] && POLICY="policy4"
+		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies)" "Select minimum CPU speed"
 		MIN_SPEED=$PARAMETER
-		generic_select "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_frequencies)" "Select maximum CPU speed" "$PARAMETER"
+		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies)" "Select maximum CPU speed" "$PARAMETER"
 		MAX_SPEED=$PARAMETER
-		generic_select "$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_governors)" "Select CPU governor"
+		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_governors)" "Select CPU governor"
 		GOVERNOR=$PARAMETER
 		if [[ -n $MIN_SPEED && -n $MAX_SPEED && -n $GOVERNOR ]]; then
 			dialog --colors --title " Apply and save changes " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \

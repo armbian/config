@@ -83,11 +83,13 @@ do
 	MENUTITLE="Configure \Z1$DISTRO $DISTROID\Z0"
 
 	# read cpu speed
-	num=$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq 2> /dev/null)
+	POLICY="policy0"
+	[[ $(grep -c '^processor' /proc/cpuinfo) -ge 4 ]] && POLICY="policy4"
+	num=$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_min_freq 2> /dev/null)
         if [[ -f /etc/default/cpufrequtils && ! -z "${num##*[!0-9]*}" ]]; then
                 FREQENCIES="\n"$(LC_ALL="C" cpufreq-info | grep policy | sed "s/  current policy: //" | sed 's/.*/\u&/' | tail -1)"\n"
 		LISTLENGTH=$((LISTLENGTH + 2))
-		FREQENCIES="\nSoC runs between \Z1$(($(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq) / 1000))\Z0 and \Z1$(($(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq) / 1000)) MHz\Z0 using \Z1$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)\Z0 governor.\n"
+		FREQENCIES="\nSoC runs between \Z1$(($(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_min_freq) / 1000))\Z0 and \Z1$(($(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_max_freq) / 1000)) MHz\Z0 using \Z1$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_governor)\Z0 governor.\n"
         fi
 
 	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE" based \Z1Armbian\Z0 for the \Z1${BOARD_NAME}\Z0 "
