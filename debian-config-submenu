@@ -31,10 +31,10 @@ while true; do
 	# check update status of BSP packages
 	local mark=$(apt-mark showhold | egrep "linux|armbian")
 
-	# check if install targets are available
+	# check if eMMC/SD is on the system
 	if [[ $(sed -n 's/^DEVNAME=//p' /sys/dev/block/$(mountpoint -d /)/uevent 2> /dev/null) == mmcblk* \
 	&& -f /usr/sbin/nand-sata-install ]]; then
-		LIST+=( "Install" "Install to SATA, eMMC, NAND or USB" )
+		LIST+=( "Install" "Install to/update boot loader" )
 	fi
 
 	# armbian specific function
