@@ -80,7 +80,7 @@ do
 	# count number of menu items to adjust window size
 	LISTLENGTH="$((11+${#LIST[@]}/2))"
 	BOXLENGTH=${#LIST[@]}
-	MENUTITLE="Configure $DISTRO $DISTROID "
+	MENUTITLE="Configure $DISTRO $DISTROID"
 	[[ -n "${BOARD_NAME/ /}" ]] && MENUTITLE=$MENUTITLE" based \Z1Armbian\Z0 for the \Z1${BOARD_NAME}\Z0 "
 
 	# main dialog routine
