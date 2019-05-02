@@ -701,7 +701,7 @@ install_tvheadend ()
 # TVheadend https://tvheadend.org/ unofficial port https://tvheadend.org/boards/5/topics/21528
 #
 if [[ "$family" == "Ubuntu" ]]; then
-	add-apt-repository ppa:mamarley/tvheadend-git-stable >/dev/null 2>&1
+	add-apt-repository -y ppa:mamarley/tvheadend-git-stable >/dev/null 2>&1
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
 else
