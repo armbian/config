@@ -214,7 +214,7 @@ function display_qr_code()
 {
 		clear
 		SECRET=$(head -1 /root/.google_authenticator)
-		qrencode -d 9 -8 -t UTF8 "otpauth://totp/test?secret=$SECRET"
+		qrencode -m 2 -d 9 -8 -t ANSI256 "otpauth://totp/test?secret=$SECRET"
 		echo -e "\nSetting up your OTP-generator\
 		\nInstall a one-time password authenticator on your mobile device (e.g. FreeOTP) from the Android market or F-Droid.\
 		\nIn the application menu, click the corresponding button to create a new account and either scan the QR code or enter the secret key manually:\
