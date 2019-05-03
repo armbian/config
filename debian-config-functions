@@ -23,6 +23,7 @@
 # get_a20modes
 # get_h3modes
 # add_choose_user
+# google_token_allusers
 # configure_desktop
 
 
@@ -633,6 +634,28 @@ function add_choose_user ()
 			exec 3>&-
 	fi
 
+}
+
+
+
+
+#
+# Copy Google token to all local users.
+#
+function google_token_allusers ()
+{
+
+if [[ -f /root/.google_authenticator ]]; then
+	local USERS=($(awk -F'[/:]' '{if ($3 >= 1000 && $3 != 65534) print $1}' /etc/passwd))
+	for i in "${USERS[@]}"
+	do
+		USER=${i[0]//[[:blank:]]/}
+		if [[ -d /home/$USER ]]; then
+			cp /root/.google_authenticator /home/$USER/
+			chown ${USER}:${USER} /home/${USER}/.google_authenticator
+		fi
+	done
+fi
 }
 
 
