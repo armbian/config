@@ -164,6 +164,7 @@ function jobs ()
 			fi
 			if [[ -n $(dpkg -l | grep linux-headers) ]]; then
 					debconf-apt-progress -- apt-get -y purge ${REMOVE_PKG}
+					rm -rf /usr/src/linux-headers*
 			else
 					debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
 			fi
@@ -180,13 +181,19 @@ function jobs ()
 	#
 	"Source" )
                 if ! is_package_manager_running; then
+		PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-next//" | sed "s/-dev//" | sed "s/-default//")
                         if [[ -n $(dpkg -l | grep $SOURCE_PKG) ]]; then
-                                        debconf-apt-progress -- apt-get -y purge ${SOURCE_PKG}
+                                        debconf-apt-progress -- apt-get -y purge linux-source*
 					# cleanup
 		                        debconf-apt-progress -- apt -y autoremove
+					rm -r /usr/src/linux-source*
                         else
                                         debconf-apt-progress -- apt-get -y install ${SOURCE_PKG}
-					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find compressed kernel source and configuration in /usr/src" 7 72
+					mkdir -p /usr/src/$PACKAGE
+					(pv -n /usr/src/$PACKAGE".tar.xz" | xz -d -T0 - | tar xf - -C /usr/src/$PACKAGE ) 2>&1 | dialog --colors --backtitle "$BACKTITLE" --title " Please wait! " --gauge "\nDecompressing kernel sources to /usr/src/$PACKAGE" 8 80
+					xz -d /usr/src/*config.xz --stdout > /usr/src/$PACKAGE/.config
+					rm /usr/src/$PACKAGE".tar.xz" /usr/src/*config.xz
+					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find pre-configured kernel sources in /usr/src/$PACKAGE" 7 72
                         fi
                 fi
         ;;
