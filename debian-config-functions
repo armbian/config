@@ -439,7 +439,7 @@ function other_kernel_version ()
 		if [[ -n $ACKNOWLEDGEMENT ]]; then
 			exec 3>&1
             TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Switch from" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" $((9+${LIST_LENGTH})) 62 25 "${LIST[@]}" 2>&1 1>&3)
+			--title "Switch from and reboot" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" $((9+${LIST_LENGTH})) 62 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 			if [[ $exitstatus = 0 ]]; then
@@ -455,10 +455,18 @@ function other_kernel_version ()
 				if [[ $? = 0 ]]; then
 					# remove old kernel
 					dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
-					aptitude remove ~nlinux-image*${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
-					aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-image-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-image-next-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-image-dev-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-dtb-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-dtb-next-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					aptitude remove ~nlinux-dtb-dev-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+					# cleanup
+					find "/boot/" -name "System.map*" -type f -delete
+					find "/boot/" -name "config*" -type f -delete
+					find "/boot/" -name "vmlinuz*" -type f -delete
+					find "/boot/" -name "*nitrd*" -type f -delete
 					debconf-apt-progress --	apt-get -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
-					dialog --title "Switching kernel to" --backtitle "$BACKTITLE" --yes-label "Reboot"  --no-label "Cancel" --yesno "\n$TARGET_VERSION?" 7 48
 					if [[ $? = 0 ]]; then reboot; fi
 				else
 					dialog --backtitle "$BACKTITLE" --title "Warning" --msgbox "\nTest install failed. Can't change firmware \n\nCheck /tmp/switch_kernel.log" 9 48
