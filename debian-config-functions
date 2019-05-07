@@ -400,11 +400,9 @@ function other_kernel_version ()
 	CURRENT_VERSION=$(echo $CURRENT_VERSION_TEMP | awk '{print $2}')"="$(echo $CURRENT_VERSION_TEMP | awk '{print $3}')
 
 	# check what is available from the repository
-	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|version:|Version:"  | sed -n -e 's/^.*: //p' | sed 's/\.$//g'))
+	debconf-apt-progress -- apt-get update
+	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|Version:|version:" | grep -v "Config-Version" | sed -n -e 's/^.*: //p' | sed 's/\.$//g'))
 	new_list=()
-
-	#printf '%s\n' "${LIST[@]}"
-	#read
 
 	# create a human readable menu
 	for ((n=0;n<$((${#LIST[@]}));n++));
