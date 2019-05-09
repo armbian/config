@@ -1040,6 +1040,7 @@ function jobs ()
 	"CPU" )
 		POLICY="policy0"
 	        [[ $(grep -c '^processor' /proc/cpuinfo) -gt 4 ]] && POLICY="policy4"
+		[[ ! -f /sys/devices/system/cpu/cpufreq/policy4 ]] && POLICY="policy0"
 		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies)" "Select minimum CPU speed"
 		MIN_SPEED=$PARAMETER
 		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies)" "Select maximum CPU speed" "$PARAMETER"
