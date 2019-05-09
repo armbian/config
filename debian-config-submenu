@@ -354,7 +354,7 @@ while true; do
 	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else \
 	LIST+=( "Headers" "Install kernel headers" ); fi
 
-	SOURCE_PKG=$(apt-cache --names-only search ^linux-source-* | awk '{ print $1 }' | grep ${BRANCH}-${LINUXFAMILY} | head -1)
+	SOURCE_PKG=$(apt-cache --names-only search ^linux-source-* | awk '{ print $1 }' | grep ${BRANCH}-${LINUXFAMILY} | tail -1)
 	if [[ -n $SOURCE_PKG ]]; then
 		if [[ -n $(dpkg -l | grep $SOURCE_PKG) ]]; then LIST+=( "Source" "Remove kernel source" ); else \
 	        LIST+=( "Source" "Install kernel source" ); fi
