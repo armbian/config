@@ -843,12 +843,12 @@ TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-coll
 exitstatus=$?;
 exec 3>&-
 if [ $exitstatus = 0 ]; then
-	install_docker
+	#install_docker
 	debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates curl dbus jq network-manager socat software-properties-common
 	local arch=$(dpkg --print-architecture)
 	[[ "$arch" == "arm64" ]] && arch="aarch64"
-	docker pull homeassistant/${arch}-homeassistant
-	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-build/master/install/hassio_install" > ${TEMP_DIR}/hass.io.bash
+	#docker pull homeassistant/${arch}-homeassistant
+	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-installer/master/hassio_install.sh" > ${TEMP_DIR}/hass.io.bash
 	bash ${TEMP_DIR}/hass.io.bash -m ${TARGET_BOARD}
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
 fi
