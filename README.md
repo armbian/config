@@ -81,7 +81,7 @@ Login as root and type:
 |Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|NCP (Nextcloud personal cloud)|:heavy_check_mark:|n/a|29.09.2018|
+|NCP (Nextcloud personal cloud)|:heavy_check_mark:|n/a|19.05.2019|
 |OpenMediaVault NAS (NAS server)|:heavy_check_mark:|n/a|29.09.2018|
 |OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
 |Home Assistant (Smarthome suite within Docker)|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
