@@ -58,38 +58,41 @@ function main(){
 
 
 
+
 #
 # compare two strings in dot separated version format
 #
 vercomp () {
-    if [[ $1 == $2 ]]
-    then
-        return 0
-    fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if [[ -z ${ver2[i]} ]]
-        then
-            # fill empty fields in ver2 with zeros
-            ver2[i]=0
-        fi
-        if ((10#${ver1[i]} > 10#${ver2[i]}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
+
+	if [[ $1 == $2 ]]
+	then
+		return 0
+	fi
+	local IFS=.
+	local i ver1=($1) ver2=($2)
+	# fill empty fields in ver1 with zeros
+	for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+	do
+		ver1[i]=0
+	done
+	for ((i=0; i<${#ver1[@]}; i++))
+	do
+		if [[ -z ${ver2[i]} ]]
+		then
+			# fill empty fields in ver2 with zeros
+			ver2[i]=0
+		fi
+		if ((10#${ver1[i]} > 10#${ver2[i]}))
+		then
+			return 1
+		fi
+		if ((10#${ver1[i]} < 10#${ver2[i]}))
+		then
+			return 2
+		fi
+	done
+	return 0
+
 }
 
 
@@ -99,18 +102,20 @@ vercomp () {
 # test compare two strings $1="3.4.12" $2="5.4.2" $3="<" returns 0 if relation is correct
 #
 testvercomp () {
-    vercomp $1 $2
-    case $? in
-        0) op='=';;
-        1) op='>';;
-        2) op='<';;
-    esac
-    if [[ $op != $3 ]]
-    then
+
+	vercomp $1 $2
+	case $? in
+		0) op='=';;
+		1) op='>';;
+		2) op='<';;
+	esac
+	if [[ $op != $3 ]]
+	then
 		return 1
-    else
+	else
 		return 0
-    fi
+	fi
+
 }
 
 
@@ -121,13 +126,15 @@ testvercomp () {
 #
 function check_desktop()
 {
-DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
-check_if_installed nodm && DESKTOP_INSTALLED="nodm";
-check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
-check_if_installed lightdm && DESKTOP_INSTALLED="gnome";
-[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
-[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
-[[ -n $(service gdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="gdm"
+
+	DISPLAY_MANAGER=""; DESKTOP_INSTALLED=""
+	check_if_installed nodm && DESKTOP_INSTALLED="nodm";
+	check_if_installed lightdm && DESKTOP_INSTALLED="lightdm";
+	check_if_installed lightdm && DESKTOP_INSTALLED="gnome";
+	[[ -n $(service lightdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="lightdm"
+	[[ -n $(service nodm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="nodm"
+	[[ -n $(service gdm status 2> /dev/null | grep -w active) ]] && DISPLAY_MANAGER="gdm"
+
 }
 
 
@@ -171,6 +178,7 @@ check_if_installed (){
 	else
 		return 0
 	fi
+
 }
 
 
@@ -196,15 +204,19 @@ function is_package_manager_running() {
 
 
 
+
 #
 # wget with dialog progress bar $1=URL $2=parameters
 #
 function fancy_wget()
 {
-LANG=C wget $2 --progress=bar:force:noscroll $1 2>&1 | stdbuf -i0 -o0 -e0 tr '>' '\n' | \
-stdbuf -i0 -o0 -e0 sed -rn 's/^.*\<([0-9]+)%\[.*$/\1/p' | dialog --backtitle "$BACKTITLE" --title " Downloading " \
---gauge "Please wait" 7 70 0
+
+	LANG=C wget $2 --progress=bar:force:noscroll $1 2>&1 | stdbuf -i0 -o0 -e0 tr '>' '\n' | \
+	stdbuf -i0 -o0 -e0 sed -rn 's/^.*\<([0-9]+)%\[.*$/\1/p' | dialog --backtitle "$BACKTITLE" --title " Downloading " \
+	--gauge "Please wait" 7 70 0
+
 }
+
 
 
 
@@ -213,14 +225,17 @@ stdbuf -i0 -o0 -e0 sed -rn 's/^.*\<([0-9]+)%\[.*$/\1/p' | dialog --backtitle "$B
 #
 function display_qr_code()
 {
+
 		clear
 		SECRET=$(head -1 /root/.google_authenticator)
 		qrencode -m 2 -d 9 -8 -t ANSI256 "otpauth://totp/test?secret=$SECRET"
-		echo -e "\nSetting up your OTP-generator\
-		\nInstall a one-time password authenticator on your mobile device (e.g. FreeOTP) from the Android market or F-Droid.\
-		\nIn the application menu, click the corresponding button to create a new account and either scan the QR code or enter the secret key manually:\
-		\n\n$SECRET \n\nYou should now see a new passcode token being generated every 60 seconds on your phone.\n"  | fold -sw 38
+		echo -e "\nHow to setup your one type password generator?\n"
+		echo -e "\nInstall a one-time password authenticator on your mobile device (e.g. FreeOTP) from the Android \
+market or F-Droid.	\n\nIn the application menu, click the corresponding button to create a new account and either \
+scan the QR code or enter the secret key manually:\\n\n$SECRET \n\nYou should now see a new passcode token being \
+generated every 60 seconds on your phone.\n"  | fold -sw 60
 		read -n 1 -s -r -p "Press any key to continue"
+
 }
 
 
@@ -231,10 +246,12 @@ function display_qr_code()
 #
 function beta_disclaimer ()
 {
-exec 3>&1
-	ACKNOWLEDGEMENT=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title " Warning " \
-	--clear \--radiolist "\n$1\n \n" 11 56 5 "Yes, I understand" "" off	 2>&1 1>&3)
-exec 3>&-
+
+	exec 3>&1
+	ACKNOWLEDGEMENT=$(dialog --colors --nocancel --backtitle "$BACKTITLE" --no-collapse --title " Warning " \
+	--clear \--radiolist "\n$1\n \n" 0 56 5 "Yes, I understand" "" off	 2>&1 1>&3)
+	exec 3>&-
+
 }
 
 
@@ -245,7 +262,9 @@ exec 3>&-
 #
 function show_box ()
 {
+
 	dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " $1 " --clear --msgbox "\n$2\n \n" $3 56
+
 }
 
 
@@ -333,10 +352,13 @@ function generic_select()
 #
 function kernel_desc ()
 {
-        [[ "$1" == "dev" ]]     && echo "development, unstable"
-        [[ "$1" == "next" ]]    && echo "mainline or 2nd generation"
-        [[ "$1" == "default" ]] && echo "legacy, stock, 1st build"
+
+	[[ "$1" == "dev" ]]     && echo "development, unstable"
+	[[ "$1" == "next" ]]    && echo "mainline or 2nd generation"
+	[[ "$1" == "default" ]] && echo "legacy, stock, 1st build"
+
 }
+
 
 
 
@@ -344,51 +366,65 @@ function kernel_desc ()
 # reload kernel, bsp and armbian-config
 #
 function reload_bsp(){
-        debconf-apt-progress -- apt-get update
-        # test install packages
-        TARGET_BRANCH=$BRANCH
-        exceptions "$INSTALL_KERNEL"
+
+	debconf-apt-progress -- apt-get update
+	# test install packages
+	TARGET_BRANCH=$BRANCH
+	exceptions "$INSTALL_KERNEL"
 	unset PACKAGE_LIST
-	[[ -n $(apt-cache search --names-only "^armbian-${LINUXFAMILY}$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${LINUXFAMILY}"
-	[[ -n $(apt-cache search --names-only "^armbian-${BOARD}$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${BOARD}"
-	[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}"
-	[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}-desktop-xfce$") ]] && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop-xfce"
+	[[ -n $(apt-cache search --names-only "^armbian-${LINUXFAMILY}$") ]] && \
+	PACKAGE_LIST=$PACKAGE_LIST" armbian-${LINUXFAMILY}"
+	[[ -n $(apt-cache search --names-only "^armbian-${BOARD}$") ]] && \
+	PACKAGE_LIST=$PACKAGE_LIST" armbian-${BOARD}"
+	[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}$") ]] && \
+	PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}"
+	[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}-desktop-xfce$") ]] && \
+	PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop-xfce"
+
 	# if new packages are absent, reinstall old ones
 	if [[ -z $PACKAGE_LIST ]]; then
 		PACKAGE_LIST="linux-${DISTROID}-root$TARGET_BRANCH-$BOARD"
 		check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop"
 	fi
+
 	# reinstall headers only if they are already installed
-	check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
+	check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && \
+	PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
 	IFS=" "
-	[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
+	[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
+	PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 	PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
-	debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST armbian-config
-        # if download is ok, remove old packages
-        if [[ $? = 0 ]]; then
-                dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
-                aptitude remove ~nlinux-image*${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
-                aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
-                aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
-                aptitude remove ~nlinux-${DISTROID}-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
-                aptitude remove ~narmbian-config --quiet=100 -y >> /var/log/upgrade.log 2>&1
+	debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends \
+	install $PACKAGE_LIST armbian-config
+	# if download is ok, remove old packages
+	if [[ $? = 0 ]]; then
+		dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
+		aptitude remove ~nlinux-image*${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
+		aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
+		aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
+		aptitude remove ~nlinux-${DISTROID}-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
+		aptitude remove ~narmbian-config --quiet=100 -y >> /var/log/upgrade.log 2>&1
 		aptitude remove ~narmbian-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
 		aptitude remove ~narmbian-${BOARD} --quiet=100 -y >> /var/log/upgrade.log 2>&1
 		aptitude remove ~narmbian-${DISTROID} --quiet=100 -y >> /var/log/upgrade.log 2>&1
 		aptitude remove ~narmbian-${DISTROID}-desktop --quiet=100 -y >> /var/log/upgrade.log 2>&1
 		aptitude remove ~narmbian-${DISTROID}-desktop-xfce --quiet=100 -y >> /var/log/upgrade.log 2>&1
-                # install packages
+		# install packages
 		echo $PACKAGE_LIST >> /var/log/upgrade.log
-		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_LIST armbian-config
+		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall \
+		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_LIST armbian-config
 		# clean apt cache
 		apt clean
-                if [[ $? = 1 ]]; then
+		if [[ $? = 1 ]]; then
 			echo "Something went wrong ... check logs."; exit;
 		else
 			reboot
 		fi
-        fi
+	fi
+
 }
+
+
 
 
 function other_kernel_version ()
@@ -403,17 +439,18 @@ function other_kernel_version ()
 
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
-	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|Version:|version:" | grep -v "Config-Version" | sed -n -e 's/^.*: //p' | sed 's/\.$//g'))
+	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|Version:|version:" \
+	| grep -v "Config-Version" | sed -n -e 's/^.*: //p' | sed 's/\.$//g'))
 	new_list=()
 
 	# create a human readable menu
 	for ((n=0;n<$((${#LIST[@]}));n++));
 	do
-        m=$(( $n + 1 ))
-        prvi=$((3*$m - 3))
-        drugi=$((3*$m - 2))
-        tretji=$((3*$m - 1))
-        [[ -z ${LIST[$prvi]} ]] && break
+		m=$(( $n + 1 ))
+		prvi=$((3*$m - 3))
+		drugi=$((3*$m - 2))
+		tretji=$((3*$m - 1))
+		[[ -z ${LIST[$prvi]} ]] && break
 		if [[ $CURRENT_VERSION != "${LIST[$prvi]}=${LIST[$drugi]}" ]]; then
 			new_list+=( "${LIST[$prvi]}=${LIST[$drugi]}" )
 			new_list+=( ${LIST[$tretji]} )
@@ -426,12 +463,14 @@ function other_kernel_version ()
 
 	if [ "$LIST_LENGTH" -eq 0 ]; then
 		dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox  "\nNo other kernels available!" 7 32
-        else
-		beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot."
+	else
+		beta_disclaimer "Switching between kernels might change functionality of your board or it might fail to boot. \
+		\n\n\Z1In case of troubles expect no help!\Z0"
 		if [[ -n $ACKNOWLEDGEMENT ]]; then
 			exec 3>&1
             TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Switch from and reboot" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" $((9+${LIST_LENGTH})) 62 25 "${LIST[@]}" 2>&1 1>&3)
+			--title "Switch from and reboot" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" \
+			$((9+${LIST_LENGTH})) 62 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 			if [[ $exitstatus = 0 ]]; then
@@ -441,9 +480,11 @@ function other_kernel_version ()
 				TARGET_VERSION_DTB=${TARGET_VERSION/image/dtb}
 				TARGET_VERSION_PRE=$(echo $TARGET_VERSION_DTB | cut -f1 -d"=")
 				TARGET_VERSION_SUB=$(echo $TARGET_VERSION_DTB | cut -f2 -d"=")
-				[[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]] && PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
+				[[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]] && \
+				PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
 				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
-				debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST
+				debconf-apt-progress -- apt --download-only --allow-downgrades -y \
+				--no-install-recommends install $PACKAGE_LIST
 				if [[ $? = 0 ]]; then
 					# remove old kernel
 					dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
@@ -463,12 +504,14 @@ function other_kernel_version ()
 					apt clean
 					if [[ $? = 0 ]]; then reboot; fi
 				else
-					dialog --backtitle "$BACKTITLE" --title "Warning" --msgbox "\nTest install failed. Can't change firmware \n\nCheck /tmp/switch_kernel.log" 9 48
+					dialog --backtitle "$BACKTITLE" --title "Warning" --msgbox \
+					"\nTest install failed. Can't change firmware \n\nCheck /tmp/switch_kernel.log" 9 48
 				fi
 			fi
 		fi
 	fi
 }
+
 
 
 
@@ -497,7 +540,8 @@ function aval_dtbs ()
 	else
 			exec 3>&1
 			TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select optimised board configuration" --clear --menu "" $((6+${LIST_LENGTH})) ${width} 25 "${LIST[@]}" 2>&1 1>&3)
+			--title "Select optimised board configuration" --clear --menu \
+			"" $((6+${LIST_LENGTH})) ${width} 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 	fi
@@ -529,7 +573,8 @@ function get_a20modes ()
 	else
 			exec 3>&1
 			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+			--title "Select video mode" --clear --menu \
+			"" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 
@@ -560,7 +605,8 @@ function get_odroidmodes ()
         else
                         exec 3>&1
                         SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-                        --title "Select video mode" --clear --menu "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+                        --title "Select video mode" --clear --menu \
+                        "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
                         exec 3>&-
         fi
 
@@ -591,7 +637,8 @@ function get_h3modes ()
 	else
 			exec 3>&1
 			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select video mode" --clear --menu "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+			--title "Select video mode" --clear --menu \
+			"" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
 			exec 3>&-
 	fi
 
@@ -613,12 +660,13 @@ function add_choose_user ()
 	local LIST=()
 	for i in "${USERS[@]}"
 	do
-			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+		LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
 	LIST_LENGTH=$((${#LIST[@]}/2));
 
 	if [ "$LIST_LENGTH" -eq 0 ]; then
-		dialog --backtitle "$BACKTITLE" --title " Notice " --msgbox "\nWe didn't find any unprivileged user with sudo rights which is required to run this service.\
+		dialog --backtitle "$BACKTITLE" --title " Notice " --msgbox \
+		"\nWe didn't find any unprivileged user with sudo rights which is required to run this service.\
 		\n\nPress enter to create one!" 10 48
 		read -t 0 temp
 		echo -e "\nPlease provide a username (eg. your forename) or leave blank for canceling user creation: \c"
@@ -647,17 +695,18 @@ function add_choose_user ()
 function google_token_allusers ()
 {
 
-if [[ -f /root/.google_authenticator ]]; then
-	local USERS=($(awk -F'[/:]' '{if ($3 >= 1000 && $3 != 65534) print $1}' /etc/passwd))
-	for i in "${USERS[@]}"
-	do
-		USER=${i[0]//[[:blank:]]/}
-		if [[ -d /home/$USER ]]; then
-			cp /root/.google_authenticator /home/$USER/
-			chown ${USER}:${USER} /home/${USER}/.google_authenticator
-		fi
-	done
-fi
+	if [[ -f /root/.google_authenticator ]]; then
+		local USERS=($(awk -F'[/:]' '{if ($3 >= 1000 && $3 != 65534) print $1}' /etc/passwd))
+		for i in "${USERS[@]}"
+		do
+			USER=${i[0]//[[:blank:]]/}
+			if [[ -d /home/$USER ]]; then
+				cp /root/.google_authenticator /home/$USER/
+				chown ${USER}:${USER} /home/${USER}/.google_authenticator
+			fi
+		done
+	fi
+
 }
 
 
@@ -682,11 +731,14 @@ function configure_desktop ()
 
 		# remove desktop package to secure proper install
 		if check_if_installed armbian-${DISTROID}-desktop ; then
-			debconf-apt-progress -- apt-get -y remove armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
+			debconf-apt-progress -- apt-get -y \
+			remove armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
 		fi
 
 		# install desktop package
-		debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y install $1 armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
+		debconf-apt-progress -- apt-get --reinstall -o Dpkg::Options::="--force-confdef" \
+		-o Dpkg::Options::="--force-confold" -y \
+		install $1 armbian-${DISTROID}-desktop${PACKAGE_SUFIX} lightdm lightdm-gtk-greeter
 
 		# in case previous install was interrupted
 		[[ $? -eq 130 ]] && dpkg --configure -a
@@ -699,7 +751,8 @@ function configure_desktop ()
 				usermod -aG ${additionalgroup} ${CHOSEN_USER} 2>/dev/null
 		done
 
-		# Prevent loading paralel printer port drivers which we don't need here.Suppress boot error if kernel modules are absent
+		# Prevent loading paralel printer port drivers which we don't need here.
+		# suppress boot error if kernel modules are absent
 		if [[ -f /etc/modules-load.d/cups-filters.conf ]]; then
 			sed "s/^lp/#lp/" -i /etc/modules-load.d/cups-filters.conf
 			sed "s/^ppdev/#ppdev/" -i /etc/modules-load.d/cups-filters.conf

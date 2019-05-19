@@ -94,15 +94,15 @@ while true; do
 			fi
 	else
 			if [[ -n $DESKTOP_INSTALLED ]]; then
-															LIST+=( "Desktop" "Enable desktop" )
-															if ! check_if_installed mpv ; then
-																LIST+=( "Default" "Install desktop with browser and extras" )
-															fi
+					LIST+=( "Desktop" "Enable desktop" )
+					if ! check_if_installed mpv ; then
+						LIST+=( "Default" "Install desktop with browser and extras" )
+					fi
 				else
-															LIST+=( "Minimal" "Install minimal desktop" )
-															if ! check_if_installed mpv ; then
-																LIST+=( "Default" "Install desktop with browser and extras" )
-															fi
+					LIST+=( "Minimal" "Install minimal desktop" )
+					if ! check_if_installed mpv ; then
+						LIST+=( "Default" "Install desktop with browser and extras" )
+					fi
 			fi
 	fi
 
@@ -129,8 +129,10 @@ while true; do
 			tag_key_selected_color = (WHITE,RED,ON)
 			EOF
 			[[ -n ${mark} ]] && local sys_title=" Warning - firmware packages frozen"
-			[[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && local sys_title=" Warning - attached to beta repository"
-			[[ -n ${mark} && -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && sys_title=" Warning - frozen & attached to beta repository"
+			[[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && \
+			local sys_title=" Warning - attached to beta repository"
+			[[ -n ${mark} && -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && \
+			sys_title=" Warning - frozen & attached to beta repository"
 		else
 			local sys_title=" System settings "
 			echo > $temp_rc
@@ -182,7 +184,8 @@ while true; do
 			HOSTAPDCLIENTS=$(hostapd_cli all_sta 2> /dev/null | grep connected_time | wc -l)
 			LIST+=( "Hotspot" "Manage active wireless access point" )
 		else
-			[[ -n $(LC_ALL=C nmcli device status 2> /dev/null | grep wifi | grep -w disconnected) ]] && LIST+=( "Hotspot" "Create WiFi access point" )
+			[[ -n $(LC_ALL=C nmcli device status 2> /dev/null | grep wifi | grep -w disconnected) ]] && \
+			LIST+=( "Hotspot" "Create WiFi access point" )
 
 	fi
 
@@ -297,7 +300,9 @@ done
 }
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+#
 # personal
 #
 function submenu_personal ()
@@ -333,7 +338,9 @@ done
 }
 
 
-#-----------------------------------------------------------------------------------------------------------------------------------------#
+
+
+#
 # software
 #
 function submenu_software ()
