@@ -356,7 +356,7 @@ while true; do
 
 	SOURCE_PKG=$(apt-cache --names-only search ^linux-source-* | awk '{ print $1 }' | grep ${BRANCH}-${LINUXFAMILY} | tail -1)
 	if [[ -n $SOURCE_PKG ]]; then
-		if [[ -n $(dpkg -l | grep $SOURCE_PKG) ]]; then LIST+=( "Source" "Remove kernel source" ); else \
+		if ls /usr/src/linux-source* 1> /dev/null 2>&1; then LIST+=( "Source" "Remove kernel source" ); else \
 	        LIST+=( "Source" "Install kernel source" ); fi
 	fi
 

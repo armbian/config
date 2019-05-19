@@ -380,6 +380,8 @@ function reload_bsp(){
                 # install packages
 		echo $PACKAGE_LIST >> /var/log/upgrade.log
 		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_LIST armbian-config
+		# clean apt cache
+		apt clean
                 if [[ $? = 1 ]]; then
 			echo "Something went wrong ... check logs."; exit;
 		else
@@ -457,6 +459,8 @@ function other_kernel_version ()
 					find "/boot/" -name "vmlinuz*" -type f -delete
 					find "/boot/" -name "*nitrd*" -type f -delete
 					debconf-apt-progress --	apt -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
+					# clean apt cache
+					apt clean
 					if [[ $? = 0 ]]; then reboot; fi
 				else
 					dialog --backtitle "$BACKTITLE" --title "Warning" --msgbox "\nTest install failed. Can't change firmware \n\nCheck /tmp/switch_kernel.log" 9 48
@@ -688,7 +692,7 @@ function configure_desktop ()
 		[[ $? -eq 130 ]] && dpkg --configure -a
 
 		# clean apt cache
-		apt-get clean
+		apt clean
 
 		# add user to groups
 		for additionalgroup in sudo netdev audio video dialout plugdev input bluetooth systemd-journal ssh; do
