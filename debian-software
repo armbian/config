@@ -750,10 +750,10 @@ if [[ "$family" == "Ubuntu" ]]; then
 	debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
 else
 	if [ ! -f /etc/apt/sources.list.d/tvheadend.list ]; then
-	echo "deb http://www.deb-multimedia.org ${distribution} main non-free" >> /etc/apt/sources.list.d/tvheadend.list
+	echo "deb https://www.deb-multimedia.org ${distribution} main non-free" >> /etc/apt/sources.list.d/tvheadend.list
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 5C808C2B65558117 >/dev/null 2>&1
 	fi
-	URL="http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u9_"$(dpkg --print-architecture)".deb"
+	URL="https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u9_"$(dpkg --print-architecture)".deb"
 	fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
 	dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
 	debconf-apt-progress -- apt-get update
@@ -781,8 +781,8 @@ install_urbackup ()
 # Client/server backup system https://www.urbackup.org/
 #
 if [ "$(dpkg --print-architecture | grep arm64)" == "arm64" ]; then local arch=armhf; else local arch=$(dpkg --print-architecture); fi
-PREFIX="http://hndl.urbackup.org/Server/latest/"
-URL="http://hndl.urbackup.org/Server/latest/"$(wget -q $PREFIX -O - | html2text -width 120 | grep deb | awk ' { print $3 }' | grep $arch)
+PREFIX="https://hndl.urbackup.org/Server/latest/"
+URL="https://hndl.urbackup.org/Server/latest/"$(wget -q $PREFIX -O - | html2text -width 120 | grep deb | awk ' { print $3 }' | grep $arch)
 fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
 dpkg -i ${TEMP_DIR}/package.deb >/dev/null 2>&1
 apt-get -yy -f install
@@ -961,13 +961,13 @@ install_plex_media_server ()
 # Media server
 #
 if [ "$(dpkg --print-architecture | grep armhf)" == "armhf" ]; then
-	echo -e "deb [arch=armhf] http://dev2day.de/pms/ stretch main" > /etc/apt/sources.list.d/plex.list
-	wget -q -O - http://dev2day.de/pms/dev2day-pms.gpg.key | apt-key add - >/dev/null 2>&1
+	echo -e "deb [arch=armhf] https://dev2day.de/pms/ stretch main" > /etc/apt/sources.list.d/plex.list
+	wget -q -O - https://dev2day.de/pms/dev2day-pms.gpg.key | apt-key add - >/dev/null 2>&1
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install plexmediaserver-installer
 elif [ "$(dpkg --print-architecture | grep arm64)" == "arm64" ]; then
-	echo -e "deb [arch=armhf] http://dev2day.de/pms/ stretch main" > /etc/apt/sources.list.d/plex.list
-	wget -q -O - http://dev2day.de/pms/dev2day-pms.gpg.key | apt-key add - >/dev/null 2>&1
+	echo -e "deb [arch=armhf] https://dev2day.de/pms/ stretch main" > /etc/apt/sources.list.d/plex.list
+	wget -q -O - https://dev2day.de/pms/dev2day-pms.gpg.key | apt-key add - >/dev/null 2>&1
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install binutils:armhf plexmediaserver-installer:armhf
 else
@@ -1015,7 +1015,7 @@ install_sonarr ()
 if [ "$(dpkg --print-architecture | grep arm64)" == "arm64" ]; then
 	debconf-apt-progress -- apt-get update
 	debconf-apt-progress -- apt-get -y install mono-complete mediainfo
-	fancy_wget "http://update.sonarr.tv/v2/develop/mono/NzbDrone.develop.tar.gz" "-O ${TEMP_DIR}/sonarr.tgz"
+	fancy_wget "https://update.sonarr.tv/v2/develop/mono/NzbDrone.develop.tar.gz" "-O ${TEMP_DIR}/sonarr.tgz"
 	tar xf ${TEMP_DIR}/sonarr.tgz -C /opt
 else
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FDA5DFFC >/dev/null 2>&1
@@ -1047,7 +1047,7 @@ install_vpn_server ()
 # Script downloads latest stable
 #
 cd ${TEMP_DIR}
-PREFIX="http://www.softether-download.com/files/softether/"
+PREFIX="https://www.softether-download.com/files/softether/"
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
 SUFIX="${URL/-tree/}"
@@ -1135,7 +1135,7 @@ install_vpn_client ()
 # Script downloads latest stable
 #
 cd ${TEMP_DIR}
-PREFIX="http://www.softether-download.com/files/softether/"
+PREFIX="https://www.softether-download.com/files/softether/"
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading basic packages"
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
 SUFIX="${URL/-tree/}"
@@ -1493,7 +1493,7 @@ install_Jailkit()
 #
 debconf-apt-progress -- apt-get install -y build-essential autoconf automake libtool flex bison debhelper binutils
 cd ${TEMP_DIR}
-wget -q http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz -O - | tar -xz && cd jailkit-2.19
+wget -q https://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz -O - | tar -xz && cd jailkit-2.19
 echo 5 > debian/compat
 ./debian/rules binary > /dev/null 2>&1
 dpkg -i ../jailkit_2.19-1_*.deb > /dev/null 2>&1
@@ -1588,7 +1588,7 @@ install_ISPConfig (){
 # Install ISPConfig 3
 #------------------------------------------------------------------------------------------------------------------------------------------
 cd ${TEMP_DIR}
-wget -q http://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
+wget -q https://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd ${TEMP_DIR}/ispconfig3_install/install/
 php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php &>> /var/log/ispconfig_config.log
 dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Auto updating SSL certificate " --clear --yesno "\nDo you want to secure ISPConfig control panel and all services with free Let's Encrypt SSL certificate?" 8 80
