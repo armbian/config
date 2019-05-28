@@ -592,6 +592,7 @@ function get_odroidmodes ()
         IFS=$'\r\n'
         GLOBIGNORE='*'
         SCREEN_RESOLUTION=($(cat /boot/boot.ini | grep -w "# setenv" | grep "hz" | cut -d'"' -f 2))
+	SCREEN_RESOLUTION=($(cat /boot/boot.ini | grep "Progressive" | grep -v "setenv" | cut -d'"' -f 2))
         local LIST=()
         for i in "${SCREEN_RESOLUTION[@]}"
         do
