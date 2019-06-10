@@ -59,7 +59,14 @@ Login as root and type:
 - **help**
 	- Links to documentation, support and sources
 
-**Running this utility on 3rd party Debian based distributions**
+**Run this utility on 3rd party Debian based distributions**
+
+	echo "deb [arch=arm64] http://apt.armbian.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/armbian.list
+	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 9F0E78D5
+	apt update
+	apt install armbian-config
+
+Development version:
 
 	# Install dependencies
 	apt install git iperf3 psmisc curl bc expect dialog network-manager sunxi-tools iptables \
