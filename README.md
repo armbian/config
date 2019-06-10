@@ -71,22 +71,22 @@ Login as root and type:
 
 # Software testings
 
-|Application name|Stretch|Bionic|Test install|
-|:--|:--:|:--:|--:|
-|TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|SoftEther VPN server (VPN server)|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
-|Plex (Plex media server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|Radarr (Movie downloading server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|NCP (Nextcloud personal cloud)|:heavy_check_mark:|n/a|19.05.2019|
-|OpenMediaVault NAS (NAS server)|:heavy_check_mark:|n/a|29.09.2018|
-|OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|Home Assistant (Smarthome suite within Docker)|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
-|PI hole (ad blocker)|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
-|UrBackup (client/server backup system)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
-|Docker (Docker CE engine)|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
-|Mayan EDMS (Document management system within Docker)|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
-|MiniDLNA (Media sharing)|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
+|Application name|Buster|Stretch|Bionic|Test install|
+|:--|:--:|:--:|:--:|--:|
+|TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|SoftEther VPN server (VPN server)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
+|Plex (Plex media server)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|07.03.2019|
+|Radarr (Movie downloading server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|Sonarr (TV shows downloading server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|Transmission (torrent server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|NCP (Nextcloud personal cloud)|:grey_question:|:heavy_check_mark:|n/a|19.05.2019|
+|OpenMediaVault NAS (NAS server)|:grey_question:|:heavy_check_mark:|n/a|29.09.2018|
+|OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|Home Assistant (Smarthome suite within Docker)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
+|PI hole (ad blocker)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
+|UrBackup (client/server backup system)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|Docker (Docker CE engine)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|Mayan EDMS (Document management system within Docker)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
+|MiniDLNA (Media sharing)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
