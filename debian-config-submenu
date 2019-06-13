@@ -393,6 +393,11 @@ while true; do
 				else
 				LIST+=( "Thunderbird" "Remove full featured email client" )
 			fi
+                        if ! check_if_installed gimp ; then
+                                LIST+=( "Gimp" "Install photo manipulation tool" )
+                                else
+                                LIST+=( "Gimp" "Remove photo manipulation tool" )
+                        fi
 			if ! check_if_installed libreoffice-writer ; then
 				LIST+=( "Writer" "Libreoffice: Writer only" )
 				LIST+=( "Suite" "Libreoffice: Full suite" )

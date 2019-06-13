@@ -1030,6 +1030,14 @@ function jobs ()
 		fi
 	;;
 
+        "Gimp" )
+                if ! check_if_installed gimp then ; then
+                        debconf-apt-progress -- apt-get -y install gimp
+                else
+                        debconf-apt-progress -- apt-get -y purge gimp
+                fi
+        ;;
+
 	"Libre" )
 		debconf-apt-progress -- apt-get -y purge libreoffice*
 	;;
