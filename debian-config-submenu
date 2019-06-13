@@ -63,6 +63,13 @@ while true; do
 		LIST+=( "CPU" "Set CPU speed and governor" )
 	fi
 
+	AVAHIDSTATUS=$(service avahi-daemon status 2> /dev/null | grep -w active | grep -w running)
+	if [[ -n "$AVAHIDSTATUS" ]]; then
+		LIST+=( "Avahi" "Disable system announce in the network" )
+		else
+		LIST+=( "Avahi" "Announce system in the network" )
+	fi
+
 	[[ -d ${OVERLAYDIR} ]] && \
 	LIST+=( "Hardware" "Toggle hardware configuration: UART, I2C, etc." )
 	[[ "$LINUXFAMILY" = cubox && "$BRANCH" = "next" ]] && LIST+=( "DTB" "Switch board .dtb configuration" )
