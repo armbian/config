@@ -557,6 +557,7 @@ case $distribution in
 		OMV_EXTRA_PACKAGES="openmediavault-flashmemory openmediavault-netatalk"
 		;;
 	buster)
+		dialog --title "Warning" --msgbox "\nPlease be aware that OMV5 is still in beta state, might be functionally broken or not working at all. Report any issues you run into at forum.openmediavault.org.\n\nIf you want to run OMV4 remain on Debian Stretch" 11 56
 		OMV_Name="usul"
 		OMV_EXTRAS_URL="https://github.com/OpenMediaVault-Plugin-Developers/packages/raw/master/openmediavault-omvextrasorg_latest_all5.deb"
 		OMV_EXTRA_PACKAGES="openmediavault-flashmemory"
