@@ -263,6 +263,7 @@ function jobs ()
 	# Select dynamic or edit static IP address
 	#
 	"IP" )
+			select_interface
 			# check if we have systemd networking in action
 			SYSTEMDNET=$(service systemd-networkd status | grep -w active | grep -w running)
 			dialog --title " IP address assignment " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" \
@@ -273,33 +274,33 @@ function jobs ()
 			# dynamic
 			if [[ $exitstatus = 0 ]]; then
 				if [[ -n $SYSTEMDNET ]]; then
-					filename="/etc/systemd/network/10-${DEFAULT_ADAPTER}.network"
+					filename="/etc/systemd/network/10-${SELECTED_ADAPTER}.network"
 					if [[ -f $filename ]]; then
 						sed -i '/Network/,$d' $filename
 						echo -e "[Network]" >>$filename
 						echo -e "DHCP=ipv4" >>$filename
 					fi
 				else
-					if [[ -n $(LC_ALL=C nmcli device status | grep $DEFAULT_ADAPTER | grep connected) ]]; then
-						nmcli connection delete uuid $(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $DEFAULT_ADAPTER | awk '{print $1}') >/dev/null 2>&1
-						nmcli con add con-name "Armbian ethernet" type ethernet ifname $DEFAULT_ADAPTER >/dev/null 2>&1
+					if [[ -n $(LC_ALL=C nmcli device status | grep $SELECTED_ADAPTER ) ]]; then
+						nmcli connection delete uuid $(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $SELECTED_ADAPTER | awk '{print $1}') >/dev/null 2>&1
+						nmcli con add con-name "Armbian ethernet" type ethernet ifname $SELECTED_ADAPTER >/dev/null 2>&1
 						nmcli con up "Armbian ethernet" >/dev/null 2>&1
 						else
-						create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "dynamic" > /etc/network/interfaces
+						create_if_config "$SELECTED_ADAPTER" "$SELECTED_ADAPTER" "dynamic" > /etc/network/interfaces
 					fi
 				fi
 			fi
 
 			# static
 			if [[ $exitstatus = 1 ]]; then
-				create_if_config "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "fixed" > /dev/null
+				create_if_config "$SELECTED_ADAPTER" "$SELECTED_ADAPTER" "fixed" > /dev/null
 				if [[ -n $SYSTEMDNET ]]; then
-					systemd_ip_editor "${DEFAULT_ADAPTER}"
+					systemd_ip_editor "${SELECTED_ADAPTER}"
 				else
-					if [[ -n $(LC_ALL=C nmcli device status | grep $DEFAULT_ADAPTER | grep connected) ]]; then
-						nm_ip_editor "$DEFAULT_ADAPTER"
+					if [[ -n $(LC_ALL=C nmcli device status | grep $SELECTED_ADAPTER ) ]]; then
+						nm_ip_editor "$SELECTED_ADAPTER"
 					else
-						ip_editor "$DEFAULT_ADAPTER" "$DEFAULT_ADAPTER" "/etc/network/interfaces"
+						ip_editor "$SELECTED_ADAPTER" "$SELECTED_ADAPTER" "/etc/network/interfaces"
 					fi
 				fi
 			fi
@@ -524,7 +525,7 @@ function jobs ()
 				[[ ! -f /etc/network/interfaces ]] && echo "source /etc/network/interfaces.d/*" > /etc/network/interfaces
 
 				# select default interfaces if there is more than one
-				#select_default_interface
+				select_default_interface
 
 				NETWORK_CONF="/etc/network/interfaces"
 

@@ -168,8 +168,8 @@ done
 function submenu_networking ()
 {
 
-# if there is more than one connected device
-select_default_interface
+# select default interface if there is more than one connected
+#select_interface "default"
 
 while true; do
 

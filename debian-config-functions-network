@@ -17,6 +17,7 @@
 # check_ht_capab
 # check_vht_capab
 # check_channels
+# netmask_to_cidr
 # nm_ip_editor
 # systemd_ip_editor
 # ip_editor
@@ -330,6 +331,19 @@ function check_channels ()
 }
 
 
+#
+# convert netmask to CIDR
+#
+function netmask_to_cidr ()
+{
+  IFS=' '
+  local bits=0
+  for octet in $(echo $1| sed 's/\./ /g'); do
+    binbits=$(echo "obase=2; ibase=10; ${octet}"| bc | sed 's/0//g')
+    let bits+=${#binbits}
+  done
+  echo "${bits}"
+}
 
 
 #
@@ -347,13 +361,27 @@ exec 3>&1
 	2>&1 1>&3 | {
 		read -r address;read -r netmask;read -r gateway
 		if [[ $? = 0 ]]; then
-				localuuid=$(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $1 | awk '{print $1}')
-				nmcli con mod $localuuid ipv4.method manual ipv4.addresses "$address/$netmask" >/dev/null 2>&1
+			localuuid=$(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $1 | awk '{print $1}')
+      # convert netmask value to CIDR if required
+      if [[ $netmask =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        CIDR=$(netmask_to_cidr ${netmask})
+      else
+        CIDR=${netmask}
+      fi
+			if [[ -n "$localuuid" ]]; then
+				# adjust existing
+				nmcli con mod $localuuid ipv4.method manual ipv4.addresses "$address/$CIDR" >/dev/null 2>&1
 				nmcli con mod $localuuid ipv4.method manual ipv4.gateway  "$gateway" >/dev/null 2>&1
 				nmcli con mod $localuuid ipv4.dns "8.8.8.8,$gateway" >/dev/null 2>&1
 				nmcli con down $localuuid >/dev/null 2>&1
 				sleep 2
 				nmcli con up $localuuid >/dev/null 2>&1
+			else
+				# create new
+				nmcli con add con-name "armbian" ifname "$1" type 802-3-ethernet ip4 "$address/$CIDR" gw4 "$gateway" >/dev/null 2>&1
+				nmcli con mod "armbian" ipv4.dns "8.8.8.8,$gateway" >/dev/null 2>&1
+				nmcli con up "armbian" >/dev/null 2>&1
+			fi
 		fi
 		}
 }
@@ -453,7 +481,7 @@ function wlan_edit ()
 {
 
 	# select default interfaces if there is more than one
-	select_default_interface
+	select_interface "default"
 	dialog --title " Configuration edit " --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Basic" \
 	--no-label "Advanced" --yesno "\n\Z1Basic:\Z0    Change SSID, password and channel\n\n\Z1Advanced:\Z0 Edit /etc/hostapd.conf file" 9 70
 	if [[ $? = 0 ]]; then
@@ -543,19 +571,56 @@ function get_wlan_interface ()
 
 
 
+function select_interface ()
+{
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
+	local ADAPTER=($(nmcli device status | grep ethernet | awk '{ print $1 }' | grep -v lo))
+	local LIST=()
+	for i in "${ADAPTER[@]}"
+	do
+		local IPADDR=$(LC_ALL=C ip -4 addr show dev ${i[0]} | awk '/inet/ {print $2}' | cut -d'/' -f1)
+		ADD_SPEED=""
+		[[ $i == eth* || $i == en* ]] && ADD_SPEED=$(ethtool $i | grep Speed)
+		[[ $i == wl* ]] && ADD_SPEED=$(LC_ALL=C nmcli -f RATE,DEVICE,ACTIVE dev wifi list | grep $i | grep yes | awk 'NF==4{print $1""$2}NF==1' | sed -e 's/^/  Speed: /' | tail -1)
+		LIST+=( "${i[0]//[[:blank:]]/}" "${IPADDR} ${ADD_SPEED}" )
+	done
+	LIST_LENGTH=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGTH" -eq 0 ]; then
+		SELECTED_ADAPTER="lo"
+	elif [ "$LIST_LENGTH" -eq 1 ]; then
+		SELECTED_ADAPTER=${ADAPTER[0]}
+	else
+	exec 3>&1
+	SELECTED_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Select $1 interface" --clear \
+	--menu "" $((6+${LIST_LENGTH})) 74 14 "${LIST[@]}" 2>&1 1>&3)
+	exec 3>&-
+	fi
+
+}
+
+
+
+
 #
 # select interface if there is more than one and adjust metric
 #
+# $1 = default | all
+#
 function select_default_interface ()
 {
+
 	ALREADY_DEFINED=$(cat /etc/iptables.ipv4.nat 2> /dev/null | grep "POSTROUTING -o" | tail -1 | awk '{ print $4 }')
 	if [[ -n "${ALREADY_DEFINED}" ]]; then
-
 		DEFAULT_ADAPTER=${ALREADY_DEFINED}
 	else
 		IFS=$'\r\n'
 		GLOBIGNORE='*'
-		local ADAPTER=($(nmcli -t -f DEVICE connection show --active))
+		if [[ $1 == "default" ]]; then
+			local ADAPTER=($(nmcli -t -f DEVICE connection show --active))
+		else
+			local ADAPTER=($(nmcli device status | tail -n +2 | awk '{ print $1 }' | grep -v lo))
+		fi
 		local LIST=()
 		for i in "${ADAPTER[@]}"
 		do
@@ -563,7 +628,11 @@ function select_default_interface ()
 				ADD_SPEED=""
 				[[ $i == eth* || $i == en* ]] && ADD_SPEED=$(ethtool $i | grep Speed)
 				[[ $i == wl* ]] && ADD_SPEED=$(LC_ALL=C nmcli -f RATE,DEVICE,ACTIVE dev wifi list | grep $i | grep yes | awk 'NF==4{print $1""$2}NF==1' | sed -e 's/^/  Speed: /' | tail -1)
-				[[ $IPADDR != "172.24.1.1" && -n $IPADDR ]] && LIST+=( "${i[0]//[[:blank:]]/}" "${IPADDR} ${ADD_SPEED}" )
+				if [[ $1 == "default" ]]; then
+					[[ $IPADDR != "172.24.1.1" && -n $IPADDR ]] && LIST+=( "${i[0]//[[:blank:]]/}" "${IPADDR} ${ADD_SPEED}" )
+				else
+					[[ $IPADDR != "172.24.1.1" ]] && LIST+=( "${i[0]//[[:blank:]]/}" "${IPADDR} ${ADD_SPEED}" )
+				fi
 		done
 		LIST_LENGTH=$((${#LIST[@]}/2));
 		if [ "$LIST_LENGTH" -eq 0 ]; then
@@ -573,7 +642,7 @@ function select_default_interface ()
 		else
 				exec 3>&1
 				DEFAULT_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-				--title "Select default interface" --clear --menu "" $((6+${LIST_LENGTH})) 74 14 "${LIST[@]}" 2>&1 1>&3)
+				--title "Select $1 interface" --clear --menu "" $((6+${LIST_LENGTH})) 74 14 "${LIST[@]}" 2>&1 1>&3)
 				exec 3>&-
 		fi
 	fi
