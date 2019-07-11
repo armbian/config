@@ -1019,6 +1019,14 @@ function jobs ()
 		fi
 	;;
 
+        "Gimp" )
+                if ! check_if_installed gimp then ; then
+                        debconf-apt-progress -- apt-get -y install gimp
+                else
+                        debconf-apt-progress -- apt-get -y purge gimp
+                fi
+        ;;
+
 	"Libre" )
 		debconf-apt-progress -- apt-get -y purge libreoffice*
 	;;
@@ -1065,6 +1073,20 @@ function jobs ()
 				sync
 			fi
 		fi
+	;;
+
+	"Avahi")
+	if ! is_package_manager_running; then
+		if check_if_installed avahi-daemon ; then
+			service avahi-daemon stop
+			debconf-apt-progress -- apt-get -y purge avahi-daemon
+		else
+			debconf-apt-progress -- apt-get -y install avahi-daemon
+			[[ -f /usr/share/doc/avahi-daemon/examples/sftp-ssh.service ]] && cp /usr/share/doc/avahi-daemon/examples/sftp-ssh.service /etc/avahi/services/
+			[[ -f /usr/share/doc/avahi-daemon/examples/ssh.service ]] && cp /usr/share/doc/avahi-daemon/examples/ssh.service /etc/avahi/services/
+			service avahi-daemon restart
+		fi
+	fi
 	;;
 
 
@@ -1157,9 +1179,9 @@ function jobs ()
 		PREFIX="$(echo $BEFORE | cut -f1 -d".")"
 		AVAL_MIRROR=()
 		if [[ $PREFIX == beta ]]; then
-			AVAL_MIRROR=("beta.armbian.com" "mirrors.netix.net/armbian/apt/")
+			AVAL_MIRROR=("beta.armbian.com")
 			else
-			AVAL_MIRROR+=("apt.armbian.com" "mirrors.tuna.tsinghua.edu.cn/armbian/" "mirrors.netix.net/armbian/apt/" "mirrors.dotsrc.org/armbian-apt/")
+			AVAL_MIRROR+=("apt.armbian.com" "mirrors.tuna.tsinghua.edu.cn/armbian/" "mirrors.dotsrc.org/armbian-apt/")
 		fi
 		local LIST=()
 		for i in "${AVAL_MIRROR[@]}"
