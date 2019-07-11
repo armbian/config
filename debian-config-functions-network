@@ -17,6 +17,7 @@
 # check_ht_capab
 # check_vht_capab
 # check_channels
+# netmask_to_cidr
 # nm_ip_editor
 # systemd_ip_editor
 # ip_editor
@@ -330,6 +331,19 @@ function check_channels ()
 }
 
 
+#
+# convert netmask to CIDR
+#
+function netmask_to_cidr ()
+{
+  IFS=' '
+  local bits=0
+  for octet in $(echo $1| sed 's/\./ /g'); do
+    binbits=$(echo "obase=2; ibase=10; ${octet}"| bc | sed 's/0//g')
+    let bits+=${#binbits}
+  done
+  echo "${bits}"
+}
 
 
 #
@@ -348,9 +362,15 @@ exec 3>&1
 		read -r address;read -r netmask;read -r gateway
 		if [[ $? = 0 ]]; then
 			localuuid=$(LC_ALL=C nmcli -f UUID,DEVICE connection show | grep $1 | awk '{print $1}')
+      # convert netmask value to CIDR if required
+      if [[ $netmask =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        CIDR=$(netmask_to_cidr ${netmask})
+      else
+        CIDR=${netmask}
+      fi
 			if [[ -n "$localuuid" ]]; then
 				# adjust existing
-				nmcli con mod $localuuid ipv4.method manual ipv4.addresses "$address/$netmask" >/dev/null 2>&1
+				nmcli con mod $localuuid ipv4.method manual ipv4.addresses "$address/$CIDR" >/dev/null 2>&1
 				nmcli con mod $localuuid ipv4.method manual ipv4.gateway  "$gateway" >/dev/null 2>&1
 				nmcli con mod $localuuid ipv4.dns "8.8.8.8,$gateway" >/dev/null 2>&1
 				nmcli con down $localuuid >/dev/null 2>&1
@@ -358,7 +378,7 @@ exec 3>&1
 				nmcli con up $localuuid >/dev/null 2>&1
 			else
 				# create new
-				nmcli con add con-name "armbian" ifname "$1" type 802-3-ethernet ip4 "$address/$netmask" gw4 "$gateway" >/dev/null 2>&1
+				nmcli con add con-name "armbian" ifname "$1" type 802-3-ethernet ip4 "$address/$CIDR" gw4 "$gateway" >/dev/null 2>&1
 				nmcli con mod "armbian" ipv4.dns "8.8.8.8,$gateway" >/dev/null 2>&1
 				nmcli con up "armbian" >/dev/null 2>&1
 			fi
