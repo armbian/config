@@ -205,12 +205,13 @@ function check_status
 	LIST+=( "ISPConfig" "$DESCRIPTION" "$ISPCONFIG_STATUS" )
 
 	# PHPmyadmin
-	if [[ $ISPCONFIG_STATUS == on ]]; then
-	LIST_CONST=$((LIST_CONST + 1))
-	alive_port "MYSQL administration" "8081" "" "/phpmyadmin"
-	PHPMYADMIN_STATUS="on"
-	LIST+=( "PHPmyadmin" "$DESCRIPTION" "$PHPMYADMIN_STATUS" )
-	fi
+#   TODO: fix phpmyadmin installer before uncommenting this section
+#	if [[ $ISPCONFIG_STATUS == on ]]; then
+#	LIST_CONST=$((LIST_CONST + 1))
+#	alive_port "MYSQL administration" "8081" "" "/phpmyadmin"
+#	PHPMYADMIN_STATUS="on"
+#	LIST+=( "PHPmyadmin" "$DESCRIPTION" "$PHPMYADMIN_STATUS" )
+#	fi
 }
 
 
@@ -1346,7 +1347,7 @@ php5-curl php5-intl php5-memcache php5-memcached php5-pspell php5-recode php5-sq
 libapache2-mod-passenger php5-xcache libapache2-mod-fastcgi php5-fpm"
 
 local pkg_buster="apache2 apache2-doc apache2-utils libapache2-mod-php php7.3 php7.3-common php7.3-gd php7.3-mysql php7.3-imap \
-phpmyadmin php7.3-cli php7.3-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear mcrypt  imagemagick libruby libapache2-mod-python \
+php7.3-cli php7.3-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear mcrypt  imagemagick libruby libapache2-mod-python \
 php7.3-curl php7.3-intl php7.3-pspell php7.3-recode php7.3-sqlite3 php7.3-tidy php7.3-xmlrpc php7.3-xsl memcached php-memcache \
 php-imagick php-gettext php7.3-zip php7.3-mbstring php-soap php7.3-soap php7.3-fpm php-apcu certbot"
 
