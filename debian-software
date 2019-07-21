@@ -1245,10 +1245,13 @@ install_Virus ()
 #
 # Install Amavisd-new, SpamAssassin, And ClamAV
 #
-packets="amavisd-new spamassassin clamav clamav-daemon unzip bzip2 arj p7zip unrar-free ripole rpm nomarch lzop \
+packets="amavisd-new spamassassin clamav clamav-daemon unzip bzip2 arj p7zip unrar-free rpm nomarch lzop \
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
 libnet-ident-perl zip libnet-dns-perl postgrey"
-if [[ $distribution != "bionic" ]]; then packets=$packets" zoo"; fi
+if [[ $distribution != "bionic" ]] && [[ $distribution != "buster" ]]; then 
+    packets=$packets" zoo"
+fi
+if [[ $distribution != "buster" ]]; then packets=$packets" ripole"; fi
 install_packet "$packets" "amavisd, spamassassin, clamav"
 sed -i "s/^AllowSupplementaryGroups.*/AllowSupplementaryGroups true/" /etc/clamav/clamd.conf
 service spamassassin stop >/dev/null 2>&1
@@ -1342,6 +1345,11 @@ php5-imap php5-cli php5-cgi libapache2-mod-fcgid apache2-suexec php-pear php-aut
 php5-curl php5-intl php5-memcache php5-memcached php5-pspell php5-recode php5-sqlite php5-tidy php5-xmlrpc php5-xsl \
 libapache2-mod-passenger php5-xcache libapache2-mod-fastcgi php5-fpm"
 
+local pkg_buster="apache2 apache2-doc apache2-utils libapache2-mod-php php7.3 php7.3-common php7.3-gd php7.3-mysql php7.3-imap \
+phpmyadmin php7.3-cli php7.3-cgi libapache2-mod-fcgid apache2-suexec-pristine php-pear mcrypt  imagemagick libruby libapache2-mod-python \
+php7.3-curl php7.3-intl php7.3-pspell php7.3-recode php7.3-sqlite3 php7.3-tidy php7.3-xmlrpc php7.3-xsl memcached php-memcache \
+php-imagick php-gettext php7.3-zip php7.3-mbstring php-soap php7.3-soap php7.3-fpm php-apcu certbot"
+
 local temp="pkg_${distribution}"
 install_packet "${pkg} ${!temp}" "Apache for $family $distribution"
 # fix HTTPOXY vulnerability
@@ -1360,11 +1368,14 @@ a2enmod actions proxy_fcgi setenvif fastcgi alias httpoxy suexec rewrite ssl act
 	        xenial)
 			a2enconf php7.0-fpm >/dev/null 2>&1
 	                ;;
-	        stretc)
+	        stretch)
 			a2enconf php7.0-fpm >/dev/null 2>&1
 	                ;;
 	        bionic)
 			a2enconf php7.2-fpm >/dev/null 2>&1
+	                ;;
+	        buster)
+			a2enconf php7.3-fpm >/dev/null 2>&1
 	                ;;
 	        esac
 service apache2 restart >> /dev/null
@@ -1395,6 +1406,10 @@ local pkg_bionic="php7.2-fpm php7.2-opcache php7.2-fpm php7.2 php7.2-common php7
 imagemagick libruby php7.2-curl php7.2-intl php7.2-pspell php7.2-recode php7.2-sqlite3 php7.2-tidy \
 php7.2-xmlrpc php7.2-xsl php-memcache php-imagick php-gettext php7.2-zip php7.2-mbstring php-apcu letsencrypt"
 
+local pkg_buster="php7.3-fpm php7.3-opcache php7.3-fpm php7.3 php7.3-common php7.3-gd php7.3-mysql php7.3-imap php7.3-cli php7.3-cgi \
+imagemagick libruby php7.3-curl php7.3-intl php7.3-pspell php7.3-recode php7.3-sqlite3 php7.3-tidy \
+php7.3-xmlrpc php7.3-xsl php-memcache php-imagick php-gettext php7.3-zip php7.3-mbstring php-apcu letsencrypt"
+
 local temp="pkg_${distribution}"
 install_packet "${pkg} ${!temp}" "Nginx for $family $distribution"
 
@@ -1411,7 +1426,7 @@ case $distribution in
         	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
         	service php7.0-fpm reload >> /dev/null
 		;;
-	stretc)
+	stretch)
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
 	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
         	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
@@ -1423,6 +1438,13 @@ case $distribution in
 	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.2/fpm/php.ini
         	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.2/fpm/php.ini
         	service php7.2-fpm reload >> /dev/null
+		phpenmod mbstring
+		;;
+	buster)
+		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
+	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.3/fpm/php.ini
+        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.3/fpm/php.ini
+        	service php7.3-fpm reload >> /dev/null
 		phpenmod mbstring
 		;;
         esac
