@@ -528,7 +528,9 @@ fi
 
 install_ncp (){
 	curl -sSL https://raw.githubusercontent.com/nextcloud/nextcloudpi/master/install.sh > ${TEMP_DIR}/install.sh
-	sed 's/grep -q -e .*/[[ \$(lsb_release -is) != "Debian" ]] \&\& \{/' -i ${TEMP_DIR}/install.sh
+	curl -sSL https://raw.githubusercontent.com/nextcloud/nextcloudpi/master/etc/ncp.cfg > ${TEMP_DIR}/ncp.cfg
+	local DEBIAN_RELEASE=$(awk '{if ($1 == "\"release\":" ) {print $2}}' ${TEMP_DIR}/ncp.cfg | sed 's/[", ]//g')
+	sed "s/check_distro etc\/ncp.cfg/[[ \$(lsb_release -cs) == \"${DEBIAN_RELEASE}\" ]] /" -i ${TEMP_DIR}/install.sh
 	bash ${TEMP_DIR}/install.sh
 }
 
