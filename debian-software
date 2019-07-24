@@ -15,14 +15,23 @@
 # alive_process
 # install_basic
 # create_ispconfig_configuration
+# check_if_installed
 # install_cups
 # install_samba
+# install_ncp
 # install_omv
 # install_tvheadend
+# install_docker
 # install_urbackup
 # install_transmission
 # install_transmission_seed_armbian_torrents
+# install_hassio
+# install_openhab
 # install_syncthing
+# install_plex_media_server
+# install_emby_server
+# install_radarr
+# install_sonarr
 # install_vpn_server
 # install_vpn_client
 # install_DashNTP
@@ -30,8 +39,6 @@
 # install_MySQLDovecot
 # install_Virus
 # install_hhvm
-# install_openhab
-# install_hass.io
 # install_phpmyadmin
 # install_apache
 # install_nginx
@@ -42,9 +49,6 @@
 # install_Fail2BanDovecot
 # install_Fail2BanRulesDovecot
 # install_ISPConfig
-# check_if_installed
-
-
 
 
 #
@@ -153,6 +157,12 @@ function check_status
 	alive_port "Plex media server" "32400"
 	LIST+=( "Plex" "$DESCRIPTION" "$PLEX_STATUS" )
 
+	# Emby server
+	AMBY_STATUS="$((check_if_installed emby-server) \
+	&& echo "on" || echo "off" )"
+	alive_port "Emby server" "8096"
+	LIST+=( "Emby" "$DESCRIPTION" "$AMBY_STATUS" )
+
 	# Radarr
 	RADARR_STATUS="$([[ -d /opt/Radarr ]] && echo "on" || echo "off" )"
 	alive_port "Movies downloading server" "7878"
@@ -177,7 +187,6 @@ function check_status
 	TRANSMISSION_STATUS="$(check_if_installed transmission-daemon && echo "on" || echo "off" )"
 	alive_port "Torrent download server" "9091"
 	LIST+=( "Transmission" "$DESCRIPTION" "$TRANSMISSION_STATUS" )
-
 
 	# UrBackup
 	URBACKUP_STATUS="$((check_if_installed urbackup-server || check_if_installed urbackup-server-dbg) \
@@ -961,7 +970,7 @@ dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take se
 install_plex_media_server ()
 {
 #
-# Media server
+# Plex Media server
 #
 	echo -e "deb https://downloads.plex.tv/repo/deb public main" > /etc/apt/sources.list.d/plex.list
 	wget -q -O - https://downloads.plex.tv/plex-keys/PlexSign.key | apt-key add - >/dev/null 2>&1
@@ -969,7 +978,17 @@ install_plex_media_server ()
 	debconf-apt-progress -- apt-get -y install plexmediaserver
 }
 
-
+install_emby_server ()
+{
+#
+# Emby server
+#
+  ARCH=$(dpkg --print-architecture)
+  URL=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases/latest | grep "/emby-server-deb.*${ARCH}.deb" | cut -d : -f 2,3 | tr -d \")
+	fancy_wget "$URL" "-O ${TEMP_DIR}/emby.deb"
+	dpkg -i ${TEMP_DIR}/emby.deb >/dev/null 2>&1
+	apt-get -yy -f install
+}
 
 
 install_radarr ()
@@ -1759,6 +1778,11 @@ if ! is_package_manager_running; then
 		if [[ "$selection" == *Plex* && "$PLEX_STATUS" != "on" ]]; then
 			install_plex_media_server
 			selection=${selection//Plex/}
+		fi
+
+		if [[ "$selection" == *Emby* && "$EMBY_STATUS" != "on" ]]; then
+			install_emby_server
+			selection=${selection//Emby/}
 		fi
 
 		if [[ "$selection" == *Radarr* && "$RADARR_STATUS" != "on" ]]; then
