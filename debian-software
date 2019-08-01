@@ -877,7 +877,7 @@ for f in ${TEMP_DIR}/torrent-tmp/*.torrent; do
 done
 # remove old armbian torrents
 while read i; do
-        [[ $i == *Armbian_* || $i == *gcc-linaro-* || $i == *-ng-arm* ]] && transmission-remote -n 'transmission:transmission' -t $(echo "$i" | awk '{print $1}';) --remove-and-delete
+        [[ $i == *Armbian_* || $i == *gcc-linaro-* || $i == *tar.lz4 ]] && transmission-remote -n 'transmission:transmission' -t $(echo "$i" | awk '{print $1}';) --remove-and-delete
 done < ${TEMP_DIR}/torrent-tmp/active.torrents
 # remove temporally files and direcotories
 EOF
