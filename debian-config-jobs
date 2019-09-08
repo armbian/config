@@ -1000,11 +1000,11 @@ function jobs ()
 	;;
 
 	"Minimal" )
-	configure_desktop
+	configure_desktop "--install-recommends"
 	;;
 
 	"Default")
-	configure_desktop "--install-recommends"
+	configure_desktop "--install-suggests"
 	;;
 
 	"RDP" )
