@@ -547,7 +547,7 @@ install_ncp (){
 
 install_omv (){
 #
-# On Debian install OpenMediaVault 3 (Jessie) or 4 (Stretch)
+# On Debian install OpenMediaVault 3 (Jessie), 4 (Stretch) or 5 (Buster)
 #
 # TODO: Some OMV packages lack authentication
 
@@ -635,8 +635,9 @@ debconf-apt-progress -- apt-get --yes --auto-remove --show-upgraded \
 	--option DPkg::Options::="--force-confold" \
 	install postfix dirmngr openmediavault
 
-# Fix multiple sources entry on ARM with OMV4
+# Fix multiple sources entry on ARM with OMV
 sed -i '/stretch-backports/d' /etc/apt/sources.list
+sed -i '/buster-backports/d' /etc/apt/sources.list
 
 # Install OMV-Extras
 FILE="${TEMP_DIR}/omv_extras.deb"; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE ; rm $FILE
