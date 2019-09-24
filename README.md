@@ -71,7 +71,7 @@ Development version:
 
 	# Install dependencies
 	apt install git iperf3 psmisc curl bc expect dialog network-manager sunxi-tools iptables \
-	debconf-utils unzip dirmngr software-properties-common
+	debconf-utils unzip dirmngr software-properties-common psmisc
 
 	git clone https://github.com/armbian/config
 	cd config
