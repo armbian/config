@@ -436,7 +436,6 @@ function other_kernel_version ()
 	# get current kernel information
 	CURRENT_VERSION_TEMP=$(dpkg -l | grep '^ii' | grep linux-image)
 	CURRENT_VERSION=$(echo $CURRENT_VERSION_TEMP | awk '{print $2}')"="$(echo $CURRENT_VERSION_TEMP | awk '{print $3}')
-
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
 	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|Version:|version:" \
@@ -475,6 +474,13 @@ function other_kernel_version ()
 			exec 3>&-
 			if [[ $exitstatus = 0 ]]; then
 				IFS=" "
+				# determine upgrade packages
+				UPGRADE_ROOT="default"
+				UPGRADE_UBOOT=""
+				[[ $TARGET_VERSION == *legacy* ]] && UPGRADE_ROOT="-legacy" && UPGRADE_UBOOT="legacy"
+				[[ $TARGET_VERSION == *next* ]] && UPGRADE_ROOT="-next"  && UPGRADE_UBOOT="next"
+				[[ $TARGET_VERSION == *current* ]] && UPGRADE_ROOT="-current" && UPGRADE_UBOOT="current"
+				[[ $TARGET_VERSION == *dev* ]] && UPGRADE_ROOT="-dev" && UPGRADE_UBOOT="dev"
 				# install packages
 				PACKAGE_LIST="$TARGET_VERSION"
 				TARGET_VERSION_DTB=${TARGET_VERSION/image/dtb}
@@ -483,11 +489,10 @@ function other_kernel_version ()
 				[[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]] && \
 				PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
 				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
-				debconf-apt-progress -- apt --download-only --allow-downgrades -y \
-				--no-install-recommends install $PACKAGE_LIST
+				debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST
 				if [[ $? = 0 ]]; then
-					# remove old kernel
 					dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
+					# remove old kernel
 					aptitude remove ~nlinux-image-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
 					aptitude remove ~nlinux-image-next-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
 					aptitude remove ~nlinux-image-dev-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
@@ -499,7 +504,19 @@ function other_kernel_version ()
 					find "/boot/" -name "config*" -type f -delete
 					find "/boot/" -name "vmlinuz*" -type f -delete
 					find "/boot/" -name "*nitrd*" -type f -delete
-					debconf-apt-progress --	apt -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
+					debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
+					# update u-boot and rootfs
+					debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install linux-u-boot-${BOARD}-${UPGRADE_UBOOT}
+					if [[ $? = 0 ]]; then
+						aptitude remove ~n$(dpkg -l | grep '^ii' | grep linux-u-boot |  awk '{print $2}') --quiet=100 -y >> /var/log/upgrade.log 2>&1
+						debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends install linux-u-boot-${BOARD}-${UPGRADE_UBOOT}
+					fi
+
+					debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install linux-${DISTROID}-root${UPGRADE_ROOT}-${BOARD}
+					if [[ $? = 0 ]]; then
+                                                aptitude remove ~n$(dpkg -l | grep '^ii' | grep linux-${DISTROID} |  awk '{print $2}') --quiet=100 -y >> /var/log/upgrade.log 2>&1
+						debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends install linux-${DISTROID}-root${UPGRADE_ROOT}-${BOARD}
+                                        fi
 					# clean apt cache
 					apt clean
 					if [[ $? = 0 ]]; then reboot; fi
