@@ -999,12 +999,8 @@ function jobs ()
 		fi
 	;;
 
-	"Minimal" )
+	"Default" )
 	configure_desktop "--install-recommends"
-	;;
-
-	"Default")
-	configure_desktop "--install-suggests"
 	;;
 
 	"RDP" )
