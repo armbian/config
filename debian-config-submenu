@@ -308,7 +308,7 @@ function submenu_personal ()
 while true; do
 
 	LIST=()
-	LIST+=( "Timezone" "Change timezone \Z5($(date +%Z))\Z0" )
+	LIST+=( "Timezone" "Change timezone \Z5($(LC_ALL=C timedatectl | grep zone | awk '{$1=$1;print}' | sed "s/Time zone: //"))\Z0" )
 	LIST+=( "Locales" "Reconfigure language \Z5($(locale | grep LANGUAGE | cut -d= -f2 | cut -d_ -f1))\Z0 and character set" )
 	LIST+=( "Keyboard" "Change console keyboard layout (\Z5$(cat /etc/default/keyboard | grep XKBLAYOUT | grep -o '".*"' | sed 's/"//g')\Z0)")
 	LIST+=( "Hostname" "Change your hostname \Z5($(cat /etc/hostname))\Z0" )
