@@ -783,6 +783,7 @@ function jobs ()
 	#
 	"Keyboard" )
 		dpkg-reconfigure keyboard-configuration
+		setupcon
 	;;
 
 	# Change Hostname
