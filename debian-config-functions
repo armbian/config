@@ -366,60 +366,50 @@ function kernel_desc ()
 # reload kernel, bsp and armbian-config
 #
 function reload_bsp(){
-
+	clear
 	debconf-apt-progress -- apt-get update
-	# test install packages
-	TARGET_BRANCH=$BRANCH
+
+	# new branch names introduced with 12/2019
+	if [[ -n $(apt-cache search --names-only "^linux-image-current") ]]; then
+		[[ BRANCH == next ]] && TARGET_BRANCH="legacy" && TARGET_UBOOT_BRANCH="legacy"
+		TARGET_BRANCH="current"
+		TARGET_UBOOT_BRANCH="current"
+	else
+		TARGET_BRANCH="${BRANCH}"
+		TARGET_UBOOT_BRANCH="${UBOOT_BRANCH}"
+	fi
 	exceptions "$INSTALL_KERNEL"
 	unset PACKAGE_LIST
-	[[ -n $(apt-cache search --names-only "^armbian-${LINUXFAMILY}$") ]] && \
-	PACKAGE_LIST=$PACKAGE_LIST" armbian-${LINUXFAMILY}"
-	[[ -n $(apt-cache search --names-only "^armbian-${BOARD}$") ]] && \
-	PACKAGE_LIST=$PACKAGE_LIST" armbian-${BOARD}"
-	[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}$") ]] && \
-	PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}"
-	[[ -n $(apt-cache search --names-only "^armbian-${DISTROID}-desktop-xfce$") ]] && \
-	PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop-xfce"
+	PACKAGE_LIST="linux-${DISTROID}-root$TARGET_BRANCH-$BOARD"
+	[[ -z ${TARGET_UBOOT_BRANCH} ]] && TARGET_UBOOT_BRANCH="current"
+	PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-$BOARD-$TARGET_UBOOT_BRANCH"
+	check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop"
+	check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
 
-	# if new packages are absent, reinstall old ones
-	if [[ -z $PACKAGE_LIST ]]; then
-		PACKAGE_LIST="linux-${DISTROID}-root$TARGET_BRANCH-$BOARD"
-		check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop"
-	fi
-
-	# reinstall headers only if they are already installed
-	check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && \
-	PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
 	IFS=" "
 	[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
 	PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 	PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
-	debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends \
-	install $PACKAGE_LIST armbian-config
+	debconf-apt-progress --	apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST armbian-config
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
-		dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
-		aptitude remove ~nlinux-image*${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~nlinux-dtb --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~nlinux-headers --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~nlinux-${DISTROID}-root --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~narmbian-config --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~narmbian-${LINUXFAMILY} --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~narmbian-${BOARD} --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~narmbian-${DISTROID} --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~narmbian-${DISTROID}-desktop --quiet=100 -y >> /var/log/upgrade.log 2>&1
-		aptitude remove ~narmbian-${DISTROID}-desktop-xfce --quiet=100 -y >> /var/log/upgrade.log 2>&1
+
+		debconf-apt-progress -- apt -y -qq purge linux-u-boot* linux-image* linux-dtb* linux-headers* linux-${DISTROID}-root* armbian-${DISTROID}-desktop* armbian-config
+		find "/boot/" -name "System.map*" -type f -delete
+		find "/boot/" -name "config*" -type f -delete
+		find "/boot/" -name "vmlinuz*" -type f -delete
+		find "/boot/" -name "*nitrd*" -type f -delete
 		# install packages
 		echo $PACKAGE_LIST >> /var/log/upgrade.log
 		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall \
 		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_LIST armbian-config
-		# clean apt cache
-		apt clean
+
 		if [[ $? = 1 ]]; then
 			echo "Something went wrong ... check logs."; exit;
 		else
-			reboot
+			apt clean
 		fi
+
 	fi
 
 }
