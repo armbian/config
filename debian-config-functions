@@ -412,6 +412,9 @@ function other_kernel_version ()
 	CURRENT_VERSION_TEMP=$(dpkg -l | grep '^ii' | grep linux-image)
 	CURRENT_VERSION=$(echo $CURRENT_VERSION_TEMP | awk '{print $2}')"="$(echo $CURRENT_VERSION_TEMP | awk '{print $3}')
 
+	# Merged families
+	[[ ${LINUXFAMILY} == cubox || ${LINUXFAMILY} == udoo ]] && LINUXFAMILY=imx6
+
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
 	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|Version:|version:" \
