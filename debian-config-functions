@@ -414,6 +414,7 @@ function other_kernel_version ()
 
 	# Merged families
 	[[ ${LINUXFAMILY} == cubox || ${LINUXFAMILY} == udoo ]] && LINUXFAMILY=imx6
+	[[ ${LINUXFAMILY} == odroidn2 ]] && LINUXFAMILY=meson64
 
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
