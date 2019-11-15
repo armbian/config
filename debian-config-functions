@@ -414,6 +414,9 @@ function other_kernel_version ()
 	CURRENT_VERSION=$(echo $CURRENT_VERSION_TEMP | awk '{print $2}')"="$(echo $CURRENT_VERSION_TEMP | awk '{print $3}')
 
 	# Merge families and handle exceptions
+	[[ ${LINUXFAMILY} == sun*i ]] && LINUXFAMILY=sunxi
+	[[ ${LINUXFAMILY} == pine64 ]] && LINUXFAMILY=sunxi64
+	[[ ${LINUXFAMILY} == sun*iw* ]] && LINUXFAMILY=sunxi64
 	[[ ${LINUXFAMILY} == cubox || ${LINUXFAMILY} == udoo ]] && LINUXFAMILY=imx6
 	[[ ${LINUXFAMILY} == odroidn2 || ${LINUXFAMILY} == odroidc2 ]] && LINUXFAMILY=meson64 && HIDDEN="legacy"
 
@@ -488,7 +491,16 @@ function other_kernel_version ()
 					# BSP must be installed separate otherwise it won't work
 					debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends install linux-${DISTROID}-root${UPGRADE_ROOT}-${BOARD}
 					debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
-					if [[ $? = 0 ]]; then reboot; fi
+					if [[ $? = 0 ]]; then
+						# update boot loader
+						[[ -f /usr/lib/u-boot/platform_install.sh ]] && source /usr/lib/u-boot/platform_install.sh
+						#recognize_root
+						root_uuid=$(sed -e 's/^.*root=//' -e 's/ .*$//' < /proc/cmdline)
+						root_partition=$(blkid | tr -d '":' | grep "${root_uuid}" | awk '{print $1}')
+						root_partition_device="${root_partition::-2}"
+						write_uboot_platform "$DIR" "${root_partition_device}"
+						reboot
+					fi
 				else
 					dialog --backtitle "$BACKTITLE" --title "Warning" --msgbox \
 					"\nTest install failed. Can't change firmware \n\nCheck /tmp/switch_kernel.log" 9 48
