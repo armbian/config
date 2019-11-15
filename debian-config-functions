@@ -407,18 +407,15 @@ function other_kernel_version ()
 
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
-	local HIDDEN=''
+	local HIDDEN='hidden'
 
 	# get current kernel information
 	CURRENT_VERSION_TEMP=$(dpkg -l | grep '^ii' | grep linux-image)
 	CURRENT_VERSION=$(echo $CURRENT_VERSION_TEMP | awk '{print $2}')"="$(echo $CURRENT_VERSION_TEMP | awk '{print $3}')
 
-	# Merged families
+	# Merge families and handle exceptions
 	[[ ${LINUXFAMILY} == cubox || ${LINUXFAMILY} == udoo ]] && LINUXFAMILY=imx6
-	[[ ${LINUXFAMILY} == odroidn2 || ${LINUXFAMILY} == odroidc2 ]] && LINUXFAMILY=meson64
-
-	# Handle exceptions
-	[[ ${BOARD} == odroidc2 ]] && HIDDEN="legacy"
+	[[ ${LINUXFAMILY} == odroidn2 || ${LINUXFAMILY} == odroidc2 ]] && LINUXFAMILY=meson64 && HIDDEN="legacy"
 
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
@@ -434,7 +431,7 @@ function other_kernel_version ()
 		drugi=$((3*$m - 2))
 		tretji=$((3*$m - 1))
 		[[ -z ${LIST[$prvi]} ]] && break
-		if [[ $CURRENT_VERSION != "${LIST[$prvi]}=${LIST[$drugi]}" && "${LIST[$prvi]}" != *${HIDDEN}* ]]; then
+		if [[ $CURRENT_VERSION != "${LIST[$prvi]}=${LIST[$drugi]}" && ${LIST[$prvi]} != *${HIDDEN}* ]]; then
 			new_list+=( "${LIST[$prvi]}=${LIST[$drugi]}" )
 			new_list+=( ${LIST[$tretji]} )
 		fi
