@@ -418,7 +418,8 @@ function other_kernel_version ()
 	[[ ${LINUXFAMILY} == pine64 ]] && LINUXFAMILY=sunxi64
 	[[ ${LINUXFAMILY} == sun*iw* ]] && LINUXFAMILY=sunxi64
 	[[ ${LINUXFAMILY} == cubox || ${LINUXFAMILY} == udoo ]] && LINUXFAMILY=imx6
-	[[ ${LINUXFAMILY} == odroidn2 || ${LINUXFAMILY} == odroidc2 ]] && LINUXFAMILY=meson64 && HIDDEN="legacy"
+	[[ ${BOARD} == odroidc2 || ${BOARD} == kvim1 || ${BOARD} == lafrite || ${BOARD} == lepotato || ${BOARD} == nanopik2-s905 ]] && HIDDEN="legacy"
+	[[ ${LINUXFAMILY} == odroidn2 ]] && LINUXFAMILY=meson64
 
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
