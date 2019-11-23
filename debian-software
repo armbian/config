@@ -51,6 +51,8 @@
 # install_ISPConfig
 
 
+
+
 #
 # load functions, local first
 #
@@ -79,14 +81,6 @@ if  [[ -f debian-config-functions-network ]]; then source debian-config-function
 fi
 
 
-
-
-#
-# not sure if needed
-#
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-[[ -z $LC_ALL ]] && export LC_ALL="C"
 
 
 function check_status
@@ -333,23 +327,35 @@ echo ""
 }
 
 
+
+
 alive_port ()
 {
 #
 # Displays URL to the service $1 on port $2 or just that is active if $3 = boolean $4 = path
 #
 if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
+
 	if [[ $3 == boolean ]]; then
+
 		DESCRIPTION="$1 is \Z1active\Z0";
-	   elif [[ $3 == ssl ]]; then
+
+		elif [[ $3 == ssl ]]; then
+
 		DESCRIPTION="Active on https://${serverIP}:\Z1$2\Z0$4";
+
 		else
+
 		DESCRIPTION="Active on http://${serverIP}:\Z1$2\Z0$4";
+
 	fi
 else
-DESCRIPTION="$1";
+
+	DESCRIPTION="$1";
+
 fi
 }
+
 
 
 
@@ -360,9 +366,6 @@ alive_process ()
 #
 if pgrep -x "$2" > /dev/null 2>&1; then DESCRIPTION="$1 is \Z1active\Z0"; else DESCRIPTION="$1"; fi
 }
-
-
-
 
 
 
@@ -782,7 +785,8 @@ fi
 
 install_docker ()
 {
-echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${family,,} $distribution edge" > /etc/apt/sources.list.d/docker.list
+echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${family,,} $distribution edge" >\
+ /etc/apt/sources.list.d/docker.list
 curl -fsSL "https://download.docker.com/linux/${family,,}/gpg" | apt-key add -qq - > /dev/null 2>&1
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce
@@ -894,7 +898,9 @@ install_hassio ()
 #
 # Install Home assistant smart home suite hass.io / Docker instance by using official installer
 #
+
 local arch=$(dpkg --print-architecture)
+
 case $arch in
 	armhf)
 		local machine=raspberrypi2
@@ -909,11 +915,17 @@ case $arch in
 		exit 1
 	;;
 esac
+
 if [ $? == 0 ]; then
+
 	install_docker
-	debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates curl dbus jq network-manager socat software-properties-common
-	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-installer/master/hassio_install.sh" | bash -s -- -m  ${machine}
-	dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
+	debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates \
+	dbus jq network-manager socat software-properties-common
+	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-installer/master/hassio_install.sh" | \
+	bash -s -- -m  ${machine}
+	dialog --backtitle "$BACKTITLE" --title "Please wait" \
+	--msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
+
 fi
 }
 
@@ -925,12 +937,15 @@ install_openhab ()
 #
 # Install Openhab2 smart home suite openhab.org
 #
+
 wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
 echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get install -y openhab2 openhab2-addons default-jre
 service openhab2 start
-dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
+dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox \
+"\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
+
 }
 
 
@@ -985,6 +1000,9 @@ install_plex_media_server ()
 	debconf-apt-progress -- apt-get -y install plexmediaserver
 }
 
+
+
+
 install_emby_server ()
 {
 #
@@ -996,6 +1014,8 @@ install_emby_server ()
 	dpkg -i ${TEMP_DIR}/emby.deb >/dev/null 2>&1
 	apt-get -yy -f install
 }
+
+
 
 
 install_radarr ()
@@ -1625,9 +1645,9 @@ service fail2ban restart >> /dev/null
 
 
 install_ISPConfig (){
-#------------------------------------------------------------------------------------------------------------------------------------------
+#
 # Install ISPConfig 3
-#------------------------------------------------------------------------------------------------------------------------------------------
+#
 cd ${TEMP_DIR}
 wget -q https://www.ispconfig.org/downloads/ISPConfig-3-stable.tar.gz -O - | tar -xz
 cd ${TEMP_DIR}/ispconfig3_install/install/
@@ -1645,9 +1665,9 @@ fi
 
 
 
-#------------------------------------------------------------------------------------------------------------------------------------------
+#
 # Main choices
-#------------------------------------------------------------------------------------------------------------------------------------------
+#
 
 # check for root
 #
@@ -1829,10 +1849,10 @@ if ! is_package_manager_running; then
 			selection=${selection//\"Pi hole\"/}
 		fi
 
-                if [[ "$selection" == *Docker* && "$DOCKER_STATUS" != "on" ]]; then
-                       install_docker
-                       selection=${selection//Docker/}
-                fi
+		if [[ "$selection" == *Docker* && "$DOCKER_STATUS" != "on" ]]; then
+			install_docker
+			selection=${selection//Docker/}
+		fi
 
 		if [[ "$selection" == *Transmission* && "$TRANSMISSION_STATUS" != "on" ]]; then
 			install_transmission
