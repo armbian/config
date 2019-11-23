@@ -782,7 +782,7 @@ fi
 
 install_docker ()
 {
-echo "deb https://download.docker.com/linux/${family,,} $distribution edge" > /etc/apt/sources.list.d/docker.list
+echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${family,,} $distribution edge" > /etc/apt/sources.list.d/docker.list
 curl -fsSL "https://download.docker.com/linux/${family,,}/gpg" | apt-key add -qq - > /dev/null 2>&1
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce
