@@ -892,24 +892,27 @@ chmod +x /etc/cron.daily/seed-armbian-torrent
 install_hassio ()
 {
 #
-# Install Home assistant smart home suite hass.io
+# Install Home assistant smart home suite hass.io / Docker instance by using official installer
 #
-
-LIST=("intel-nuc" "Intel NUC" "odroid-c2" "Hardkernel Odroid C2" "odroid-xu" "Hardkernel Odroid XU4" "orangepi-prime" "Allwinner H5 boards" "qemuarm" "Virtualized ARM" "qemuarm-64" "Virtualized ARM64" "qemux86" "Virtualized x86" "qemux86-64" "Virtualied x64" "raspberrypi" "1st generation" "raspberrypi2" "2nd generation" "raspberrypi3" "3rd generation" "raspberrypi3-64" "3rd generation arm64 userland" "tinker" "Tinkerboard")
-LIST_LENGTH=$((${#LIST[@]}/2));
-exec 3>&1
-#TARGET_BOARD=$(dialog --menu "Choose machine type:" 0 0 0  "${LIST[@]}")
-TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse --title "Choose machine type:" --clear --menu "" $((6+${LIST_LENGTH})) 52 25 "${LIST[@]}" 2>&1 1>&3)
-exitstatus=$?;
-exec 3>&-
-if [ $exitstatus = 0 ]; then
+local arch=$(dpkg --print-architecture)
+case $arch in
+	armhf)
+		local machine=raspberrypi2
+	;;
+	arm64)
+		local machine=raspberrypi4-64
+	;;
+	amd64)
+		local machine=intel-nuc
+	;;
+	*)
+		exit 1
+	;;
+esac
+if [ $? == 0 ]; then
 	install_docker
 	debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates curl dbus jq network-manager socat software-properties-common
-	local arch=$(dpkg --print-architecture)
-	[[ "$arch" == "arm64" ]] && arch="aarch64"
-	docker pull homeassistant/${arch}-homeassistant
-	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-installer/master/hassio_install.sh" > ${TEMP_DIR}/hass.io.bash
-	bash ${TEMP_DIR}/hass.io.bash -m ${TARGET_BOARD}
+	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-installer/master/hassio_install.sh" | bash -s -- -m  ${machine}
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
 fi
 }
