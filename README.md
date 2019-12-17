@@ -92,7 +92,7 @@ Development version:
 |ISPConfig (WEB, SMTP, POP, IMAP, FTPD, MYSQL server)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |NCP (Nextcloud personal cloud)|:grey_question:|:heavy_check_mark:|n/a|19.05.2019|
 |OpenMediaVault NAS (NAS server)|:heavy_check_mark:|:heavy_check_mark:|n/a|24.07.2019|
-|OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|OpenHAB2 (Smarthome suite)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|17.12.2019|
 |Home Assistant (Smarthome suite within Docker)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
 |PI hole (ad blocker)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
 |UrBackup (client/server backup system)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|

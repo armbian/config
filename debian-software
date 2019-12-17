@@ -941,7 +941,9 @@ install_openhab ()
 wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
 echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get install -y openhab2 openhab2-addons default-jre
+debconf-apt-progress -- apt-get install -y openjdk-8-jdk
+apt-get install -y openhab2 openhab2-addons
+sed -i 's|EXTRA_JAVA_OPTS=""|EXTRA_JAVA_OPTS="-Dgnu.io.rxtx.SerialPorts=/dev/ttyUSB0:/dev/ttyS0:/dev/ttyS2:/dev/ttyACM0:/dev/ttyAMA0"|' /etc/default/openhab2
 service openhab2 start
 dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox \
 "\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
