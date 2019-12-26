@@ -121,7 +121,7 @@ function check_status
 	# OpenHab
 	OPENHAB_STATUS="$([[ -f /usr/bin/openhab-cli ]] && echo "on" || echo "off" )"
         alive_port "Openhab2 smarthome suite" "8080"
-        LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
+        [[ "$family" != "Debian" || "$distribution" == "stretch" ]] && LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
 
 	# VPN
 	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
