@@ -954,7 +954,6 @@ case $jdkArch in
 		URL="https://cdn.azul.com/zulu/bin/zulu8.42.0.21-ca-jdk8.0.232-linux_i686.tar.gz"
 
 esac
-}
 
 fancy_wget "$URL" "-O ${TEMP_DIR}/zulu8.tar.gz"
 mkdir -p /opt/jdk
