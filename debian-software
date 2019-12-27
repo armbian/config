@@ -939,6 +939,9 @@ install_openhab ()
 #
 
 # Install ZuluJDK
+
+local jdkArch=$(dpkg --print-architecture)
+
 case $jdkArch in
 
 	armhf)
