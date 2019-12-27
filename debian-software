@@ -973,17 +973,16 @@ ldconfig >/dev/null 2>&1
 wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
 echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
-apt-get install -y openhab2
-systemctl daemon-reload
-systemctl enable openhab2.service
-systemctl start openhab2.service
-# seems broken
+debconf-apt-progress -- apt-get install -y openhab2
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable openhab2.service >/dev/null 2>&1
+systemctl start openhab2.service >/dev/null 2>&1
+# addons seems broken
 # apt-get install -y openhab2-addons
 sed -i 's|EXTRA_JAVA_OPTS=""|EXTRA_JAVA_OPTS="-Dgnu.io.rxtx.SerialPorts=/dev/ttyUSB0:/dev/ttyS0:/dev/ttyS2:/dev/ttyACM0:/dev/ttyAMA0"|' /etc/default/openhab2
-service openhab2 start
+service openhab2 restart >/dev/null 2>&1
 dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox \
 "\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
-
 }
 
 
