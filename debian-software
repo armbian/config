@@ -121,7 +121,7 @@ function check_status
 	# OpenHab
 	OPENHAB_STATUS="$([[ -f /usr/bin/openhab-cli ]] && echo "on" || echo "off" )"
         alive_port "Openhab2 smarthome suite" "8080"
-        [[ "$family" != "Debian" || "$distribution" == "stretch" ]] && LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
+	LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
 
 	# VPN
 	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
@@ -938,11 +938,45 @@ install_openhab ()
 # Install Openhab2 smart home suite openhab.org
 #
 
+# Install ZuluJDK
+case $jdkArch in
+
+	armhf)
+		URL="https://cdn.azul.com/zulu-embedded/bin/zulu8.40.0.178-ca-jdk1.8.0_222-linux_aarch32hf.tar.gz"
+		;;
+	arm64)
+		URL="https://cdn.azul.com/zulu-embedded/bin/zulu8.40.0.178-ca-jdk1.8.0_222-linux_aarch64.tar.gz"
+		;;
+	amd64)
+		URL="https://cdn.azul.com/zulu/bin/zulu8.42.0.21-ca-jdk8.0.232-linux_x64.tar.gz"
+		;;
+	*)
+		URL="https://cdn.azul.com/zulu/bin/zulu8.42.0.21-ca-jdk8.0.232-linux_i686.tar.gz"
+
+esac
+}
+
+fancy_wget "$URL" "-O ${TEMP_DIR}/zulu8.tar.gz"
+mkdir -p /opt/jdk
+tar -xpzf ${TEMP_DIR}/zulu8.tar.gz -C /opt/jdk
+jdkBin=$(find /opt/jdk/*/bin ... -print -quit)
+jdkLib=$(find /opt/jdk/*/lib ... -print -quit)
+update-alternatives --remove-all java >/dev/null 2>&1
+update-alternatives --remove-all javac >/dev/null 2>&1
+update-alternatives --install /usr/bin/java java "$jdkBin"/java 1083000 >/dev/null 2>&1
+update-alternatives --install /usr/bin/javac javac "$jdkBin"/javac 1083000 >/dev/null 2>&1
+echo "$jdkLib"/"$jdkArch" > /etc/ld.so.conf.d/java.conf
+echo "$jdkLib"/"$jdkArch"/jli >> /etc/ld.so.conf.d/java.conf
+ldconfig >/dev/null 2>&1
 wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
 echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get install -y openjdk-8-jdk
-apt-get install -y openhab2 openhab2-addons
+apt-get install -y openhab2
+systemctl daemon-reload
+systemctl enable openhab2.service
+systemctl start openhab2.service
+# seems broken
+# apt-get install -y openhab2-addons
 sed -i 's|EXTRA_JAVA_OPTS=""|EXTRA_JAVA_OPTS="-Dgnu.io.rxtx.SerialPorts=/dev/ttyUSB0:/dev/ttyS0:/dev/ttyS2:/dev/ttyACM0:/dev/ttyAMA0"|' /etc/default/openhab2
 service openhab2 start
 dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox \
