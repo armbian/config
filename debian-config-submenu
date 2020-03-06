@@ -19,6 +19,7 @@
 #
 function submenu_settings ()
 {
+unset main
 while true; do
 
 	LIST=()
@@ -136,7 +137,7 @@ while true; do
 			echo > $temp_rc
 	fi
 
-
+if [[ -z $selection ]]; then
 	exec 3>&1
 	selection=$(DIALOGRC=$temp_rc dialog --colors --backtitle "$BACKTITLE" --title " $sys_title " --clear \
 	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 0 $BOXLENGTH \
@@ -144,6 +145,7 @@ while true; do
 	exit_status=$?
 	exec 3>&-
 	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
+fi
 
 	# run main function
 	jobs "$selection"
@@ -161,7 +163,7 @@ function submenu_networking ()
 
 # select default interface if there is more than one connected
 #select_interface "default"
-
+unset main
 while true; do
 
 	LIST=()
@@ -283,6 +285,7 @@ while true; do
 	fi
 	disclaimer=$disclaimer"\n\Z1Note\Zn: This tool can be successful only when drivers are configured properly. If auto-detection fails, you are on your own.\n "
 
+if [[ -z $selection ]]; then
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --colors --title " Wired, Wireless, Bluetooth, Hotspot " --clear \
 	--cancel-label "Back" --menu "${disclaimer}" $LISTLENGTH 70 $BOXLENGTH \
@@ -290,7 +293,7 @@ while true; do
 	exit_status=$?
 	exec 3>&-
 	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
-
+fi
 	# run main function
 	jobs "$selection"
 
@@ -305,6 +308,7 @@ done
 #
 function submenu_personal ()
 {
+unset main
 while true; do
 
 	LIST=()
@@ -343,6 +347,7 @@ done
 #
 function submenu_software ()
 {
+unset main
 while true; do
 
 	# detect desktop
@@ -406,6 +411,7 @@ while true; do
 	LISTLENGTH="$((6+${#LIST[@]}/2))"
 	BOXLENGTH=${#LIST[@]}
 
+if [[ -z $selection ]]; then
 	exec 3>&1
 	selection=$(dialog --backtitle "$BACKTITLE" --title "System and 3rd party software" --clear \
 	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 70 $BOXLENGTH \
@@ -413,6 +419,7 @@ while true; do
 	exit_status=$?
 	exec 3>&-
 	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
+fi
 
 	# run main function
 	jobs "$selection"

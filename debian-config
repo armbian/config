@@ -56,13 +56,27 @@ if  [[ -f ${BASH_SOURCE}-functions-network ]]; then source ${BASH_SOURCE}-functi
 fi
 
 
+# Script parameters handling
+while [[ $1 == *=* ]]; do
+    parameter=${1%%=*}
+    value=${1##*=}
+    shift
+    echo "Command line: setting $parameter to ${value:-(empty)}"
+    eval "$parameter=\"$value\""
+    scripted=true
+done
 
+# Display help
+if [[ $1 == "--help" ]]; then
+	echo "Armbian config options:"
+	echo ""
+	echo "Example to install headers:"
+	echo "${BASH_SOURCE[0]} main=Software selection=Headers"
+	exit
+fi
 
 # collect info
 main "$@"
-
-
-
 
 #
 # Main menu
@@ -104,8 +118,9 @@ do
 
 	[[ "$TITLELENGTH" -lt 60 ]] && TITLELENGTH="60"
 
+if [[ -z $main ]]; then
 	exec 3>&1
-	selection=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
+	main=$(dialog --colors --backtitle "$BACKTITLE" --title " armbian-config " --clear \
 	--cancel-label "Exit" --menu "\n$MENUTITLE \n$FREQENCIES\nSupport: \Z1https://forum.armbian.com\Z0\n " \
 	$LISTLENGTH ${TITLELENGTH} $BOXLENGTH "${LIST[@]}" 2>&1 1>&3)
 	exit_status=$?
@@ -114,9 +129,9 @@ do
 	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && exit
 
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox \
-	"\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
-
-	case $selection in
+	"\nLoading ${main,,} submodule ... " 5 $((26+${#main}))
+fi
+	case $main in
 
 		"System" )
 			submenu_settings
@@ -135,6 +150,7 @@ do
 		;;
 
 		"Help" )
+			unset main
 			t="This tool provides a straightforward way of configuring."
 			t=$t"\n \nAlthough it can be run at any time, some of the"
 			t=$t" options may have difficulties if you alter system settings manually.\n"
