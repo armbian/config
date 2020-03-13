@@ -26,7 +26,7 @@ fi
 wget -q --spider http://github.com
 if [[ $? -ne 0 ]]; then
 		read -n 1 -s -p "Warning: Configuration cannot work properly without a working internet connection. \
-		Press CTRL C to stop to stop or any key to ignore and continue."
+		Press CTRL C to stop or any key to ignore and continue."
 fi
 
 
