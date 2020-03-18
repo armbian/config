@@ -609,9 +609,15 @@ case ${BOARD} in
 		;;
 	helios4)
 		# Make mdadm display fault events on Fault LED
+		# NOTE : this is not a permanent approach need to be improved via some OMV core code change
 		if [ -f /usr/sbin/mdadm-fault-led.sh ]; then
-			sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /usr/share/openmediavault/mkconf/mdadm
-			/usr/sbin/omv-mkconf mdadm
+			if [[ "$distribution" == "stretch" ]]; then
+				sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /usr/share/openmediavault/mkconf/mdadm
+				/usr/sbin/omv-mkconf mdadm
+			elif [[ "$distribution" == "buster" ]]; then
+				sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /srv/salt/omv/deploy/mdadm/files/etc-mdadm-mdadm.conf.j2
+				/usr/sbin/omv-salt deploy run mdadm
+			fi
 		fi
 	;;
 esac
