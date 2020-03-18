@@ -582,8 +582,8 @@ if [[ "$distribution" == "stretch" ]]; then
 fi
 
 # Execute install script
-echo "Now installing OpenMediaVault. Be patient please..."
-bash ${TEMP_DIR}/omv_install.sh
+echo "Now installing OpenMediaVault. Be patient, it will take several minutes..."
+bash ${TEMP_DIR}/omv_install.sh &>> /var/log/omv_install.log
 
 # Board Specific Tweak
 echo "Now applying board tweak if required..."
