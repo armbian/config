@@ -552,16 +552,29 @@ install_omv (){
 #
 # Install OpenMediaVault on Debian
 #
+
+# Don't allow installation on Ubuntu
 if [[ "$family" == "Ubuntu" ]]; then
 	dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
 	sleep 5
 	exit 1
 fi
 
+# Warning / Notice before install
+case $distribution in
+	wheezy|jessie)
+		dialog --backtitle "$BACKTITLE" --title "OMV3 is End of Life" --msgbox "\nUpgrade to a supported OS : Debian Stretch or Buster." 7 52
+		sleep 5
+		exit 1
+		;;
+	buster)
+		dialog --title "Warning" --msgbox "\nPlease be aware that OMV5 is still in beta state. Report any issues you run into at forum.openmediavault.org.\n\nIf you want to run Stable OMV4 you need to run Debian Stretch." 11 56
+		;;
+esac
+
 # Download OMV install script
 wgeturl="https://github.com/OpenMediaVault-Plugin-Developers/installScript/raw/master/install"
 fancy_wget "$wgeturl" "-O ${TEMP_DIR}/omv_install.sh"
-
 
 # Remove Crony on Stretch since OMV4 depends on NTP
 if [[ "$distribution" == "stretch" ]]; then
@@ -571,7 +584,6 @@ fi
 # Execute install script
 echo "Now installing OpenMediaVault. Be patient please..."
 bash ${TEMP_DIR}/omv_install.sh
-
 
 # Board Specific Tweak
 echo "Now applying board tweak if required..."
