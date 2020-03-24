@@ -552,6 +552,9 @@ install_omv (){
 #
 # Install OpenMediaVault on Debian
 #
+if [ -f /etc/armbian-release ]; then
+        . /etc/armbian-release
+fi
 
 # Don't allow installation on Ubuntu
 if [[ "$family" == "Ubuntu" ]]; then
@@ -566,9 +569,6 @@ case $distribution in
 		dialog --backtitle "$BACKTITLE" --title "OMV3 is End of Life" --msgbox "\nUpgrade to a supported OS : Debian Stretch or Buster." 7 52
 		sleep 5
 		exit 1
-		;;
-	buster)
-		dialog --title "Warning" --msgbox "\nPlease be aware that OMV5 is still in beta state. Report any issues you run into at forum.openmediavault.org.\n\nIf you want to run Stable OMV4 you need to run Debian Stretch." 11 56
 		;;
 esac
 
@@ -615,7 +615,11 @@ case ${BOARD} in
 				sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /usr/share/openmediavault/mkconf/mdadm
 				/usr/sbin/omv-mkconf mdadm
 			elif [[ "$distribution" == "buster" ]]; then
-				sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /srv/salt/omv/deploy/mdadm/files/etc-mdadm-mdadm.conf.j2
+				cat <<EOF > /srv/salt/omv/deploy/mdadm/25faultled.sls
+mdadm_add_program_config:
+  cmd.run:
+    - name: "echo -e '\n# Trigger Fault Led script when an event is detected\nPROGRAM /usr/sbin/mdadm-fault-led.sh' >> /etc/mdadm/mdadm.conf"
+EOF
 				/usr/sbin/omv-salt deploy run mdadm
 			fi
 		fi
