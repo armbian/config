@@ -72,12 +72,13 @@ if [[ $1 == "--help" ]]; then
 	echo ""
 	echo "Examples:"
 	echo ""
-	echo "Install headers:					${BASH_SOURCE[0]} 		main=Software selection=Headers"
-	echo "Update, upgrade and reboot:				${BASH_SOURCE[0]} 		main=Software selection=Firmware"
-	echo "Change to ZSH:						${BASH_SOURCE[0]} 		main=Software selection=ZSH"
-	echo "Change to BASH: 					${BASH_SOURCE[0]} 		main=Software selection=BASH"
-	echo "Install headers: 					${BASH_SOURCE[0]} 		main=Software selection=Headers"
-	echo "Install Avahi mDNS/DNS-SD daemon:			${BASH_SOURCE[0]} 		main=Software selection=Avahi"
+	echo "Install headers:					${BASH_SOURCE[0]} main=Sytem selection=Headers"
+	echo "Update, upgrade and reboot:				${BASH_SOURCE[0]} main=System selection=Firmware"
+	echo "Change to ZSH:						${BASH_SOURCE[0]} main=System selection=ZSH"
+	echo "Change to BASH: 					${BASH_SOURCE[0]} main=System selection=BASH"
+	echo "Install headers: 					${BASH_SOURCE[0]} main=Software selection=Headers"
+	echo "Install sources:                                  ${BASH_SOURCE[0]} main=Software selection=Sources"
+	echo "Install Avahi mDNS/DNS-SD daemon:			${BASH_SOURCE[0]} main=Software selection=Avahi"
 	exit
 fi
 
