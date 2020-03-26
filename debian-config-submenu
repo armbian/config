@@ -361,13 +361,13 @@ while true; do
 	LIST+=( "Benchmarking" "sbc-bench board benchmarking" )
 	[[ -f /usr/bin/armbianmonitor ]] && LIST+=( "Diagnostics" "Send diagnostics" )
 
-	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers" "Remove kernel headers" ); else \
-	LIST+=( "Headers" "Install kernel headers" ); fi
+	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers_remove" "kernel headers" ); else \
+	LIST+=( "Headers_install" "kernel headers" ); fi
 
 	SOURCE_PKG=$(apt-cache --names-only search ^linux-source-* | awk '{ print $1 }' | grep ${BRANCH}-${LINUXFAMILY} | tail -1)
 	if [[ -n $SOURCE_PKG ]]; then
-		if ls /usr/src/linux-source* 1> /dev/null 2>&1; then LIST+=( "Source" "Remove kernel source" ); else \
-	        LIST+=( "Source" "Install kernel source" ); fi
+		if ls /usr/src/linux-source* 1> /dev/null 2>&1; then LIST+=( "Source_remove" "kernel source" ); else \
+	        LIST+=( "Source_install" "kernel source" ); fi
 	fi
 
 	if [[ -f /etc/armbian.txt ]]; then

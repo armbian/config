@@ -153,46 +153,46 @@ unset selection
 	#
 	# Install kernel headers
 	#
-	"Headers" )
+	"Headers_install" )
 		if ! is_package_manager_running; then
-			TARGET_BRANCH=$BRANCH
-			exceptions "$BRANCH"
-			REMOVE_PKG="linux-headers-*"
 			if [[ -f /etc/armbian-release ]]; then
-				INSTALL_PKG="linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}";
+				INSTALL_PKG="linux-headers-${BRANCH}-${LINUXFAMILY}";
 				else
 				INSTALL_PKG="linux-headers-$(uname -r | sed 's/'-$(dpkg --print-architecture)'//')";
 			fi
-			if [[ -n $(dpkg -l | grep linux-headers) ]]; then
-					debconf-apt-progress -- apt-get -y purge ${REMOVE_PKG}
-					rm -rf /usr/src/linux-headers*
-			else
-					debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
-			fi
-			# cleanup
-			apt clean
-			debconf-apt-progress -- apt -y autoremove
+			debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
 		fi
 	;;
 
 
+	#
+        # Remove kernel headers
+        #
+        "Headers_remove" )
+                if ! is_package_manager_running; then
+                        REMOVE_PKG="linux-headers-*"
+                        if [[ -n $(dpkg -l | grep linux-headers) ]]; then
+                                        debconf-apt-progress -- apt-get -y purge ${REMOVE_PKG}
+                                        rm -rf /usr/src/linux-headers*
+                        else
+                                        debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
+                        fi
+                        # cleanup
+                        apt clean
+                        debconf-apt-progress -- apt -y autoremove
+                fi
+        ;;
 
 
 	#
 	# Install kernel source
 	#
-	"Source" )
+	"Source_install" )
                 if ! is_package_manager_running; then
 			PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
 			if [[ -n $PACKAGE ]]; then
 
-				if ls /usr/src/linux-source* 1> /dev/null 2>&1; then
-					debconf-apt-progress -- apt-get -y purge linux-source*
-					debconf-apt-progress -- apt -y autoremove
-					apt clean
-					rm -r /usr/src/linux-source*
-	                        else
-                                        debconf-apt-progress -- apt-get -y install ${SOURCE_PKG}
+					debconf-apt-progress -- apt-get -y install ${SOURCE_PKG}
 					mkdir -p /usr/src/$PACKAGE
 					(pv -n /usr/src/$PACKAGE".tar.xz" | xz -d -T0 - | tar xf - -C /usr/src/$PACKAGE ) 2>&1 | dialog --colors --backtitle "$BACKTITLE" --title " Please wait! " --gauge "\nDecompressing kernel sources to /usr/src/$PACKAGE" 8 80
 					xz -d /usr/src/*config.xz --stdout > /usr/src/$PACKAGE/.config
@@ -203,11 +203,30 @@ unset selection
 					if [[ -z $scripted ]]; then
 					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find pre-configured kernel sources in /usr/src/$PACKAGE" 7 72
 					fi
-        	                fi
+
 	                fi
 		fi
         ;;
 
+
+
+        #
+        # Install kernel source
+        #
+        "Source_remove" )
+                if ! is_package_manager_running; then
+                        PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
+                        if [[ -n $PACKAGE ]]; then
+
+                                if ls /usr/src/linux-source* 1> /dev/null 2>&1; then
+                                        debconf-apt-progress -- apt-get -y purge linux-source*
+                                        debconf-apt-progress -- apt -y autoremove
+                                        apt clean
+                                        rm -r /usr/src/linux-source*
+                                fi
+                        fi
+                fi
+        ;;
 
 
 
