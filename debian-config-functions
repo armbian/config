@@ -360,31 +360,18 @@ function generic_select()
 # reload kernel, bsp and armbian-config
 #
 function reload_bsp(){
+
 	clear
 	debconf-apt-progress -- apt-get update
+	PACKAGE_LIST="linux-${DISTROID}-root-${BRANCH}-${BOARD} linux-u-boot-${BOARD}-${BRANCH}"
+	check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST+=" armbian-${DISTROID}-desktop"
+	check_if_installed linux-headers${BRANCH}-${FAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${FAMILY}"
 
-	# new branch names introduced with 12/2019
-	if [[ -n $(apt-cache search --names-only "^linux-image-current") ]]; then
-		[[ BRANCH == next ]] && TARGET_BRANCH="legacy" && TARGET_UBOOT_BRANCH="legacy"
-		TARGET_BRANCH="current"
-		TARGET_UBOOT_BRANCH="current"
-	else
-		TARGET_BRANCH="${BRANCH}"
-		TARGET_UBOOT_BRANCH="${UBOOT_BRANCH}"
-	fi
-	exceptions "$INSTALL_KERNEL"
-	unset PACKAGE_LIST
-	PACKAGE_LIST="linux-${DISTROID}-root$TARGET_BRANCH-$BOARD"
-	[[ -z ${TARGET_UBOOT_BRANCH} ]] && TARGET_UBOOT_BRANCH="current"
-	PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-$BOARD-$TARGET_UBOOT_BRANCH"
-	check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop"
-	check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
-
-	IFS=" "
-	[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
-	PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-	PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
+	[[ -n $(apt-cache search --names-only "^linux-dtb-${BRANCH}-${LINUXFAMILY}") ]] && \
+	PACKAGE_LIST+=" linux-dtb-${BRANCH}-${LINUXFAMILY}"
+	PACKAGE_LIST+=" linux-image-${BRANCH}-${LINUXFAMILY}"
 	debconf-apt-progress --	apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST armbian-config
+
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
 
@@ -393,12 +380,13 @@ function reload_bsp(){
 		find "/boot/" -name "config*" -type f -delete
 		find "/boot/" -name "vmlinuz*" -type f -delete
 		find "/boot/" -name "*nitrd*" -type f -delete
+
 		# install packages
 		echo $PACKAGE_LIST >> /var/log/upgrade.log
 		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall \
 		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_LIST armbian-config
 
-		if [[ $? = 1 ]]; then
+		if [[ $? -eq 1 ]]; then
 			echo "Something went wrong ... check logs."; exit;
 		else
 			apt clean
