@@ -1050,11 +1050,15 @@ unset selection
 	;;
 
 	"Writer" )
-		debconf-apt-progress -- apt-get -y install libreoffice-writer libreoffice-style-tango libreoffice-gtk
+		pkg_install="libreoffice-writer libreoffice-style-tango"
+		if [[ "$DISTROID" == "xenial" ]]; then pkg_install+=" libreoffice-gtk"; else pkg_install+=" libreoffice-gtk2"; fi
+		debconf-apt-progress -- apt-get -y install $pkg_install
 	;;
 
 	"Suite" )
-		debconf-apt-progress -- apt-get -y install libreoffice libreoffice-style-tango libreoffice-gtk
+		pkg_install="libreoffice libreoffice-style-tango"
+		if [[ "$DISTROID" == "xenial" ]]; then pkg_install+=" libreoffice-gtk"; else pkg_install+=" libreoffice-gtk2"; fi
+		debconf-apt-progress -- apt-get -y install $pkg_install
 	;;
 
 
