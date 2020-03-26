@@ -198,16 +198,13 @@ check_if_installed (){
 #
 function is_package_manager_running() {
 
-  fuser -s /var/lib/dpkg/lock
-  if [[ $? = 0 ]]; then
-    # 0 = true
-	dialog --colors --title " \Z1Error\Z0 " --backtitle "$BACKTITLE" --no-collapse --msgbox \
-	"\n\Z0Package manager is running in the background. \n\nCan't install dependencies. Try again later." 9 53
-    return 0
-  else
-    # 1 = false
-    return 1
-  fi
+	if ps -C apt-get,apt,dpkg >/dev/null ; then
+	[[ -z $scripted ]] && dialog --colors --title " \Z1Error\Z0 " --backtitle "$BACKTITLE" --no-collapse --msgbox \
+        "\n\Z0Package manager is running in the background. \n\nCan't install dependencies. Try again later." 9 53
+		return 0
+	else
+		return 1
+	fi
 
 }
 
@@ -365,7 +362,7 @@ function reload_bsp(){
 	debconf-apt-progress -- apt-get update
 	PACKAGE_LIST="linux-${DISTROID}-root-${BRANCH}-${BOARD} linux-u-boot-${BOARD}-${BRANCH}"
 	check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST+=" armbian-${DISTROID}-desktop"
-	check_if_installed linux-headers${BRANCH}-${FAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${FAMILY}"
+	check_if_installed linux-headers-${BRANCH}-${FAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${FAMILY}"
 
 	[[ -n $(apt-cache search --names-only "^linux-dtb-${BRANCH}-${LINUXFAMILY}") ]] && \
 	PACKAGE_LIST+=" linux-dtb-${BRANCH}-${LINUXFAMILY}"

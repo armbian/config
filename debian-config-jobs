@@ -183,13 +183,15 @@ unset selection
 	#
 	"Source" )
                 if ! is_package_manager_running; then
-		PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-next//" | sed "s/-dev//" | sed "s/-default//")
-			if ls /usr/src/linux-source* 1> /dev/null 2>&1; then
+			PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
+			if [[ -n $PACKAGE ]]; then
+
+				if ls /usr/src/linux-source* 1> /dev/null 2>&1; then
 					debconf-apt-progress -- apt-get -y purge linux-source*
 					debconf-apt-progress -- apt -y autoremove
 					apt clean
 					rm -r /usr/src/linux-source*
-                        else
+	                        else
                                         debconf-apt-progress -- apt-get -y install ${SOURCE_PKG}
 					mkdir -p /usr/src/$PACKAGE
 					(pv -n /usr/src/$PACKAGE".tar.xz" | xz -d -T0 - | tar xf - -C /usr/src/$PACKAGE ) 2>&1 | dialog --colors --backtitle "$BACKTITLE" --title " Please wait! " --gauge "\nDecompressing kernel sources to /usr/src/$PACKAGE" 8 80
@@ -198,9 +200,12 @@ unset selection
 					apt clean
 					debconf-apt-progress -- apt-get -y purge linux-source*
 					debconf-apt-progress -- apt -y autoremove
+					if [[ -z $scripted ]]; then
 					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find pre-configured kernel sources in /usr/src/$PACKAGE" 7 72
-                        fi
-                fi
+					fi
+        	                fi
+	                fi
+		fi
         ;;
 
 
@@ -804,7 +809,7 @@ unset selection
 		fi
 	;;
 
-	# ZSH
+	# Bash
 	#
 	"BASH" )
 		# change shell for root
@@ -825,7 +830,9 @@ unset selection
 		sed -i "s/^SHELL=.*/SHELL=\/bin\/bash/" /etc/default/useradd
 		# remove crontab
 		crontab -l | grep -v oh-my  | crontab -
-		dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1BASH\Z0\n\nPlease logout & login from this session!" 9 47
+		if [[ -z $scripted ]]; then
+			dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1BASH\Z0\n\nPlease logout & login from this session!" 9 47
+		fi
 	;;
 
 
@@ -867,7 +874,9 @@ unset selection
 		fi
 		# add a cronjob to update oh-my-zsh once per month
 		(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git pull origin master >/dev/null 2>/dev/null") | crontab -
-		dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
+		if [[ -z $scripted ]]; then
+			dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
+		fi
 		fi
 	;;
 
@@ -882,13 +891,15 @@ unset selection
 			exec 3>&-
 			mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//');mon_x=$(( $mon_x / 2 ))
 			mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//');
+			if [[ -z $scripted ]]; then
 			dialog --title " Update " --backtitle "$BACKTITLE" --no-label "No" --yesno "\nDo you want to update board firmware?" 7 41
-			if [[ $? = 0 ]]; then
+			fi
+			if [[ $? -eq 0 ]]; then
 				debconf-apt-progress -- apt-get update
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
 				dialog --title " Firmware update " --colors --no-label "No" --backtitle "$BACKTITLE" --yesno \
 				"\nFirmware has been updated. Reboot?   " 7 39
-				if [[ $? = 0 ]]; then reboot; fi
+				if [[ $? -eq 0 && -z $scripted ]]; then reboot; fi
 			fi
 		fi
 	;;
@@ -905,30 +916,27 @@ unset selection
 	#
 	"Freeze" | "Defreeze" )
 	if ! is_package_manager_running; then
-		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
+		if [[ -z $scripted ]]; then dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
 		"\nDo you want to ${1,,} Armbian firmware updates?" 7 54
-		if [[ $? = 0 ]]; then
-		TARGET_BRANCH=$BRANCH
-		exceptions "$BRANCH"
-		unset PACKAGE_LIST
+		fi
+		if [[ $? -eq 0 ]]; then
+
+			unset PACKAGE_LIST
 
 		# basic packages
-		check_if_installed linux-u-boot-${BOARD}-${UBOOT_BRANCH} && PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UBOOT_BRANCH}"
-		check_if_installed linux-image${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
-		check_if_installed linux-dtb$TARGET_BRANCH-$TARGET_FAMILY && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
 
-		# old BSP
-		check_if_installed linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD && PACKAGE_LIST=$PACKAGE_LIST" linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD"
-		check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
+		check_if_installed linux-u-boot-${BOARD}-${BRANCH} && PACKAGE_LIST+=" linux-u-boot-${BOARD}-${BRANCH}"
+		check_if_installed linux-image-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-image-${BRANCH}-${LINUXFAMILY}"
+		check_if_installed linux-dtb-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-dtb-${BRANCH}-${LINUXFAMILY}"
+		check_if_installed linux-headers-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${LINUXFAMILY}"
 
 		# new BSP
-		check_if_installed armbian-${LINUXFAMILY} && PACKAGE_LIST=$PACKAGE_LIST" armbian-${LINUXFAMILY}"
-		check_if_installed armbian-${BOARD} && PACKAGE_LIST=$PACKAGE_LIST" armbian-${BOARD}"
-		check_if_installed armbian-$(lsb_release -cs) && PACKAGE_LIST=$PACKAGE_LIST" armbian-$(lsb_release -cs)"
-		check_if_installed armbian-$(lsb_release -cs)-desktop-xfce && PACKAGE_LIST=$PACKAGE_LIST" armbian-$(lsb_release -cs)-desktop-xfce"
-		check_if_installed armbian-firmware && PACKAGE_LIST=$PACKAGE_LIST" armbian-firmware"
-		check_if_installed armbian-firmware-full && PACKAGE_LIST=$PACKAGE_LIST" armbian-firmware-full"
-
+		check_if_installed armbian-${LINUXFAMILY} && PACKAGE_LIST+=" armbian-${LINUXFAMILY}"
+		check_if_installed armbian-${BOARD} && PACKAGE_LIST+=" armbian-${BOARD}"
+		check_if_installed armbian-${DISTROID} && PACKAGE_LIST+=" armbian-${DISTROID}"
+		check_if_installed armbian-${DISTROID}-desktop-xfce && PACKAGE_LIST+=" armbian-${DISTROID}-desktop-xfce"
+		check_if_installed armbian-firmware && PACKAGE_LIST+=" armbian-firmware"
+		check_if_installed armbian-firmware-full && PACKAGE_LIST+=" armbian-firmware-full"
 
 		local words=( $PACKAGE_LIST )
 		local command="unhold"
