@@ -916,9 +916,10 @@ unset selection
 			if [[ $? -eq 0 ]]; then
 				debconf-apt-progress -- apt-get update
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
+				[[ -z $scripted ]] && \
 				dialog --title " Firmware update " --colors --no-label "No" --backtitle "$BACKTITLE" --yesno \
 				"\nFirmware has been updated. Reboot?   " 7 39
-				if [[ $? -eq 0 && -z $scripted ]]; then reboot; fi
+				if [[ $? -eq 0 ]]; then reboot; fi
 			fi
 		fi
 	;;
