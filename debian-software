@@ -567,9 +567,6 @@ case $distribution in
 		sleep 5
 		exit 1
 		;;
-	buster)
-		dialog --title "Warning" --msgbox "\nPlease be aware that OMV5 is still in beta state. Report any issues you run into at forum.openmediavault.org.\n\nIf you want to run Stable OMV4 you need to run Debian Stretch." 11 56
-		;;
 esac
 
 # Download OMV install script
