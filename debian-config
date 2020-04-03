@@ -76,6 +76,8 @@ if [[ $1 == "--help" ]]; then
 	echo "Update, upgrade and reboot:				${BASH_SOURCE[0]} main=System selection=Firmware"
 	echo "Change to ZSH:						${BASH_SOURCE[0]} main=System selection=ZSH"
 	echo "Change to BASH: 					${BASH_SOURCE[0]} main=System selection=BASH"
+	echo "Change to stable repository [branch=dev]:		${BASH_SOURCE[0]} main=System selection=Stable"
+	echo "Change to nightly repository [branch=dev]:		${BASH_SOURCE[0]} main=System selection=Nightly"
 	echo "Install headers:					${BASH_SOURCE[0]} main=Software selection=Headers_install"
 	echo "Remove headers:						${BASH_SOURCE[0]} main=Software selection=Headers_remove"
 	echo "Install kernel source:					${BASH_SOURCE[0]} main=Software selection=Source_install"

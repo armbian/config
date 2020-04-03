@@ -358,6 +358,9 @@ function generic_select()
 #
 function reload_bsp(){
 
+	# switch to defined branch
+	[[ -n "$1" ]] && BRANCH=$1
+
 	clear
 	debconf-apt-progress -- apt-get update
 	PACKAGE_LIST="linux-${DISTROID}-root-${BRANCH}-${BOARD} linux-u-boot-${BOARD}-${BRANCH}"

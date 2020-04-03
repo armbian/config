@@ -1448,7 +1448,7 @@ unset selection
 
 			if [[ $? = 0 || -n $scripted ]]; then
 				sed -i 's/^deb http:\/\/[^ ]*/deb http:\/\/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
-				reload_bsp
+				reload_bsp $branch
 			fi
 		fi
 	;;
@@ -1466,7 +1466,7 @@ unset selection
 
 			if [[ $? = 0 || -n $scripted ]]; then
 				sed -i 's/^deb http:\/\/beta/deb http:\/\/apt/' /etc/apt/sources.list.d/armbian.list
-				reload_bsp
+				reload_bsp $branch
 			fi
 		fi
 
