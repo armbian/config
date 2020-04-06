@@ -363,13 +363,15 @@ function reload_bsp(){
 
 	clear
 	debconf-apt-progress -- apt-get update
-	PACKAGE_LIST="linux-${DISTROID}-root-${BRANCH}-${BOARD} linux-u-boot-${BOARD}-${BRANCH}"
+
+	# must exits
+	PACKAGE_LIST="linux-dtb-${BRANCH}-${LINUXFAMILY} linux-image-${BRANCH}-${LINUXFAMILY}"
+
+	# optional
+	[[ -n $(apt-cache search --names-only "^linux-${DISTROID}-root-${BRANCH}-${BOARD}") ]] && PACKAGE_LIST+=" linux-${DISTROID}-root-${BRANCH}-${BOARD}"
+	[[ -n $(apt-cache search --names-only "^linux-u-boot-${BOARD}-${BRANCH}") ]] && PACKAGE_LIST+=" linux-u-boot-${BOARD}-${BRANCH}"
 	check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST+=" armbian-${DISTROID}-desktop"
 	check_if_installed linux-headers-${BRANCH}-${FAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${FAMILY}"
-
-	[[ -n $(apt-cache search --names-only "^linux-dtb-${BRANCH}-${LINUXFAMILY}") ]] && \
-	PACKAGE_LIST+=" linux-dtb-${BRANCH}-${LINUXFAMILY}"
-	PACKAGE_LIST+=" linux-image-${BRANCH}-${LINUXFAMILY}"
 	debconf-apt-progress --	apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST armbian-config
 
 	# if download is ok, remove old packages
