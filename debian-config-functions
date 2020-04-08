@@ -361,32 +361,53 @@ function reload_bsp(){
 	# switch to defined branch
 	[[ -n "$1" ]] && BRANCH=$1
 
+	# deal with exceptions
+	if [[ $BRANCH == current || $BRANCH == dev ]]; then
+		[[ ${LINUXFAMILY} == rk3399 ]] && LINUXFAMILY=rockchip64
+	fi
+
 	clear
 	debconf-apt-progress -- apt-get update
 
 	# must exits
-	PACKAGE_LIST="linux-dtb-${BRANCH}-${LINUXFAMILY} linux-image-${BRANCH}-${LINUXFAMILY}"
+	PACKAGE_INSTALL="linux-image-${BRANCH}-${LINUXFAMILY} linux-dtb-${BRANCH}-${LINUXFAMILY}"
+	PACKAGE_PURGE="linux-image* linux-dtb*"
 
-	# optional
-	[[ -n $(apt-cache search --names-only "^linux-${DISTROID}-root-${BRANCH}-${BOARD}") ]] && PACKAGE_LIST+=" linux-${DISTROID}-root-${BRANCH}-${BOARD}"
-	[[ -n $(apt-cache search --names-only "^linux-u-boot-${BOARD}-${BRANCH}") ]] && PACKAGE_LIST+=" linux-u-boot-${BOARD}-${BRANCH}"
-	check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST+=" armbian-${DISTROID}-desktop"
-	check_if_installed linux-headers-${BRANCH}-${FAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${FAMILY}"
-	debconf-apt-progress --	apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST armbian-config
+	# create install and remove logic
+	if [[ -n $(apt-cache search --names-only "^linux-${DISTROID}-root-${BRANCH}-${BOARD}") ]]; then
+		PACKAGE_INSTALL+=" linux-${DISTROID}-root-${BRANCH}-${BOARD}"
+		PACKAGE_PURGE+=" linux-${DISTROID}-root*"
+	fi
+
+	if [[ -n $(apt-cache search --names-only "^linux-u-boot-${BOARD}-${BRANCH}") ]]; then
+		PACKAGE_INSTALL+=" linux-u-boot-${BOARD}-${BRANCH}"
+		PACKAGE_PURGE+=" linux-u-boot-${BOARD}-*"
+	fi
+
+	if check_if_installed armbian-${DISTROID}-desktop ; then
+		PACKAGE_INSTALL+=" armbian-${DISTROID}-desktop"
+		PACKAGE_PURGE+=" armbian-${DISTROID}-desktop*"
+	fi
+
+	if check_if_installed linux-headers-${BRANCH}-${FAMILY} ; then
+		PACKAGE_INSTALL+=" linux-headers-${BRANCH}-${FAMILY}"
+		PACKAGE_PURGE+=" linux-headers*"
+	fi
+	debconf-apt-progress --	apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
 
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
 
-		debconf-apt-progress -- apt -y -qq purge linux-u-boot* linux-image* linux-dtb* linux-headers* linux-${DISTROID}-root* armbian-${DISTROID}-desktop* armbian-config
+		debconf-apt-progress -- apt -y -qq purge $PACKAGE_PURGE
 		find "/boot/" -name "System.map*" -type f -delete
 		find "/boot/" -name "config*" -type f -delete
 		find "/boot/" -name "vmlinuz*" -type f -delete
 		find "/boot/" -name "*nitrd*" -type f -delete
 
 		# install packages
-		echo $PACKAGE_LIST >> /var/log/upgrade.log
+		echo $PACKAGE_INSTALL >> /var/log/upgrade.log
 		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall \
-		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_LIST armbian-config
+		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_INSTALL
 
 		if [[ $? -eq 1 ]]; then
 			echo "Something went wrong ... check logs."; exit;
