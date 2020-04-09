@@ -368,18 +368,21 @@ function reload_bsp(){
 
 	clear
 	debconf-apt-progress -- apt-get update
+	debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
 
 	# must exits
 	PACKAGE_INSTALL="linux-image-${BRANCH}-${LINUXFAMILY} linux-dtb-${BRANCH}-${LINUXFAMILY}"
 	PACKAGE_PURGE="linux-image* linux-dtb*"
 
 	# create install and remove logic
-	if [[ -n $(apt-cache search --names-only "^linux-${DISTROID}-root-${BRANCH}-${BOARD}") ]]; then
+	apt --simulate --allow-downgrades -y --no-install-recommends install linux-${DISTROID}-root-${BRANCH}-${BOARD} &>/dev/null
+	if [[ $? -eq 0 ]]; then
 		PACKAGE_INSTALL+=" linux-${DISTROID}-root-${BRANCH}-${BOARD}"
 		PACKAGE_PURGE+=" linux-${DISTROID}-root*"
 	fi
 
-	if [[ -n $(apt-cache search --names-only "^linux-u-boot-${BOARD}-${BRANCH}") ]]; then
+	apt --simulate --allow-downgrades -y --no-install-recommends install linux-u-boot-${BOARD}-${BRANCH} &>/dev/null
+	if [[ $? -eq 0 ]]; then
 		PACKAGE_INSTALL+=" linux-u-boot-${BOARD}-${BRANCH}"
 		PACKAGE_PURGE+=" linux-u-boot-${BOARD}-*"
 	fi
@@ -393,7 +396,7 @@ function reload_bsp(){
 		PACKAGE_INSTALL+=" linux-headers-${BRANCH}-${FAMILY}"
 		PACKAGE_PURGE+=" linux-headers*"
 	fi
-	debconf-apt-progress --	apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
+	debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
 
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
