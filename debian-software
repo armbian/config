@@ -809,6 +809,13 @@ install_openhab ()
 #
 
 # Install ZuluJDK
+#
+# test below
+#
+# sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0xB1998361219BD9C9
+# sudo apt-add-repository 'deb http://repos.azulsystems.com/ubuntu stable main'
+# apt install zulu-embedded-8
+
 
 local jdkArch=$(dpkg --print-architecture)
 
