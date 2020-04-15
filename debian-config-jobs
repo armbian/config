@@ -98,9 +98,9 @@ unset selection
 		sleep 2
 	;;
 
-        # SBC-becn
-        #
-        "Benchmarking" )
+	# SBC-becn
+	#
+	"Benchmarking" )
 		if [[ ! -f /usr/local/bin/sbc-benc ]]; then
 			wget -q -O /usr/local/bin/sbc-bench https://raw.githubusercontent.com/ThomasKaiser/sbc-bench/master/sbc-bench.sh
 			chmod +x /usr/local/bin/sbc-bench
@@ -108,7 +108,7 @@ unset selection
 		sbc-bench
 		echo ""
 		read -n 1 -s -p "Press any key to continue"
-        ;;
+	;;
 
 
 	# Send diagnostics
@@ -166,67 +166,67 @@ unset selection
 
 
 	#
-        # Remove kernel headers
-        #
-        "Headers_remove" )
-                if ! is_package_manager_running; then
-                        REMOVE_PKG="linux-headers-*"
-                        if [[ -n $(dpkg -l | grep linux-headers) ]]; then
-                                        debconf-apt-progress -- apt-get -y purge ${REMOVE_PKG}
-                                        rm -rf /usr/src/linux-headers*
-                        else
-                                        debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
-                        fi
-                        # cleanup
-                        apt clean
-                        debconf-apt-progress -- apt -y autoremove
-                fi
-        ;;
+	# Remove kernel headers
+	#
+	"Headers_remove" )
+		if ! is_package_manager_running; then
+			REMOVE_PKG="linux-headers-*"
+			if [[ -n $(dpkg -l | grep linux-headers) ]]; then
+				debconf-apt-progress -- apt-get -y purge ${REMOVE_PKG}
+				rm -rf /usr/src/linux-headers*
+			else
+				debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
+			fi
+			# cleanup
+			apt clean
+			debconf-apt-progress -- apt -y autoremove
+		fi
+	;;
 
 
 	#
 	# Install kernel source
 	#
 	"Source_install" )
-                if ! is_package_manager_running; then
+		if ! is_package_manager_running; then
 			PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
 			if [[ -n $PACKAGE ]]; then
 
-					debconf-apt-progress -- apt-get -y install ${SOURCE_PKG}
-					mkdir -p /usr/src/$PACKAGE
-					(pv -n /usr/src/$PACKAGE".tar.xz" | xz -d -T0 - | tar xf - -C /usr/src/$PACKAGE ) 2>&1 | dialog --colors --backtitle "$BACKTITLE" --title " Please wait! " --gauge "\nDecompressing kernel sources to /usr/src/$PACKAGE" 8 80
-					xz -d /usr/src/*config.xz --stdout > /usr/src/$PACKAGE/.config
-					rm /usr/src/$PACKAGE".tar.xz" /usr/src/*config.xz
-					apt clean
+				debconf-apt-progress -- apt-get -y install ${SOURCE_PKG}
+				mkdir -p /usr/src/$PACKAGE
+				(pv -n /usr/src/$PACKAGE".tar.xz" | xz -d -T0 - | tar xf - -C /usr/src/$PACKAGE ) 2>&1 | dialog --colors --backtitle "$BACKTITLE" --title " Please wait! " --gauge "\nDecompressing kernel sources to /usr/src/$PACKAGE" 8 80
+				xz -d /usr/src/*config.xz --stdout > /usr/src/$PACKAGE/.config
+				rm /usr/src/$PACKAGE".tar.xz" /usr/src/*config.xz
+				apt clean
+				debconf-apt-progress -- apt-get -y purge linux-source*
+				debconf-apt-progress -- apt -y autoremove
+				if [[ -z $scripted ]]; then
+				dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find pre-configured kernel sources in /usr/src/$PACKAGE" 7 72
+				fi
+
+			fi
+		fi
+	;;
+
+
+
+	#
+	# Remove kernel source
+	#
+	"Source_remove" )
+		if ! is_package_manager_running; then
+			PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
+			if [[ -n $PACKAGE ]]; then
+
+				if ls /usr/src/linux-source* 1> /dev/null 2>&1; then
 					debconf-apt-progress -- apt-get -y purge linux-source*
 					debconf-apt-progress -- apt -y autoremove
-					if [[ -z $scripted ]]; then
-					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find pre-configured kernel sources in /usr/src/$PACKAGE" 7 72
-					fi
-
-	                fi
+					apt clean
+					rm -r /usr/src/linux-source*
+				fi
+			fi
 		fi
-        ;;
-
-
-
-        #
-        # Remove kernel source
-        #
-        "Source_remove" )
-                if ! is_package_manager_running; then
-                        PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
-                        if [[ -n $PACKAGE ]]; then
-
-                                if ls /usr/src/linux-source* 1> /dev/null 2>&1; then
-                                        debconf-apt-progress -- apt-get -y purge linux-source*
-                                        debconf-apt-progress -- apt -y autoremove
-                                        apt clean
-                                        rm -r /usr/src/linux-source*
-                                fi
-                        fi
-                fi
-        ;;
+	;;
 
 
 
@@ -758,8 +758,8 @@ unset selection
 	# Connect to Bluetooth
 	#
 	"BT discover" )
-	dialog --backtitle "$BACKTITLE" --title " Bluetooth " --msgbox "\nVerify that your Bluetooth device is discoverable!" 7 54
-	connect_bt_interface
+		dialog --backtitle "$BACKTITLE" --title " Bluetooth " --msgbox "\nVerify that your Bluetooth device is discoverable!" 7 54
+		connect_bt_interface
 	;;
 
 
@@ -1030,7 +1030,7 @@ unset selection
 	;;
 
 	"Default" )
-	configure_desktop "--install-recommends"
+		configure_desktop "--install-recommends"
 	;;
 
 	"RDP" )
@@ -1057,13 +1057,13 @@ unset selection
 		fi
 	;;
 
-        "Gimp" )
-                if ! check_if_installed gimp then ; then
-                        debconf-apt-progress -- apt-get -y install gimp
-                else
-                        debconf-apt-progress -- apt-get -y purge gimp
-                fi
-        ;;
+	"Gimp" )
+		if ! check_if_installed gimp then ; then
+			debconf-apt-progress -- apt-get -y install gimp
+		else
+			debconf-apt-progress -- apt-get -y purge gimp
+		fi
+	;;
 
 	"Libre" )
 		debconf-apt-progress -- apt-get -y purge libreoffice*
@@ -1096,7 +1096,7 @@ unset selection
 	#
 	"CPU" )
 		POLICY="policy0"
-	        [[ $(grep -c '^processor' /proc/cpuinfo) -gt 4 ]] && POLICY="policy4"
+		[[ $(grep -c '^processor' /proc/cpuinfo) -gt 4 ]] && POLICY="policy4"
 		[[ ! -d /sys/devices/system/cpu/cpufreq/policy4 ]] && POLICY="policy0"
 		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies)" "Select minimum CPU speed"
 		MIN_SPEED=$PARAMETER
