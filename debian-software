@@ -114,13 +114,13 @@ function check_status
 	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
 	# Hass.io
-        HASS_STATUS="$([[ -f /etc/hassio.json ]] && echo "on" || echo "off" )"
-        alive_port "Home assistant smarthome suite" "8123"
-        LIST+=( "Hassio" "$DESCRIPTION" "$HASS_STATUS" )
+	HASS_STATUS="$([[ -f /etc/hassio.json ]] && echo "on" || echo "off" )"
+	alive_port "Home assistant smarthome suite" "8123"
+	LIST+=( "Hassio" "$DESCRIPTION" "$HASS_STATUS" )
 
 	# OpenHab
 	OPENHAB_STATUS="$([[ -f /usr/bin/openhab-cli ]] && echo "on" || echo "off" )"
-        alive_port "Openhab2 smarthome suite" "8080"
+	alive_port "Openhab2 smarthome suite" "8080"
 	LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
 
 	# VPN
@@ -196,7 +196,7 @@ function check_status
 	if [[ "$DOCKER_STATUS" == "on" ]]; then
 		curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
 		MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
-		else
+	else
 		MAYAN_STATUS="off"
 	fi
 
@@ -306,22 +306,22 @@ declare -a PACKETS=($1)
 #skupaj=$(apt-get -s -y -qq install $1 | wc -l)
 skupaj=${#PACKETS[@]}
 while [[ $i -lt $skupaj ]]; do
-procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
-		x=${PACKETS[$i]}
-		if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-			printf '%.0f\n' $procent | dialog \
-			--backtitle "$BACKTITLE" \
-			--title "Installing" \
-			--gauge "\n$2\n\n$x" 10 70
+	procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
+	x=${PACKETS[$i]}
+	if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+		printf '%.0f\n' $procent | dialog \
+		--backtitle "$BACKTITLE" \
+		--title "Installing" \
+		--gauge "\n$2\n\n$x" 10 70
 		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >${TEMP_DIR}/install.log 2>&1 || echo 'Installation failed' \
 		| grep 'Installation failed')" != "" ]; then
 			echo -e "[\e[0;31m error \x1B[0m] Installation failed"
 			tail ${TEMP_DIR}/install.log
 			exit
 		fi
-		fi
-		i=$[$i+1]
-		j=$[$j+1]
+	fi
+	i=$[$i+1]
+	j=$[$j+1]
 done
 echo ""
 }
@@ -335,24 +335,15 @@ alive_port ()
 # Displays URL to the service $1 on port $2 or just that is active if $3 = boolean $4 = path
 #
 if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
-
 	if [[ $3 == boolean ]]; then
-
 		DESCRIPTION="$1 is \Z1active\Z0";
-
-		elif [[ $3 == ssl ]]; then
-
+	elif [[ $3 == ssl ]]; then
 		DESCRIPTION="Active on https://${serverIP}:\Z1$2\Z0$4";
-
-		else
-
+	else
 		DESCRIPTION="Active on http://${serverIP}:\Z1$2\Z0$4";
-
 	fi
 else
-
 	DESCRIPTION="$1";
-
 fi
 }
 
@@ -553,7 +544,7 @@ install_omv (){
 # Install OpenMediaVault on Debian
 #
 if [ -f /etc/armbian-release ]; then
-        . /etc/armbian-release
+	. /etc/armbian-release
 fi
 
 # Don't allow installation on Ubuntu
@@ -578,7 +569,7 @@ fancy_wget "$wgeturl" "-O ${TEMP_DIR}/omv_install.sh"
 
 # Remove Crony on Stretch since OMV4 depends on NTP
 if [[ "$distribution" == "stretch" ]]; then
-		apt-get -y -qq remove chrony
+	apt-get -y -qq remove chrony
 fi
 
 # Execute install script
@@ -639,8 +630,8 @@ if [[ "$family" == "Ubuntu" ]]; then
 	debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
 else
 	if [ ! -f /etc/apt/sources.list.d/tvheadend.list ]; then
-	echo "deb https://www.deb-multimedia.org ${distribution} main non-free" >> /etc/apt/sources.list.d/tvheadend.list
-	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 5C808C2B65558117 >/dev/null 2>&1
+		echo "deb https://www.deb-multimedia.org ${distribution} main non-free" >> /etc/apt/sources.list.d/tvheadend.list
+		apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 5C808C2B65558117 >/dev/null 2>&1
 	fi
 	URL="https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u9_"$(dpkg --print-architecture)".deb"
 	fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
@@ -891,8 +882,8 @@ systemctl start syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
 # wait until config file is created
 while :
 do
-    if [[ -f /home/${CHOSEN_USER}/.config/syncthing/config.xml ]]; then break; fi
-    sleep 1
+	if [[ -f /home/${CHOSEN_USER}/.config/syncthing/config.xml ]]; then break; fi
+	sleep 1
 done
 # change to server IP
 sed -i "s/127.0.0.1/${serverIP}/" /home/${CHOSEN_USER}/.config/syncthing/config.xml
@@ -922,8 +913,8 @@ install_emby_server ()
 #
 # Emby server
 #
-  ARCH=$(dpkg --print-architecture)
-  URL=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases/latest | grep "/emby-server-deb.*${ARCH}.deb" | cut -d : -f 2,3 | tr -d \")
+	ARCH=$(dpkg --print-architecture)
+	URL=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases/latest | grep "/emby-server-deb.*${ARCH}.deb" | cut -d : -f 2,3 | tr -d \")
 	fancy_wget "$URL" "-O ${TEMP_DIR}/emby.deb"
 	dpkg -i ${TEMP_DIR}/emby.deb >/dev/null 2>&1
 	apt-get -yy -f install
@@ -1093,10 +1084,10 @@ install_packet "debconf-utils unzip build-essential html2text apt-transport-http
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
 SUFIX="${URL/-tree/}"
 if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
-DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_ARM_EABI/softether-vpnclient-$SUFIX-linux-arm_eabi-32bit.tar.gz"
+	DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_ARM_EABI/softether-vpnclient-$SUFIX-linux-arm_eabi-32bit.tar.gz"
 else
-install_packet "gcc-multilib" "Install libraries"
-DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_Intel_x86/softether-vpnclient-$SUFIX-linux-x86-32bit.tar.gz"
+	install_packet "gcc-multilib" "Install libraries"
+	DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_Intel_x86/softether-vpnclient-$SUFIX-linux-x86-32bit.tar.gz"
 fi
 wget -q $DLURL -O - | tar -xz
 cd vpnclient
@@ -1209,7 +1200,7 @@ packets="amavisd-new spamassassin clamav clamav-daemon unzip bzip2 arj p7zip unr
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
 libnet-ident-perl zip libnet-dns-perl postgrey"
 if [[ $distribution != "bionic" ]] && [[ $distribution != "buster" ]]; then
-    packets=$packets" zoo"
+	packets=$packets" zoo"
 fi
 if [[ $distribution != "buster" ]]; then packets=$packets" ripole"; fi
 install_packet "$packets" "amavisd, spamassassin, clamav"
@@ -1251,15 +1242,15 @@ install_phpmyadmin ()
 # Phpmyadmin unattended installation
 #
 if [[ "$family" != "Ubuntu" ]]; then
-DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y install phpmyadmin
+	DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y install phpmyadmin
 else
-debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect true"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
-echo "phpmyadmin phpmyadmin/internal/skip-preseed boolean true" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
-debconf-apt-progress -- apt-get install -y phpmyadmin
+	debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
+	debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect true"
+	debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
+	echo "phpmyadmin phpmyadmin/internal/skip-preseed boolean true" | debconf-set-selections
+	echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-selections
+	echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
+	debconf-apt-progress -- apt-get install -y phpmyadmin
 fi
 # Apache2 needs additional hack
 WWW_RECONFIG=$(expect -c "
@@ -1322,22 +1313,22 @@ EOT
 
 a2enmod actions proxy_fcgi setenvif fastcgi alias httpoxy suexec rewrite ssl actions include dav_fs dav auth_digest cgi headers >/dev/null 2>&1
 	case $distribution in
-	        jessie)
-			a2enconf php5-fpm >/dev/null 2>&1
-	                ;;
-	        xenial)
-			a2enconf php7.0-fpm >/dev/null 2>&1
-	                ;;
-	        stretch)
-			a2enconf php7.0-fpm >/dev/null 2>&1
-	                ;;
-	        bionic)
-			a2enconf php7.2-fpm >/dev/null 2>&1
-	                ;;
-	        buster)
-			a2enconf php7.3-fpm >/dev/null 2>&1
-	                ;;
-	        esac
+	jessie)
+		a2enconf php5-fpm >/dev/null 2>&1
+	;;
+	xenial)
+		a2enconf php7.0-fpm >/dev/null 2>&1
+	;;
+	stretch)
+		a2enconf php7.0-fpm >/dev/null 2>&1
+	;;
+	bionic)
+		a2enconf php7.2-fpm >/dev/null 2>&1
+	;;
+	buster)
+		a2enconf php7.3-fpm >/dev/null 2>&1
+	;;
+	esac
 service apache2 restart >> /dev/null
 }
 
@@ -1374,37 +1365,37 @@ local temp="pkg_${distribution}"
 install_packet "${pkg} ${!temp}" "Nginx for $family $distribution"
 
 case $distribution in
-        jessie)
+	jessie)
 		phpenmod mcrypt mbstring
 		debconf-apt-progress -- apt-get install -y python-certbot -t jessie-backports
-        	service php5-fpm reload >> /dev/null
-                ;;
+		service php5-fpm reload >> /dev/null
+		;;
 	xenial)
 		phpenmod mcrypt mbstring
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-        	sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
-        	service php7.0-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
+		service php7.0-fpm reload >> /dev/null
 		;;
 	stretch)
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
-        	service php7.0-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
+		service php7.0-fpm reload >> /dev/null
 		phpenmod mcrypt mbstring
 		;;
 	bionic)
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.2/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.2/fpm/php.ini
-        	service php7.2-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.2/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.2/fpm/php.ini
+		service php7.2-fpm reload >> /dev/null
 		phpenmod mbstring
 		;;
 	buster)
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.3/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.3/fpm/php.ini
-        	service php7.3-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.3/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.3/fpm/php.ini
+		service php7.3-fpm reload >> /dev/null
 		phpenmod mbstring
 		;;
         esac
@@ -1568,10 +1559,10 @@ cd ${TEMP_DIR}/ispconfig3_install/install/
 php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php &>> /var/log/ispconfig_config.log
 dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Auto updating SSL certificate " --clear --yesno "\nDo you want to secure ISPConfig control panel and all services with free Let's Encrypt SSL certificate?" 8 80
 if [[ $? == 0 ]]; then
-dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
-curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip  2> /dev/null
-unzip -qq master.zip
-bash LE4ISPC-master/${server}/le4ispc.sh 2>&1
+	dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
+	curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip  2> /dev/null
+	unzip -qq master.zip
+	bash LE4ISPC-master/${server}/le4ispc.sh 2>&1
 fi
 }
 
@@ -1714,10 +1705,10 @@ if ! is_package_manager_running; then
 			selection=${selection//Hassio/}
 		fi
 
-                if [[ "$selection" == *OpenHAB* && "$OPENHAB_STATUS" != "on" ]]; then
-                        install_openhab
-                        selection=${selection//OpenHAB/}
-                fi
+		if [[ "$selection" == *OpenHAB* && "$OPENHAB_STATUS" != "on" ]]; then
+			install_openhab
+			selection=${selection//OpenHAB/}
+		fi
 
 		if [[ "$selection" == *server* && "$VPN_SERVER_STATUS" != "on" ]]; then
 			install_vpn_server
@@ -1728,9 +1719,9 @@ if ! is_package_manager_running; then
 			install_vpn_client
 			selection=${selection//\"VPN client\"/}
 		fi
-                if [[ "$selection" == *NCP* && "$NCP_STATUS" != "on" ]]; then
+		if [[ "$selection" == *NCP* && "$NCP_STATUS" != "on" ]]; then
 			install_ncp
-                        selection=${selection//NCP/}
+			selection=${selection//NCP/}
 		fi
 
 		if [[ "$selection" == *OMV* && "$OMV_STATUS" != "on" ]]; then

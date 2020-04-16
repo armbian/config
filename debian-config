@@ -25,8 +25,8 @@ fi
 #
 wget -q --spider http://github.com
 if [[ $? -ne 0 ]]; then
-		read -n 1 -s -p "Warning: Configuration cannot work properly without a working internet connection. \
-		Press CTRL C to stop or any key to ignore and continue."
+	read -n 1 -s -p "Warning: Configuration cannot work properly without a working internet connection. \
+	Press CTRL C to stop or any key to ignore and continue."
 fi
 
 
@@ -58,12 +58,12 @@ fi
 
 # Script parameters handling
 while [[ $1 == *=* ]]; do
-    parameter=${1%%=*}
-    value=${1##*=}
-    shift
-    echo "Command line: setting $parameter to ${value:-(empty)}"
-    eval "$parameter=\"$value\""
-    scripted=true
+	parameter=${1%%=*}
+	value=${1##*=}
+	shift
+	echo "Command line: setting $parameter to ${value:-(empty)}"
+	eval "$parameter=\"$value\""
+	scripted=true
 done
 
 # Display help
