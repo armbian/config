@@ -17,27 +17,27 @@ mkdir -p $COPY_TO
 function database_backup ()
 {
 	if which mysql >/dev/null; then
-	mysqldump -Q -q -e -R --add-drop-table -A -u $USER -p$PASSWORD > $COPY_TO/all.db
-	for db in $(echo 'SHOW DATABASES;'|mysql -u$USER -p$PASSWORD -h$HOST|grep -v '^Database$'|grep -v "^performance_schema" |grep -v "^information_schema" |grep -v "^mysql"); 
-	do
-		mysqldump \
-              -u$USER -p$PASSWORD -h$HOST \
-              -Q -c -C --add-drop-table --add-locks --quick --lock-tables \
-              $db | gzip --best -c > $COPY_TO/$DBBACKUPNAME-$db.sql.gz;
-		echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mDatabase $db backup"		
-	done;
+		mysqldump -Q -q -e -R --add-drop-table -A -u $USER -p$PASSWORD > $COPY_TO/all.db
+		for db in $(echo 'SHOW DATABASES;'|mysql -u$USER -p$PASSWORD -h$HOST|grep -v '^Database$'|grep -v "^performance_schema" |grep -v "^information_schema" |grep -v "^mysql");
+		do
+			mysqldump \
+			-u$USER -p$PASSWORD -h$HOST \
+			-Q -c -C --add-drop-table --add-locks --quick --lock-tables \
+			$db | gzip --best -c > $COPY_TO/$DBBACKUPNAME-$db.sql.gz;
+			echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mDatabase $db backup"
+		done;
 	fi
 }
 
 
 function web_backup ()
 {
-	if [[ -d /var/www ]]; then 
-	echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mWebsites backup"
-	for x in $(find $COPY_FROM -maxdepth 2 -name "web*" -type d -print0 | xargs -0)
-	do
-	tar -cpvzf $COPY_TO/$WEBBACKUPNAME-$(basename $x).tar.gz $x &> /dev/null
-	done;
+	if [[ -d /var/www ]]; then
+		echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mWebsites backup"
+		for x in $(find $COPY_FROM -maxdepth 2 -name "web*" -type d -print0 | xargs -0)
+		do
+			tar -cpvzf $COPY_TO/$WEBBACKUPNAME-$(basename $x).tar.gz $x &> /dev/null
+		done;
 	fi
 }
 
@@ -75,11 +75,11 @@ function conf_backup ()
 
 function mail_backup ()
 {
-	if [[ -d /var/vmail ]]; then 
+	if [[ -d /var/vmail ]]; then
 		service dovecot stop &> /dev/null
 		service postfix stop &> /dev/null
 		echo -e "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0mMail backup"
-		tar cvPfz $COPY_TO/$FILEBACKUPNAME-mail.tgz /var/vmail	
+		tar cvPfz $COPY_TO/$FILEBACKUPNAME-mail.tgz /var/vmail
 		service postfix start &> /dev/null
 		service dovecot start &> /dev/null
 	fi

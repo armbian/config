@@ -367,17 +367,17 @@ unset selection
 	# Connect to wireless access point
 	#
 	"WiFi" )
-			# disable AP mode on certain adapters
-			wlan_exceptions "off"
-			[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to STA mode" 7 62 && reboot
-			nmtui-connect
+		# disable AP mode on certain adapters
+		wlan_exceptions "off"
+		[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to STA mode" 7 62 && reboot
+		nmtui-connect
 	;;
 
 
 	# Connect to 3G/4G network
 	#
 	"LTE" )
-	if ! is_package_manager_running; then
+		if ! is_package_manager_running; then
 			if [[ $LTE_MODEM == *online* ]]; then
 				dialog --title " LTE modem is connected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Disconnect" --yesno "\n\Z1Disconnect:\Z0 kill mobile connection\n\n" 7 42
 				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "off"
@@ -385,28 +385,28 @@ unset selection
 				dialog --title " LTE modem is disconnected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Connect" --yesno "\n\Z1Connect:\Z0 dial mobile connection\n\n" 7 42
 				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "on"
 			fi
-	fi
+		fi
 	;;
 
 
 	# Connect to wireless access point
 	#
 	"Clear" )
-			# remove managed interfaces
-			systemctl daemon-reload
-			nmcli con delete $(nmcli --fields NAME,UUID,TYPE con | grep wifi | awk '{print $2}')
-			sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
-			sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
-			rm -f /etc/network/interfaces.d/armbian.ap.*
-			rm -f /etc/dnsmasq.conf
-			systemctl stop dnsmasq
-			systemctl disable dnsmasq
-			iptables -t nat -D POSTROUTING 1 >/dev/null 2>&1
-			systemctl stop armbian-restore-iptables.service
-			systemctl disable armbian-restore-iptables.service
-			rm -f /etc/iptables.ipv4.nat
-			rm -f /var/run/hostapd/* >/dev/null 2>&1
-			reload-nety
+		# remove managed interfaces
+		systemctl daemon-reload
+		nmcli con delete $(nmcli --fields NAME,UUID,TYPE con | grep wifi | awk '{print $2}')
+		sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+		sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+		rm -f /etc/network/interfaces.d/armbian.ap.*
+		rm -f /etc/dnsmasq.conf
+		systemctl stop dnsmasq
+		systemctl disable dnsmasq
+		iptables -t nat -D POSTROUTING 1 >/dev/null 2>&1
+		systemctl stop armbian-restore-iptables.service
+		systemctl disable armbian-restore-iptables.service
+		rm -f /etc/iptables.ipv4.nat
+		rm -f /var/run/hostapd/* >/dev/null 2>&1
+		reload-nety
 	;;
 
 
@@ -688,69 +688,69 @@ unset selection
 	}
 
 	function raise_dev {
-			i=0;
-			while [[ -z "$TEMP" && $i<5 ]]; do
-					TEMP=$(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected)
-					sleep 1
-					i=$((i+1))
-			done
-			dhclient vpn_se
+		i=0;
+		while [[ -z "$TEMP" && $i<5 ]]; do
+				TEMP=$(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected)
+				sleep 1
+				i=$((i+1))
+		done
+		dhclient vpn_se
 	}
 
 	if pgrep -x "vpnclient" > /dev/null
 	then
+		${VPNDIR}vpnclient stop >/dev/null 2>&1
+		${VPNDIR}vpnclient start >/dev/null 2>&1
+		if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd nicList | grep Enabled) ]]; then
+			${VPNDIR}vpncmd /client localhost /cmd niccreate se >/dev/null 2>&1
+		fi
+		if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Server") ]]; then
+			dialog --backtitle "$BACKTITLE" --no-label " Cancel " --yes-label " Import " --title " VPN " --yesno "\nA VPN configuration was not found.\n\nPlace valid file at /etc/server.vpn" 9 45
+			if [[ $? = 0 && -f /etc/server.vpn ]]; then
+				${VPNDIR}vpncmd /client localhost /cmd accountimport //etc//server.vpn >/dev/null 2>&1
 				${VPNDIR}vpnclient stop >/dev/null 2>&1
 				${VPNDIR}vpnclient start >/dev/null 2>&1
-				if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd nicList | grep Enabled) ]]; then
-					${VPNDIR}vpncmd /client localhost /cmd niccreate se >/dev/null 2>&1
-				fi
-				if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Server") ]]; then
-					dialog --backtitle "$BACKTITLE" --no-label " Cancel " --yes-label " Import " --title " VPN " --yesno "\nA VPN configuration was not found.\n\nPlace valid file at /etc/server.vpn" 9 45
-					if [[ $? = 0 && -f /etc/server.vpn ]]; then
-						${VPNDIR}vpncmd /client localhost /cmd accountimport //etc//server.vpn >/dev/null 2>&1
-						${VPNDIR}vpnclient stop >/dev/null 2>&1
-						${VPNDIR}vpnclient start >/dev/null 2>&1
-						[[ $? = 0 ]] && dialog --backtitle "$BACKTITLE" --title " VPN " --msgbox "\nConfiguration was successfully imported!" 7 43
-					fi
-				fi
+				[[ $? = 0 ]] && dialog --backtitle "$BACKTITLE" --title " VPN " --msgbox "\nConfiguration was successfully imported!" 7 43
+			fi
+		fi
 
-				# raise devices
-				raise_dev
+		# raise devices
+		raise_dev
 
-				if [[ -n $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected) ]]; then
-					get_numbers
-					echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
-					echo "ip route del default"
-					echo "ip route add default via $GW dev vpn_se"
-					read
-					dialog --title "VPN client is connected to $VPNSERVERIP" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label " Import " --yesno "\n\Z1Stop:  \Z0 stop\n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
-				fi
-				response=$?
-				if [[ $response = 0 ]]; then
-					get_numbers
-					echo "ip route del $VPNSERVERIP"
-					echo "ip route del default"
-					echo "ip route add default via $IP dev $ADAPTER"
-					read
-					dialog --backtitle "$BACKTITLE"  --nocancel --nook --infobox "\nClosing VPN connection" 5 27
-					${VPNDIR}vpnclient stop >/dev/null 2>&1
-				fi
+		if [[ -n $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected) ]]; then
+			get_numbers
+			echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
+			echo "ip route del default"
+			echo "ip route add default via $GW dev vpn_se"
+			read
+			dialog --title "VPN client is connected to $VPNSERVERIP" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label " Import " --yesno "\n\Z1Stop:  \Z0 stop\n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+		fi
+		response=$?
+		if [[ $response = 0 ]]; then
+			get_numbers
+			echo "ip route del $VPNSERVERIP"
+			echo "ip route del default"
+			echo "ip route add default via $IP dev $ADAPTER"
+			read
+			dialog --backtitle "$BACKTITLE"  --nocancel --nook --infobox "\nClosing VPN connection" 5 27
+			${VPNDIR}vpnclient stop >/dev/null 2>&1
+		fi
 	else
-				dialog --title "VPN client is disconnected" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Connect" --no-label " Import " --yesno "\n\Z1Connect:\Z0 Connect with your VPN server \n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
-				response=$?
-				if [[ $response = 0 ]]; then
-					${VPNDIR}vpnclient start >/dev/null 2>&1
+		dialog --title "VPN client is disconnected" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Connect" --no-label " Import " --yesno "\n\Z1Connect:\Z0 Connect with your VPN server \n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+		response=$?
+		if [[ $response = 0 ]]; then
+			${VPNDIR}vpnclient start >/dev/null 2>&1
 
-					# raise devices
-					raise_dev
-					get_numbers
-					echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
-					echo "ip route del default"
-					echo "ip route add default via $GW dev vpn_se"
-					read
+			# raise devices
+			raise_dev
+			get_numbers
+			echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
+			echo "ip route del default"
+			echo "ip route add default via $GW dev vpn_se"
+			read
 
-				fi
-				[[ $response = 1 ]] && vpn_reconfigure
+		fi
+		[[ $response = 1 ]] && vpn_reconfigure
 	fi
 	;;
 
@@ -859,43 +859,43 @@ unset selection
 	#
 	"ZSH" )
 		if ! is_package_manager_running; then
-		if ! check_if_installed zsh ; then
-			debconf-apt-progress -- apt-get update
-			debconf-apt-progress -- apt-get install -y zsh tmux
-		fi
-		rm -rf /etc/oh-my-zsh
-		git clone --quiet https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh
-		cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
-		mkdir -p /etc/skel/.oh-my-zsh/cache
-		# change shell for future users
-		sed -i "s/^SHELL=.*/SHELL=\/usr\/bin\/zsh/" /etc/default/useradd
-		# we have common settings
-		sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" /etc/skel/.zshrc
-		# user cache
-		sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" /etc/skel/.zshrc
-		# define theme
-		sed -i 's/^ZSH_THEME=.*/ZSH_THEME="risto"/' /etc/skel/.zshrc
-		# define default plugins
-		sed -i 's/^plugins=.*/plugins=(git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc		
-		# change shell for root
-		chsh -s $(grep /zsh$ /etc/shells | tail -1)
-		# copy cache directory
-		cp -R --attributes-only /etc/skel/.oh-my-zsh /root/.oh-my-zsh
-		cp /etc/skel/.zshrc /root/.zshrc
-		# and for selected normal user
-		add_choose_user
-		if [ -n "$CHOSEN_USER" ]; then
-			chsh -s $(grep /zsh$ /etc/shells | tail -1) $CHOSEN_USER
+			if ! check_if_installed zsh ; then
+				debconf-apt-progress -- apt-get update
+				debconf-apt-progress -- apt-get install -y zsh tmux
+			fi
+			rm -rf /etc/oh-my-zsh
+			git clone --quiet https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh
+			cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
+			mkdir -p /etc/skel/.oh-my-zsh/cache
+			# change shell for future users
+			sed -i "s/^SHELL=.*/SHELL=\/usr\/bin\/zsh/" /etc/default/useradd
+			# we have common settings
+			sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" /etc/skel/.zshrc
+			# user cache
+			sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" /etc/skel/.zshrc
+			# define theme
+			sed -i 's/^ZSH_THEME=.*/ZSH_THEME="risto"/' /etc/skel/.zshrc
+			# define default plugins
+			sed -i 's/^plugins=.*/plugins=(git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc
+			# change shell for root
+			chsh -s $(grep /zsh$ /etc/shells | tail -1)
 			# copy cache directory
-			cp -R --attributes-only /etc/skel/.oh-my-zsh /home/$CHOSEN_USER/.oh-my-zsh
-			cp /etc/skel/.zshrc /home/$CHOSEN_USER/.zshrc
-			chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/{.zshrc,.oh-my-zsh}
-		fi
-		# add a cronjob to update oh-my-zsh once per month
-		(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git pull origin master >/dev/null 2>/dev/null") | crontab -
-		if [[ -z $scripted ]]; then
-			dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
-		fi
+			cp -R --attributes-only /etc/skel/.oh-my-zsh /root/.oh-my-zsh
+			cp /etc/skel/.zshrc /root/.zshrc
+			# and for selected normal user
+			add_choose_user
+			if [ -n "$CHOSEN_USER" ]; then
+				chsh -s $(grep /zsh$ /etc/shells | tail -1) $CHOSEN_USER
+				# copy cache directory
+				cp -R --attributes-only /etc/skel/.oh-my-zsh /home/$CHOSEN_USER/.oh-my-zsh
+				cp /etc/skel/.zshrc /home/$CHOSEN_USER/.zshrc
+				chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/{.zshrc,.oh-my-zsh}
+			fi
+			# add a cronjob to update oh-my-zsh once per month
+			(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git pull origin master >/dev/null 2>/dev/null") | crontab -
+			if [[ -z $scripted ]]; then
+				dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
+			fi
 		fi
 	;;
 
@@ -943,28 +943,28 @@ unset selection
 
 			unset PACKAGE_LIST
 
-		# basic packages
+			# basic packages
 
-		check_if_installed linux-u-boot-${BOARD}-${BRANCH} && PACKAGE_LIST+=" linux-u-boot-${BOARD}-${BRANCH}"
-		check_if_installed linux-image-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-image-${BRANCH}-${LINUXFAMILY}"
-		check_if_installed linux-dtb-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-dtb-${BRANCH}-${LINUXFAMILY}"
-		check_if_installed linux-headers-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${LINUXFAMILY}"
+			check_if_installed linux-u-boot-${BOARD}-${BRANCH} && PACKAGE_LIST+=" linux-u-boot-${BOARD}-${BRANCH}"
+			check_if_installed linux-image-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-image-${BRANCH}-${LINUXFAMILY}"
+			check_if_installed linux-dtb-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-dtb-${BRANCH}-${LINUXFAMILY}"
+			check_if_installed linux-headers-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${LINUXFAMILY}"
 
-		# new BSP
-		check_if_installed armbian-${LINUXFAMILY} && PACKAGE_LIST+=" armbian-${LINUXFAMILY}"
-		check_if_installed armbian-${BOARD} && PACKAGE_LIST+=" armbian-${BOARD}"
-		check_if_installed armbian-${DISTROID} && PACKAGE_LIST+=" armbian-${DISTROID}"
-		check_if_installed armbian-${DISTROID}-desktop-xfce && PACKAGE_LIST+=" armbian-${DISTROID}-desktop-xfce"
-		check_if_installed armbian-firmware && PACKAGE_LIST+=" armbian-firmware"
-		check_if_installed armbian-firmware-full && PACKAGE_LIST+=" armbian-firmware-full"
+			# new BSP
+			check_if_installed armbian-${LINUXFAMILY} && PACKAGE_LIST+=" armbian-${LINUXFAMILY}"
+			check_if_installed armbian-${BOARD} && PACKAGE_LIST+=" armbian-${BOARD}"
+			check_if_installed armbian-${DISTROID} && PACKAGE_LIST+=" armbian-${DISTROID}"
+			check_if_installed armbian-${DISTROID}-desktop-xfce && PACKAGE_LIST+=" armbian-${DISTROID}-desktop-xfce"
+			check_if_installed armbian-firmware && PACKAGE_LIST+=" armbian-firmware"
+			check_if_installed armbian-firmware-full && PACKAGE_LIST+=" armbian-firmware-full"
 
-		local words=( $PACKAGE_LIST )
-		local command="unhold"
-		IFS=" "
-		[[ $1 == "Freeze" ]] && local command="hold"
-		for word in $PACKAGE_LIST; do apt-mark $command $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
+			local words=( $PACKAGE_LIST )
+			local command="unhold"
+			IFS=" "
+			[[ $1 == "Freeze" ]] && local command="hold"
+			for word in $PACKAGE_LIST; do apt-mark $command $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
+			fi
 		fi
-	fi
 	;;
 
 
@@ -1145,9 +1145,9 @@ unset selection
 	#
 	"Bootscript" )
 		if [[ -f /boot/boot.ini ]]; then
-		dialog --title " Edit boot.ini script " --ok-label "Save" \
-		--no-collapse --editbox /boot/boot.ini 30 0 2> /boot/boot.ini.out
-		[[ $? = 0 ]] && mv /boot/boot.ini.out /boot/boot.ini
+			dialog --title " Edit boot.ini script " --ok-label "Save" \
+			--no-collapse --editbox /boot/boot.ini 30 0 2> /boot/boot.ini.out
+			[[ $? = 0 ]] && mv /boot/boot.ini.out /boot/boot.ini
 		fi
 	;;
 
@@ -1478,13 +1478,13 @@ unset selection
 		if ! is_package_manager_running; then
 			aval_dtbs
 			if [[ $exitstatus = 0 ]]; then
-			BOX_LENGTH=$((${#TARGET_BOARD}+28));
-			dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGTH
-			if [[ $? = 0 ]]; then
-				sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt 2> /dev/null && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt 2> /dev/null || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
-				[[ "$LINUXFAMILY" = odroidxu4 ]] && sed -i "s/^fdt_file/board_name/" /boot/armbianEnv.txt && sed -i "s/^BOARD_NAME.*/BOARD_NAME=\"Odroid ${TARGET_BOARD^^}\"/" /etc/armbian-release
-				reboot;
-			fi
+				BOX_LENGTH=$((${#TARGET_BOARD}+28));
+				dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGTH
+				if [[ $? = 0 ]]; then
+					sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt 2> /dev/null && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt 2> /dev/null || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
+					[[ "$LINUXFAMILY" = odroidxu4 ]] && sed -i "s/^fdt_file/board_name/" /boot/armbianEnv.txt && sed -i "s/^BOARD_NAME.*/BOARD_NAME=\"Odroid ${TARGET_BOARD^^}\"/" /etc/armbian-release
+					reboot;
+				fi
 			fi
 		fi
 	;;

@@ -96,13 +96,13 @@ while true; do
 	[[ "$LINUXFAMILY" = odroidc* || "$LINUXFAMILY" = odroidn2 && "$BRANCH" = "default" ]] && LIST+=( "Display" "Set the display resolution" )
 	# desktop
 	if [[ -n $DISPLAY_MANAGER ]]; then
-			LIST+=( "Desktop" "Disable desktop or change login type" )
+		LIST+=( "Desktop" "Disable desktop or change login type" )
 	else
-			if [[ -n $DESKTOP_INSTALLED ]]; then
-					LIST+=( "Desktop" "Enable desktop" )
-				else
-					LIST+=( "Default" "Install desktop with browser and extras" )
-			fi
+		if [[ -n $DESKTOP_INSTALLED ]]; then
+			LIST+=( "Desktop" "Enable desktop" )
+		else
+			LIST+=( "Default" "Install desktop with browser and extras" )
+		fi
 	fi
 
 	# overlayroot
@@ -379,32 +379,32 @@ while true; do
 	fi
 
 	if [[ -n $DISPLAY_MANAGER ]]; then
-			if [[ $(service xrdp status 2> /dev/null | grep -w active) ]]; then
-				LIST+=( "RDP" "Disable remote desktop access from Windows" )
-				else
-				LIST+=( "RDP" "Enable remote desktop access from Windows" )
-			fi
-			if ! check_if_installed thunderbird ; then
-				LIST+=( "Thunderbird" "Install full featured email client" )
-				else
-				LIST+=( "Thunderbird" "Remove full featured email client" )
-			fi
-                        if ! check_if_installed gimp ; then
-                                LIST+=( "Gimp" "Install photo manipulation tool" )
-                                else
-                                LIST+=( "Gimp" "Remove photo manipulation tool" )
-                        fi
-			if ! check_if_installed libreoffice-writer ; then
-				LIST+=( "Writer" "Libreoffice: Writer only" )
+		if [[ $(service xrdp status 2> /dev/null | grep -w active) ]]; then
+			LIST+=( "RDP" "Disable remote desktop access from Windows" )
+		else
+			LIST+=( "RDP" "Enable remote desktop access from Windows" )
+		fi
+		if ! check_if_installed thunderbird ; then
+			LIST+=( "Thunderbird" "Install full featured email client" )
+		else
+			LIST+=( "Thunderbird" "Remove full featured email client" )
+		fi
+		if ! check_if_installed gimp ; then
+			LIST+=( "Gimp" "Install photo manipulation tool" )
+        else
+			LIST+=( "Gimp" "Remove photo manipulation tool" )
+		fi
+		if ! check_if_installed libreoffice-writer ; then
+			LIST+=( "Writer" "Libreoffice: Writer only" )
+			LIST+=( "Suite" "Libreoffice: Full suite" )
+		else
+			if ! check_if_installed libreoffice-base ; then
 				LIST+=( "Suite" "Libreoffice: Full suite" )
-				else
-					if ! check_if_installed libreoffice-base ; then
-						LIST+=( "Suite" "Libreoffice: Full suite" )
-						LIST+=( "Libre" "Remove Libre office packages" )
-					else
-						LIST+=( "Libre" "Remove Libre office packages" )
-					fi
+				LIST+=( "Libre" "Remove Libre office packages" )
+			else
+				LIST+=( "Libre" "Remove Libre office packages" )
 			fi
+		fi
 	fi
 
 	# count number of menu items to adjust window sizee
