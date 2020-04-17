@@ -782,7 +782,7 @@ if [ $? == 0 ]; then
 	install_docker
 	debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates \
 	dbus jq network-manager socat software-properties-common
-	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-installer/master/hassio_install.sh" | \
+	curl -sL "https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh" | \
 	bash -s -- -m  ${machine}
 	dialog --backtitle "$BACKTITLE" --title "Please wait" \
 	--msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
