@@ -364,10 +364,13 @@ while true; do
 	if [[ -n $(dpkg -l | grep linux-headers) ]]; then LIST+=( "Headers_remove" "kernel headers" ); else \
 	LIST+=( "Headers_install" "kernel headers" ); fi
 
-	SOURCE_PKG=$(apt-cache --names-only search ^linux-source-* | awk '{ print $1 }' | grep -w ${BRANCH}-${LINUXFAMILY} | tail -1)
-	if [[ -n $SOURCE_PKG ]]; then
-		if ls /usr/src/linux-source* 1> /dev/null 2>&1; then LIST+=( "Source_remove" "kernel source" ); else \
-	        LIST+=( "Source_install" "kernel source" ); fi
+	SOURCE_PKG_LIST=$(apt-cache --names-only search ^linux-source-* | awk '{ print $1 }' | grep -w ${BRANCH}-${LINUXFAMILY})
+	if [[ -n $SOURCE_PKG_LIST ]]; then
+		LIST+=( "Source_install" "kernel source" )
+	fi
+	SOURCE_PKG_LIST_INSTALLED=$(find /usr/src -maxdepth 1 -name "linux-source*")
+	if [[ -n $SOURCE_PKG_LIST_INSTALLED ]]; then
+		LIST+=( "Source_remove" "kernel source" );
 	fi
 
 	if [[ -f /etc/armbian.txt ]]; then
@@ -411,15 +414,15 @@ while true; do
 	LISTLENGTH="$((6+${#LIST[@]}/2))"
 	BOXLENGTH=${#LIST[@]}
 
-if [[ -z $selection ]]; then
-	exec 3>&1
-	selection=$(dialog --backtitle "$BACKTITLE" --title "System and 3rd party software" --clear \
-	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 70 $BOXLENGTH \
-	"${LIST[@]}" 2>&1 1>&3)
-	exit_status=$?
-	exec 3>&-
-	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
-fi
+	if [[ -z $selection ]]; then
+		exec 3>&1
+		selection=$(dialog --backtitle "$BACKTITLE" --title "System and 3rd party software" --clear \
+		--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 70 $BOXLENGTH \
+		"${LIST[@]}" 2>&1 1>&3)
+		exit_status=$?
+		exec 3>&-
+		[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
+	fi
 
 	# run main function
 	jobs "$selection"
