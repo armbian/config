@@ -190,23 +190,24 @@ unset selection
 	"Source_install" )
 		if ! is_package_manager_running; then
 
-			LIST=()
-			for pkg in $SOURCE_PKG_LIST
-			do
-				LIST+=( "$pkg" "" )
-			done
+			if [[ -z $scripted ]]; then
+				LIST=()
+				for pkg in $SOURCE_PKG_LIST
+				do
+					LIST+=( "$pkg" "" )
+				done
 
-			LISTLENGTH="$((10+${#LIST[@]}/2))"
-			BOXLENGTH=${#LIST[@]}
+				exec 3>&1
+				selection=$(dialog --backtitle "$BACKTITLE" --title "Kernel install" --clear --cancel-label "Back" \
+				--menu "Choose kernel version" 12 70 ${#LIST[@]} "${LIST[@]}" 2>&1 1>&3)
+				exit_status=$?
+				exec 3>&-
+				[[ $exit_status == 1 || $exit_status == 255 ]] && clear
+			else
+				selection=$(echo $SOURCE_PKG_LIST | awk '{ print $NF }')
+			fi
 
-			exec 3>&1
-			selection=$(dialog --backtitle "$BACKTITLE" --title "Kernel install" --clear --cancel-label "Back" \
-			--menu "Choose kernel version" $LISTLENGTH 70 $BOXLENGTH "${LIST[@]}" 2>&1 1>&3)
-			exit_status=$?
-			exec 3>&-
-			[[ $exit_status == 1 || $exit_status == 255 ]] && clear
-
-			PACKAGE=$(echo "$selection" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
+			PACKAGE=$(echo "$selection" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//" | sed "s/-next//")
 			if [[ -n $PACKAGE ]]; then
 				debconf-apt-progress -- apt-get -y install ${selection}
 				mkdir -p /usr/src/$PACKAGE
@@ -232,29 +233,33 @@ unset selection
 	#
 	"Source_remove" )
 		if ! is_package_manager_running; then
-			LIST=()
-			for pkg in $SOURCE_PKG_LIST_INSTALLED
-			do
-				LIST+=( "$pkg" "" )
-			done
 
-			LISTLENGTH="$((10+${#LIST[@]}/2))"
-			BOXLENGTH=${#LIST[@]}
+			if [[ -z $scripted ]]; then
+				LIST=()
+				for pkg in $SOURCE_PKG_LIST_INSTALLED
+				do
+					LIST+=( "$pkg" "" )
+				done
 
-			exec 3>&1
-			selection=$(dialog --backtitle "$BACKTITLE" --title "Kernel remove" --clear --cancel-label "Back" \
-			--menu "Choose kernel version" $LISTLENGTH 70 $BOXLENGTH "${LIST[@]}" 2>&1 1>&3)
-			exit_status=$?
-			exec 3>&-
-			[[ $exit_status == 1 || $exit_status == 255 ]] && clear
+				exec 3>&1
+				selection=$(dialog --backtitle "$BACKTITLE" --title "Kernel remove" --clear --cancel-label "Back" \
+				--menu "Choose kernel version" 12 70 ${#LIST[@]} "${LIST[@]}" 2>&1 1>&3)
+				exit_status=$?
+				exec 3>&-
+				[[ $exit_status == 1 || $exit_status == 255 ]] && clear
+			else
+				selection=$(echo $SOURCE_PKG_LIST_INSTALLED | awk '{ print $NF }')
+			fi
 
 			if [[ -n $selection ]]; then
 				PACKAGE="linux-source-$(echo $selection | sed 's/[-|(|[:alpha:]|(|[:space:]|(|/]//g')-${BRANCH}-${LINUXFAMILY}"
-				debconf-apt-progress -- apt-get -y purge $PACKAGE
-				debconf-apt-progress -- apt -y autoremove
-				apt clean
-				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nRemoving $selection ... " 7 72
-				rm -r $selection
+				if ls $selection 1> /dev/null 2>&1; then
+					debconf-apt-progress -- apt-get -y purge $PACKAGE
+					debconf-apt-progress -- apt -y autoremove
+					apt clean
+					dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nRemoving $selection ... " 5 72
+					rm -r $selection
+				fi
 				if [[ -z $scripted ]]; then
 					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\n$selection removed" 7 72
 				fi
