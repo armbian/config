@@ -207,7 +207,7 @@ unset selection
 				selection=$(echo $SOURCE_PKG_LIST | awk '{ print $NF }')
 			fi
 
-			PACKAGE=$(echo "$selection" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//" | sed "s/-next//")
+			PACKAGE=$(echo "$selection" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
 			if [[ -n $PACKAGE ]]; then
 				debconf-apt-progress -- apt-get -y install ${selection}
 				mkdir -p /usr/src/$PACKAGE
