@@ -198,16 +198,13 @@ check_if_installed (){
 #
 function is_package_manager_running() {
 
-  fuser -s /var/lib/dpkg/lock
-  if [[ $? = 0 ]]; then
-    # 0 = true
-	dialog --colors --title " \Z1Error\Z0 " --backtitle "$BACKTITLE" --no-collapse --msgbox \
-	"\n\Z0Package manager is running in the background. \n\nCan't install dependencies. Try again later." 9 53
-    return 0
-  else
-    # 1 = false
-    return 1
-  fi
+	if ps -C apt-get,apt,dpkg >/dev/null ; then
+		[[ -z $scripted ]] && dialog --colors --title " \Z1Error\Z0 " --backtitle "$BACKTITLE" --no-collapse --msgbox \
+		"\n\Z0Package manager is running in the background. \n\nCan't install dependencies. Try again later." 9 53
+		return 0
+	else
+		return 1
+	fi
 
 }
 
@@ -235,15 +232,15 @@ function fancy_wget()
 function display_qr_code()
 {
 
-		clear
-		SECRET=$(head -1 /root/.google_authenticator)
-		qrencode -m 2 -d 9 -8 -t ANSI256 "otpauth://totp/test?secret=$SECRET"
-		echo -e "\nHow to setup your one type password generator?\n"
-		echo -e "\nInstall a one-time password authenticator on your mobile device (e.g. FreeOTP) from the Android \
+	clear
+	SECRET=$(head -1 /root/.google_authenticator)
+	qrencode -m 2 -d 9 -8 -t ANSI256 "otpauth://totp/test?secret=$SECRET"
+	echo -e "\nHow to setup your one type password generator?\n"
+	echo -e "\nInstall a one-time password authenticator on your mobile device (e.g. FreeOTP) from the Android \
 market or F-Droid.	\n\nIn the application menu, click the corresponding button to create a new account and either \
 scan the QR code or enter the secret key manually:\\n\n$SECRET \n\nYou should now see a new passcode token being \
 generated every 60 seconds on your phone.\n"  | fold -sw 60
-		read -n 1 -s -r -p "Press any key to continue"
+	read -n 1 -s -r -p "Press any key to continue"
 
 }
 
@@ -311,15 +308,15 @@ function description
 		;;
 		*mirrors.netix.net/armbian/apt/*)
 			echo "Bulgarija"
-		;;		
+		;;
 		*mirrors.dotsrc.org/armbian-apt/*)
 			echo "Denmark"
-		;;		
+		;;
 		*.armbian.com*)
 			echo "Estonia"
 		;;
 		*)
-		echo ""
+			echo ""
 		;;
 	esac
 }
@@ -330,27 +327,27 @@ function description
 #
 function generic_select()
 {
-        IFS=$' '
-        PARAMETER=($1)
-        local LIST=()
-        for i in "${PARAMETER[@]}"
-        do
-                        if [[ -n $3 ]]; then
-                                [[ ${i[0]} -ge $3 ]] && \
-                                LIST+=( "${i[0]//[[:blank:]]/}" "" )
-                        else
-                                LIST+=( "${i[0]//[[:blank:]]/}" "" )
-                        fi
-        done
-        LIST_LENGTH=$((${#LIST[@]}/2));
-        if [ "$LIST_LENGTH" -eq 1 ]; then
-                        PARAMETER=${PARAMETER[0]}
-        else
-                        exec 3>&1
-                        PARAMETER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-                        --title "$2" --clear --menu "" $((6+${LIST_LENGTH})) 0 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
-                        exec 3>&-
-        fi
+	IFS=$' '
+	PARAMETER=($1)
+	local LIST=()
+	for i in "${PARAMETER[@]}"
+	do
+		if [[ -n $3 ]]; then
+			[[ ${i[0]} -ge $3 ]] && \
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+		else
+			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+		fi
+	done
+	LIST_LENGTH=$((${#LIST[@]}/2));
+	if [ "$LIST_LENGTH" -eq 1 ]; then
+		PARAMETER=${PARAMETER[0]}
+	else
+		exec 3>&1
+		PARAMETER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+		--title "$2" --clear --menu "" $((6+${LIST_LENGTH})) 0 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+		exec 3>&-
+	fi
 }
 
 
@@ -360,45 +357,62 @@ function generic_select()
 # reload kernel, bsp and armbian-config
 #
 function reload_bsp(){
+
+	# switch to defined branch
+	[[ -n "$1" ]] && BRANCH=$1
+
+	# deal with exceptions
+	if [[ $BRANCH == current || $BRANCH == dev ]]; then
+		[[ ${LINUXFAMILY} == rk3399 ]] && LINUXFAMILY=rockchip64
+	fi
+
 	clear
 	debconf-apt-progress -- apt-get update
+	debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
 
-	# new branch names introduced with 12/2019
-	if [[ -n $(apt-cache search --names-only "^linux-image-current") ]]; then
-		[[ BRANCH == next ]] && TARGET_BRANCH="legacy" && TARGET_UBOOT_BRANCH="legacy"
-		TARGET_BRANCH="current"
-		TARGET_UBOOT_BRANCH="current"
-	else
-		TARGET_BRANCH="${BRANCH}"
-		TARGET_UBOOT_BRANCH="${UBOOT_BRANCH}"
+	# must exits
+	PACKAGE_INSTALL="linux-image-${BRANCH}-${LINUXFAMILY} linux-dtb-${BRANCH}-${LINUXFAMILY}"
+	PACKAGE_PURGE="linux-image* linux-dtb*"
+
+	# create install and remove logic
+	apt --simulate --allow-downgrades -y --no-install-recommends install linux-${DISTROID}-root-${BRANCH}-${BOARD} &>/dev/null
+	if [[ $? -eq 0 ]]; then
+		PACKAGE_INSTALL+=" linux-${DISTROID}-root-${BRANCH}-${BOARD}"
+		PACKAGE_PURGE+=" linux-${DISTROID}-root*"
 	fi
-	exceptions "$INSTALL_KERNEL"
-	unset PACKAGE_LIST
-	PACKAGE_LIST="linux-${DISTROID}-root$TARGET_BRANCH-$BOARD"
-	[[ -z ${TARGET_UBOOT_BRANCH} ]] && TARGET_UBOOT_BRANCH="current"
-	PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-$BOARD-$TARGET_UBOOT_BRANCH"
-	check_if_installed armbian-${DISTROID}-desktop && PACKAGE_LIST=$PACKAGE_LIST" armbian-${DISTROID}-desktop"
-	check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
 
-	IFS=" "
-	[[ -n $(apt-cache search --names-only "^linux-dtb$TARGET_BRANCH-$TARGET_FAMILY") ]] && \
-	PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-	PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
-	debconf-apt-progress --	apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST armbian-config
+	apt --simulate --allow-downgrades -y --no-install-recommends install linux-u-boot-${BOARD}-${BRANCH} &>/dev/null
+	if [[ $? -eq 0 ]]; then
+		PACKAGE_INSTALL+=" linux-u-boot-${BOARD}-${BRANCH}"
+		PACKAGE_PURGE+=" linux-u-boot-${BOARD}-*"
+	fi
+
+	if check_if_installed armbian-${DISTROID}-desktop ; then
+		PACKAGE_INSTALL+=" armbian-${DISTROID}-desktop"
+		PACKAGE_PURGE+=" armbian-${DISTROID}-desktop*"
+	fi
+
+	if check_if_installed linux-headers-${BRANCH}-${FAMILY} ; then
+		PACKAGE_INSTALL+=" linux-headers-${BRANCH}-${FAMILY}"
+		PACKAGE_PURGE+=" linux-headers*"
+	fi
+	debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
+
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
 
-		debconf-apt-progress -- apt -y -qq purge linux-u-boot* linux-image* linux-dtb* linux-headers* linux-${DISTROID}-root* armbian-${DISTROID}-desktop* armbian-config
+		debconf-apt-progress -- apt -y -qq purge $PACKAGE_PURGE
 		find "/boot/" -name "System.map*" -type f -delete
 		find "/boot/" -name "config*" -type f -delete
 		find "/boot/" -name "vmlinuz*" -type f -delete
 		find "/boot/" -name "*nitrd*" -type f -delete
-		# install packages
-		echo $PACKAGE_LIST >> /var/log/upgrade.log
-		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall \
-		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_LIST armbian-config
 
-		if [[ $? = 1 ]]; then
+		# install packages
+		echo $PACKAGE_INSTALL >> /var/log/upgrade.log
+		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall \
+		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_INSTALL
+
+		if [[ $? -eq 1 ]]; then
 			echo "Something went wrong ... check logs."; exit;
 		else
 			apt clean
@@ -461,7 +475,7 @@ function other_kernel_version ()
 		\n\n\Z1In case of troubles expect no help!\Z0"
 		if [[ -n $ACKNOWLEDGEMENT ]]; then
 			exec 3>&1
-            TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+			TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
 			--title "Switch from and reboot" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" \
 			$((9+${LIST_LENGTH})) 62 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
@@ -530,28 +544,28 @@ function aval_dtbs ()
 {
 
 	if [[ $LINUXFAMILY == cubox ]]; then
-	local width=80
-	LIST=("imx6dl-hummingboard.dtb" "HB Solo/DualLite" "imx6dl-hummingboard-emmc-som-v15.dtb" "HB Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard-som-v15.dtb" "HB Solo/DualLite v1.5" \
-	"imx6dl-hummingboard2.dtb" "HB2 Solo/DualLite" "imx6dl-hummingboard2-emmc-som-v15.dtb" "HB2 Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard2-som-v15.dtb" "HB2 Solo/DualLite v1.5" \
-	"imx6q-hummingboard.dtb" "HB Dual/Quad" "imx6q-hummingboard-emmc-som-v15.dtb" "HB Dual/Quad v1.5 with eMMC" "imx6q-hummingboard-som-v15.dtb" "HB Dual/Quad v1.5" \
-	"imx6q-hummingboard2.dtb" "HB2 Dual/Quad" "imx6q-hummingboard2-emmc-som-v15.dtb" "HB2 Dual/Quad v1.5 with eMMC" "imx6q-hummingboard2-som-v15.dtb" "HB2 Dual/Quad v1.5" \
-	"imx6dl-cubox-i.dtb" "Cubox-i Solo/DualLite" "imx6dl-cubox-i-emmc-som-v15.dtb" "Cubox-i Solo/DualLite v1.5 with eMMC" "imx6dl-cubox-i-som-v15.dtb" "Cubox-i Solo/DualLite v1.5" \
-	"imx6q-cubox-i.dtb" "Cubox-i Dual/Quad" "imx6q-cubox-i-emmc-som-v15.dtb" "Cubox-i Dual/Quad v1.5 with eMMC" "imx6q-cubox-i-som-v15.dtb" "Cubox-i Dual/Quad v1.5")
+		local width=80
+		LIST=("imx6dl-hummingboard.dtb" "HB Solo/DualLite" "imx6dl-hummingboard-emmc-som-v15.dtb" "HB Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard-som-v15.dtb" "HB Solo/DualLite v1.5" \
+		"imx6dl-hummingboard2.dtb" "HB2 Solo/DualLite" "imx6dl-hummingboard2-emmc-som-v15.dtb" "HB2 Solo/DualLite v1.5 with eMMC" "imx6dl-hummingboard2-som-v15.dtb" "HB2 Solo/DualLite v1.5" \
+		"imx6q-hummingboard.dtb" "HB Dual/Quad" "imx6q-hummingboard-emmc-som-v15.dtb" "HB Dual/Quad v1.5 with eMMC" "imx6q-hummingboard-som-v15.dtb" "HB Dual/Quad v1.5" \
+		"imx6q-hummingboard2.dtb" "HB2 Dual/Quad" "imx6q-hummingboard2-emmc-som-v15.dtb" "HB2 Dual/Quad v1.5 with eMMC" "imx6q-hummingboard2-som-v15.dtb" "HB2 Dual/Quad v1.5" \
+		"imx6dl-cubox-i.dtb" "Cubox-i Solo/DualLite" "imx6dl-cubox-i-emmc-som-v15.dtb" "Cubox-i Solo/DualLite v1.5 with eMMC" "imx6dl-cubox-i-som-v15.dtb" "Cubox-i Solo/DualLite v1.5" \
+		"imx6q-cubox-i.dtb" "Cubox-i Dual/Quad" "imx6q-cubox-i-emmc-som-v15.dtb" "Cubox-i Dual/Quad v1.5 with eMMC" "imx6q-cubox-i-som-v15.dtb" "Cubox-i Dual/Quad v1.5")
 	else
-	local width=52
-	LIST=("xu4" "Odroid XU4" "xu3" "Odroid XU3" "xu3l" "Odroid XU3 Lite" "hc1" "Odroid HC1/HC2")
+		local width=52
+		LIST=("xu4" "Odroid XU4" "xu3" "Odroid XU3" "xu3l" "Odroid XU3 Lite" "hc1" "Odroid HC1/HC2")
 	fi
 
 	LIST_LENGTH=$((${#LIST[@]}/2));
 	if [ "$LIST_LENGTH" -eq 1 ]; then
-			TARGET_BOARD=${AVAL_KERNEL[0]}
+		TARGET_BOARD=${AVAL_KERNEL[0]}
 	else
-			exec 3>&1
-			TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select optimised board configuration" --clear --menu \
-			"" $((6+${LIST_LENGTH})) ${width} 25 "${LIST[@]}" 2>&1 1>&3)
-			exitstatus=$?;
-			exec 3>&-
+		exec 3>&1
+		TARGET_BOARD=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+		--title "Select optimised board configuration" --clear --menu \
+		"" $((6+${LIST_LENGTH})) ${width} 25 "${LIST[@]}" 2>&1 1>&3)
+		exitstatus=$?;
+		exec 3>&-
 	fi
 
 }
@@ -571,19 +585,19 @@ function get_a20modes ()
 	local LIST=()
 	for i in "${SCREEN_RESOLUTION[@]}"
 	do
-			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+		LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
 	LIST_LENGTH=$((${#LIST[@]}/2));
 	#echo $LIST_LENGTH
 	#exit
 	if [ "$LIST_LENGTH" -eq 1 ]; then
-			SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
+		SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
 	else
-			exec 3>&1
-			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select video mode" --clear --menu \
-			"" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
-			exec 3>&-
+		exec 3>&1
+		SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+		--title "Select video mode" --clear --menu \
+		"" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+		exec 3>&-
 	fi
 
 }
@@ -597,27 +611,27 @@ function get_a20modes ()
 function get_odroidmodes ()
 {
 
-        IFS=$'\r\n'
-        GLOBIGNORE='*'
-        SCREEN_RESOLUTION=($(cat /boot/boot.ini | grep -w "# setenv" | grep "hz" | cut -d'"' -f 2))
+	IFS=$'\r\n'
+	GLOBIGNORE='*'
+	SCREEN_RESOLUTION=($(cat /boot/boot.ini | grep -w "# setenv" | grep "hz" | cut -d'"' -f 2))
 	SCREEN_RESOLUTION=($(cat /boot/boot.ini | grep "Progressive" | grep -v "setenv" | cut -d'"' -f 2))
-        local LIST=()
-        for i in "${SCREEN_RESOLUTION[@]}"
-        do
-                        LIST+=( "${i[0]//[[:blank:]]/}" "" )
-        done
-        LIST_LENGTH=$((${#LIST[@]}/2));
-        #echo $LIST_LENGTH
-        #exit
-        if [ "$LIST_LENGTH" -eq 1 ]; then
-                        SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
-        else
-                        exec 3>&1
-                        SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-                        --title "Select video mode" --clear --menu \
-                        "" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
-                        exec 3>&-
-        fi
+	local LIST=()
+	for i in "${SCREEN_RESOLUTION[@]}"
+	do
+		LIST+=( "${i[0]//[[:blank:]]/}" "" )
+	done
+	LIST_LENGTH=$((${#LIST[@]}/2));
+	#echo $LIST_LENGTH
+	#exit
+	if [ "$LIST_LENGTH" -eq 1 ]; then
+		SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
+	else
+		exec 3>&1
+		SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+		--title "Select video mode" --clear --menu \
+		"" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+		exec 3>&-
+	fi
 
 }
 
@@ -636,19 +650,19 @@ function get_h3modes ()
 	local LIST=()
 	for i in "${SCREEN_RESOLUTION[@]}"
 	do
-			LIST+=( "${i[0]//[[:blank:]]/}" "" )
+		LIST+=( "${i[0]//[[:blank:]]/}" "" )
 	done
 	LIST_LENGTH=$((${#LIST[@]}/2));
 	#echo $LIST_LENGTH
 	#exit
 	if [ "$LIST_LENGTH" -eq 1 ]; then
-			SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
+		SCREEN_RESOLUTION=${SCREEN_RESOLUTION[0]}
 	else
-			exec 3>&1
-			SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select video mode" --clear --menu \
-			"" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
-			exec 3>&-
+		exec 3>&1
+		SCREEN_RESOLUTION=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+		--title "Select video mode" --clear --menu \
+		"" $((6+${LIST_LENGTH})) 25 $((1+${LIST_LENGTH})) "${LIST[@]}" 2>&1 1>&3)
+		exec 3>&-
 	fi
 
 }
@@ -685,12 +699,12 @@ function add_choose_user ()
 		echo "Trying to add user $CHOSEN_USER"
 		adduser $CHOSEN_USER || return
 	elif [ "$LIST_LENGTH" -eq 1 ]; then
-			CHOSEN_USER=${USERS[0]}
+		CHOSEN_USER=${USERS[0]}
 	else
-			exec 3>&1
-			CHOSEN_USER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
-			--title "Select unprivileged user" --clear --menu "" $((6+${LIST_LENGTH})) 40 15 "${LIST[@]}" 2>&1 1>&3)
-			exec 3>&-
+		exec 3>&1
+		CHOSEN_USER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
+		--title "Select unprivileged user" --clear --menu "" $((6+${LIST_LENGTH})) 40 15 "${LIST[@]}" 2>&1 1>&3)
+		exec 3>&-
 	fi
 
 }

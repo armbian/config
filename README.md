@@ -79,7 +79,7 @@ Development version:
 
 # Software testings
 
-|Application name|Buster|Stretch|Bionic|Test install|
+|Application name|Buster|Stretch*|Bionic|Test install|
 |:--|:--:|:--:|:--:|--:|
 |TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
 |Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
@@ -99,3 +99,5 @@ Development version:
 |Docker (Docker CE engine)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
 |Mayan EDMS (Document management system within Docker)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|29.09.2018|
 |MiniDLNA (Media sharing)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+
+\* no longer supported

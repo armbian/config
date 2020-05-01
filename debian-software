@@ -114,14 +114,14 @@ function check_status
 	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
 	# Hass.io
-        HASS_STATUS="$([[ -f /etc/hassio.json ]] && echo "on" || echo "off" )"
-        alive_port "Home assistant smarthome suite" "8123"
-        LIST+=( "Hassio" "$DESCRIPTION" "$HASS_STATUS" )
+	HASS_STATUS="$([[ -f /etc/hassio.json ]] && echo "on" || echo "off" )"
+	alive_port "Home assistant smarthome suite" "8123"
+	LIST+=( "Hassio" "$DESCRIPTION" "$HASS_STATUS" )
 
 	# OpenHab
 	OPENHAB_STATUS="$([[ -f /usr/bin/openhab-cli ]] && echo "on" || echo "off" )"
-        alive_port "Openhab2 smarthome suite" "8080"
-        LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
+	alive_port "Openhab2 smarthome suite" "8080"
+	LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
 
 	# VPN
 	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
@@ -196,7 +196,7 @@ function check_status
 	if [[ "$DOCKER_STATUS" == "on" ]]; then
 		curl --output /dev/null --silent --head --fail http://localhost/authentication/login/?next=
 		MAYAN_STATUS=$([[ $? -eq 0 ]] && echo "on" || echo "off")
-		else
+	else
 		MAYAN_STATUS="off"
 	fi
 
@@ -306,22 +306,22 @@ declare -a PACKETS=($1)
 #skupaj=$(apt-get -s -y -qq install $1 | wc -l)
 skupaj=${#PACKETS[@]}
 while [[ $i -lt $skupaj ]]; do
-procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
-		x=${PACKETS[$i]}
-		if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-			printf '%.0f\n' $procent | dialog \
-			--backtitle "$BACKTITLE" \
-			--title "Installing" \
-			--gauge "\n$2\n\n$x" 10 70
+	procent=$(echo "scale=2;($j/$skupaj)*100"|bc)
+	x=${PACKETS[$i]}
+	if [ $(dpkg-query -W -f='${Status}' $x 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+		printf '%.0f\n' $procent | dialog \
+		--backtitle "$BACKTITLE" \
+		--title "Installing" \
+		--gauge "\n$2\n\n$x" 10 70
 		if [ "$(DEBIAN_FRONTEND=noninteractive apt-get -qq -y install $x >${TEMP_DIR}/install.log 2>&1 || echo 'Installation failed' \
 		| grep 'Installation failed')" != "" ]; then
 			echo -e "[\e[0;31m error \x1B[0m] Installation failed"
 			tail ${TEMP_DIR}/install.log
 			exit
 		fi
-		fi
-		i=$[$i+1]
-		j=$[$j+1]
+	fi
+	i=$[$i+1]
+	j=$[$j+1]
 done
 echo ""
 }
@@ -335,24 +335,15 @@ alive_port ()
 # Displays URL to the service $1 on port $2 or just that is active if $3 = boolean $4 = path
 #
 if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
-
 	if [[ $3 == boolean ]]; then
-
 		DESCRIPTION="$1 is \Z1active\Z0";
-
-		elif [[ $3 == ssl ]]; then
-
+	elif [[ $3 == ssl ]]; then
 		DESCRIPTION="Active on https://${serverIP}:\Z1$2\Z0$4";
-
-		else
-
+	else
 		DESCRIPTION="Active on http://${serverIP}:\Z1$2\Z0$4";
-
 	fi
 else
-
 	DESCRIPTION="$1";
-
 fi
 }
 
@@ -550,147 +541,48 @@ install_ncp (){
 
 install_omv (){
 #
-# On Debian install OpenMediaVault 3 (Jessie), 4 (Stretch) or 5 (Buster)
+# Install OpenMediaVault on Debian
 #
-# TODO: Some OMV packages lack authentication
+if [ -f /etc/armbian-release ]; then
+	. /etc/armbian-release
+fi
 
+# Don't allow installation on Ubuntu
 if [[ "$family" == "Ubuntu" ]]; then
 	dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
 	sleep 5
 	exit 1
 fi
 
+# Warning / Notice before install
 case $distribution in
 	wheezy|jessie)
-		dialog --backtitle "$BACKTITLE" --title "OMV3 is End of Life" --msgbox "\nUpgrade to a supported Debian release first." 7 52
+		dialog --backtitle "$BACKTITLE" --title "OMV3 is End of Life" --msgbox "\nUpgrade to a supported OS : Debian Stretch or Buster." 7 52
 		sleep 5
 		exit 1
 		;;
-	stretch)
-		OMV_Name="arrakis"
-		OMV_EXTRAS_URL="https://github.com/OpenMediaVault-Plugin-Developers/packages/raw/master/openmediavault-omvextrasorg_latest_all4.deb"
-		OMV_EXTRA_PACKAGES="openmediavault-flashmemory openmediavault-netatalk"
-		;;
-	buster)
-		dialog --title "Warning" --msgbox "\nPlease be aware that OMV5 is still in beta state, might be functionally broken or not working at all. Report any issues you run into at forum.openmediavault.org.\n\nIf you want to run OMV4 remain on Debian Stretch" 11 56
-		OMV_Name="usul"
-		OMV_EXTRAS_URL="https://github.com/OpenMediaVault-Plugin-Developers/packages/raw/master/openmediavault-omvextrasorg_latest_all5.deb"
-		OMV_EXTRA_PACKAGES="openmediavault-flashmemory"
-		;;
 esac
 
-systemctl status log2ram >/dev/null 2>&1 && (systemctl stop log2ram ; systemctl disable log2ram >/dev/null 2>&1; rm /etc/cron.daily/log2ram)
-systemctl status armbian-ramlog >/dev/null 2>&1 && (systemctl stop armbian-ramlog ; systemctl disable armbian-ramlog >/dev/null 2>&1; rm /etc/cron.daily/armbian-ram-logging)
+# Download OMV install script
+wgeturl="https://github.com/OpenMediaVault-Plugin-Developers/installScript/raw/master/install"
+fancy_wget "$wgeturl" "-O ${TEMP_DIR}/omv_install.sh"
 
-export LANG=en_US.UTF-8
-export DEBIAN_FRONTEND=noninteractive
-export APT_LISTCHANGES_FRONTEND=none
-if [ -f /etc/armbian-release ]; then
-	. /etc/armbian-release
-else
-	sed -i "s/^# en_US.UTF-8/en_US.UTF-8/" /etc/locale.gen
-	locale-gen
+# Remove Crony on Stretch since OMV4 depends on NTP
+if [[ "$distribution" == "stretch" ]]; then
+	apt-get -y -qq remove chrony
 fi
 
-# preserve cpufrequtils settings:
-if [ -f /etc/default/cpufrequtils ]; then
-	. /etc/default/cpufrequtils
-fi
+# Execute install script
+echo "Now installing OpenMediaVault. Be patient, it will take several minutes..."
+bash ${TEMP_DIR}/omv_install.sh &>> /var/log/omv_install.log
 
-# Add OMV sources
-cat > /etc/apt/sources.list.d/openmediavault.list << EOF
-deb https://packages.openmediavault.org/public ${OMV_Name} main
-
-## Uncomment the following line to add software from the proposed repository.
-deb https://packages.openmediavault.org/public ${OMV_Name}-proposed main
-
-## This software is not part of OpenMediaVault, but is offered by third-party
-## developers as a service to OpenMediaVault users.
-# deb https://packages.openmediavault.org/public ${OMV_Name} partner
-EOF
-
-# Install keys
-wget -O "/etc/apt/trusted.gpg.d/openmediavault-archive-keyring.asc" https://packages.openmediavault.org/public/archive.key
-apt-key add "/etc/apt/trusted.gpg.d/openmediavault-archive-keyring.asc"
-debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get --yes install openmediavault-keyring
-apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 7AA630A1EDEE7D73
-
-# configure install and check for disk space
-read HOSTNAME </etc/hostname
-read TZ </etc/timezone
-debconf-set-selections <<< "postfix postfix/mailname string ${HOSTNAME}"
-debconf-set-selections <<< "postfix postfix/main_mailer_type string 'No configuration'"
-SPACE_NEEDED=$(apt-get --assume-no --allow-unauthenticated --fix-missing --no-install-recommends install openmediavault-keyring openmediavault postfix dirmngr 2>/dev/null | awk -F" " '/additional disk space will be used/ {print $4}')
-SPACE_NEEDED=${SPACE_NEEDED%.*}
-SPACE_AVAIL=$(df -k / | awk -F" " '/\/$/ {printf ("%0.0f",$4/1200); }')
-if [ ${SPACE_AVAIL} -lt ${SPACE_NEEDED} ]; then
-	dialog --backtitle "$BACKTITLE" --title "No space left on device" --msgbox "\nOpenMediaVault needs ${SPACE_NEEDED} MB for installation while only ${SPACE_AVAIL} MB are available." 7 52
-	exit 1
-fi
-
-# main install
-echo "Now installing OMV packages. Be patient please"
-debconf-apt-progress -- apt-get --yes --auto-remove --show-upgraded \
-	--allow-downgrades --allow-change-held-packages \
-	--no-install-recommends \
-	--option Dpkg::Options::="--force-confdef" \
-	--option DPkg::Options::="--force-confold" \
-	install postfix dirmngr openmediavault
-
-# Fix multiple sources entry on ARM with OMV
-sed -i '/stretch-backports/d' /etc/apt/sources.list
-sed -i '/buster-backports/d' /etc/apt/sources.list
-
-# Install OMV-Extras
-FILE="${TEMP_DIR}/omv_extras.deb"; wget "$OMV_EXTRAS_URL" -qO $FILE && dpkg -i $FILE ; rm $FILE
-debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get --yes --force-yes --fix-missing --auto-remove --allow-unauthenticated \
-  --show-upgraded --option DPkg::Options::="--force-confold" dist-upgrade
-
-# Install flashmemory plugin and netatalk on OMV4 by default, use nice logo for the latter,
-# disable OMV monitoring by default
-. /usr/share/openmediavault/scripts/helper-functions
-debconf-apt-progress -- apt-get -y --fix-missing --no-install-recommends --auto-remove install ${OMV_EXTRA_PACKAGES}
-AFP_Options="mimic model = Macmini"
-SMB_Options="min receivefile size = 16384\nwrite cache size = 524288\ngetwd cache = yes\nsocket options = TCP_NODELAY IPTOS_LOWDELAY"
-xmlstarlet ed -L -u "/config/services/afp/extraoptions" -v "$(echo -e "${AFP_Options}")" ${OMV_CONFIG_FILE}
-xmlstarlet ed -L -u "/config/services/smb/extraoptions" -v "$(echo -e "${SMB_Options}")" ${OMV_CONFIG_FILE}
-xmlstarlet ed -L -u "/config/services/flashmemory/enable" -v "1" ${OMV_CONFIG_FILE}
-xmlstarlet ed -L -u "/config/services/ssh/enable" -v "1" ${OMV_CONFIG_FILE}
-xmlstarlet ed -L -u "/config/services/ssh/permitrootlogin" -v "1" ${OMV_CONFIG_FILE}
-xmlstarlet ed -L -u "/config/system/time/ntp/enable" -v "1" ${OMV_CONFIG_FILE}
-xmlstarlet ed -L -u "/config/system/time/timezone" -v "${TZ}" ${OMV_CONFIG_FILE}
-xmlstarlet ed -L -u "/config/system/network/dns/hostname" -v "${HOSTNAME}" ${OMV_CONFIG_FILE}
-/usr/sbin/omv-rpc -u admin "perfstats" "set" '{"enable":false}'
-/usr/sbin/omv-rpc -u admin "config" "applyChanges" '{ "modules": ["monit","rrdcached","collectd"],"force": true }'
-sed -i 's|-j /var/lib/rrdcached/journal/ ||' /etc/init.d/rrdcached
-/sbin/folder2ram -enablesystemd 2>/dev/null
-
-# Prevent accidentally destroying board performance by clicking around in OMV UI since
-# OMV sets 'powersave' governor when touching 'Power Management' settings.
-if [ ! -f /etc/default/cpufrequtils ]; then
-	DEFAULT_GOV="$(zgrep "^CONFIG_CPU_FREQ_DEFAULT_GOV_" /proc/config.gz 2>/dev/null | sed 's/CONFIG_CPU_FREQ_DEFAULT_GOV_//')"
-	if [ -n "${DEFAULT_GOV}" ]; then
-		GOVERNOR=$(cut -f1 -d= <<<"${DEFAULT_GOV}" | tr '[:upper:]' '[:lower:]')
-	else
-		GOVERNOR=ondemand
-	fi
-	MIN_SPEED="0"
-	MAX_SPEED="0"
-fi
-echo -e "OMV_CPUFREQUTILS_GOVERNOR=${GOVERNOR}" >>/etc/default/openmediavault
-echo -e "OMV_CPUFREQUTILS_MINSPEED=${MIN_SPEED}" >>/etc/default/openmediavault
-echo -e "OMV_CPUFREQUTILS_MAXSPEED=${MAX_SPEED}" >>/etc/default/openmediavault
-if [ -x /usr/sbin/omv-mkconf ]; then
-	for i in netatalk samba flashmemory ssh ntp timezone monit rrdcached collectd cpufrequtils ; do
-		/usr/sbin/omv-mkconf $i
-	done
-fi
+# Board Specific Tweak
+echo "Now applying board tweak if required..."
 
 # Hardkernel Cloudshell 1 and 2 fixes, read the whole thread for details:
 # https://forum.openmediavault.org/index.php/Thread/17855
 lsusb | grep -q -i "05e3:0735" && sed -i "/exit 0/i echo 20 > /sys/class/block/sda/queue/max_sectors_kb" /etc/rc.local
+
 case ${BOARD} in
 	odroidxu4)
 		HMP_Fix='; taskset -c -p 4-7 $i '
@@ -706,56 +598,25 @@ case ${BOARD} in
 			done
 		fi
 		;;
-	bananapim3|nanopifire3|nanopct3plus|nanopim3)
-		HMP_Fix='; taskset -c -p 4-7 $i '
-		;;
-	*rk3399*|*edge*|nanopct4|nanopim4|nanopineo4|renegade-elite|rockpi-4*|rockpro64)
-		HMP_Fix='; taskset -c -p 4-5 $i '
-		;;
-	odroidn2)
-		HMP_Fix='; taskset -c -p 2-5 $i '
-		;;
-esac
-
-# Helios4 tweak
-# Make mdadm display fault events on Fault LED
-if [ ${BOARD} == "helios4" ]; then
-	if [ -f /usr/sbin/mdadm-fault-led.sh ]; then
-		sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /usr/share/openmediavault/mkconf/mdadm
-		/usr/sbin/omv-mkconf mdadm
-	fi
-fi
-
-# Add a cron job to make NAS processes more snappy and silence rsyslog
-systemctl status rsyslog >/dev/null 2>&1
-if [ $? -eq 0 ]; then
-	echo ':msg, contains, "do ionice -c1" ~' >/etc/rsyslog.d/omv-armbian.conf
-	echo ':msg, contains, "action " ~' >>/etc/rsyslog.d/omv-armbian.conf
-	echo ':msg, contains, "netsnmp_assert" ~' >>/etc/rsyslog.d/omv-armbian.conf
-	echo ':msg, contains, "Failed to initiate sched scan" ~' >>/etc/rsyslog.d/omv-armbian.conf
-	systemctl restart rsyslog
-fi
-echo "* * * * * root for i in \`pgrep \"ftpd|nfsiod|smbd|afpd|cnid\"\` ; do ionice -c1 -p \$i ${HMP_Fix}; done >/dev/null 2>&1" >/etc/cron.d/make_nas_processes_faster
-chmod 600 /etc/cron.d/make_nas_processes_faster
-
-# finishing steps
-case $distribution in
-	stretch)
-		# Fix python bug upstream Debian 9 obviously ignores
-		if [ -f /usr/lib/python3.5/weakref.py ]; then
-			wget -O /usr/lib/python3.5/weakref.py \
-			https://raw.githubusercontent.com/python/cpython/9cd7e17640a49635d1c1f8c2989578a8fc2c1de6/Lib/weakref.py
+	helios4)
+		# Make mdadm display fault events on Fault LED
+		# NOTE : this is not a permanent approach need to be improved via some OMV core code change
+		if [ -f /usr/sbin/mdadm-fault-led.sh ]; then
+			if [[ "$distribution" == "stretch" ]]; then
+				sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /usr/share/openmediavault/mkconf/mdadm
+				/usr/sbin/omv-mkconf mdadm
+			elif [[ "$distribution" == "buster" ]]; then
+				cat <<EOF > /srv/salt/omv/deploy/mdadm/25faultled.sls
+mdadm_add_program_config:
+  cmd.run:
+    - name: "echo -e '\n# Trigger Fault Led script when an event is detected\nPROGRAM /usr/sbin/mdadm-fault-led.sh' >> /etc/mdadm/mdadm.conf"
+EOF
+				/usr/sbin/omv-salt deploy run mdadm
+			fi
 		fi
-		/usr/sbin/omv-initsystem
-		;;
-	buster)
-		/usr/sbin/omv-confdbadm populate
-		;;
+	;;
 esac
 }
-
-
-
 
 install_tvheadend ()
 {
@@ -769,8 +630,8 @@ if [[ "$family" == "Ubuntu" ]]; then
 	debconf-apt-progress -- apt-get -y install libssl-doc libssl1.0.0 zlib1g-dev tvheadend xmltv-util
 else
 	if [ ! -f /etc/apt/sources.list.d/tvheadend.list ]; then
-	echo "deb https://www.deb-multimedia.org ${distribution} main non-free" >> /etc/apt/sources.list.d/tvheadend.list
-	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 5C808C2B65558117 >/dev/null 2>&1
+		echo "deb https://www.deb-multimedia.org ${distribution} main non-free" >> /etc/apt/sources.list.d/tvheadend.list
+		apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 5C808C2B65558117 >/dev/null 2>&1
 	fi
 	URL="https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u9_"$(dpkg --print-architecture)".deb"
 	fancy_wget "$URL" "-O ${TEMP_DIR}/package.deb"
@@ -921,7 +782,7 @@ if [ $? == 0 ]; then
 	install_docker
 	debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates \
 	dbus jq network-manager socat software-properties-common
-	curl -sL "https://raw.githubusercontent.com/home-assistant/hassio-installer/master/hassio_install.sh" | \
+	curl -sL "https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh" | \
 	bash -s -- -m  ${machine}
 	dialog --backtitle "$BACKTITLE" --title "Please wait" \
 	--msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
@@ -938,16 +799,58 @@ install_openhab ()
 # Install Openhab2 smart home suite openhab.org
 #
 
+# Install ZuluJDK
+#
+# test below
+#
+# sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0xB1998361219BD9C9
+# sudo apt-add-repository 'deb http://repos.azulsystems.com/ubuntu stable main'
+# apt install zulu-embedded-8
+
+
+local jdkArch=$(dpkg --print-architecture)
+
+case $jdkArch in
+
+	armhf)
+		URL="https://cdn.azul.com/zulu-embedded/bin/zulu8.40.0.178-ca-jdk1.8.0_222-linux_aarch32hf.tar.gz"
+		;;
+	arm64)
+		URL="https://cdn.azul.com/zulu-embedded/bin/zulu8.40.0.178-ca-jdk1.8.0_222-linux_aarch64.tar.gz"
+		;;
+	amd64)
+		URL="https://cdn.azul.com/zulu/bin/zulu8.42.0.21-ca-jdk8.0.232-linux_x64.tar.gz"
+		;;
+	*)
+		URL="https://cdn.azul.com/zulu/bin/zulu8.42.0.21-ca-jdk8.0.232-linux_i686.tar.gz"
+
+esac
+
+fancy_wget "$URL" "-O ${TEMP_DIR}/zulu8.tar.gz"
+mkdir -p /opt/jdk
+tar -xpzf ${TEMP_DIR}/zulu8.tar.gz -C /opt/jdk
+jdkBin=$(find /opt/jdk/*/bin ... -print -quit)
+jdkLib=$(find /opt/jdk/*/lib ... -print -quit)
+update-alternatives --remove-all java >/dev/null 2>&1
+update-alternatives --remove-all javac >/dev/null 2>&1
+update-alternatives --install /usr/bin/java java "$jdkBin"/java 1083000 >/dev/null 2>&1
+update-alternatives --install /usr/bin/javac javac "$jdkBin"/javac 1083000 >/dev/null 2>&1
+echo "$jdkLib"/"$jdkArch" > /etc/ld.so.conf.d/java.conf
+echo "$jdkLib"/"$jdkArch"/jli >> /etc/ld.so.conf.d/java.conf
+ldconfig >/dev/null 2>&1
 wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
 echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get install -y openjdk-8-jdk
-apt-get install -y openhab2 openhab2-addons
+debconf-apt-progress -- apt-get install -y openhab2
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable openhab2.service >/dev/null 2>&1
+systemctl start openhab2.service >/dev/null 2>&1
+# addons seems broken
+# apt-get install -y openhab2-addons
 sed -i 's|EXTRA_JAVA_OPTS=""|EXTRA_JAVA_OPTS="-Dgnu.io.rxtx.SerialPorts=/dev/ttyUSB0:/dev/ttyS0:/dev/ttyS2:/dev/ttyACM0:/dev/ttyAMA0"|' /etc/default/openhab2
-service openhab2 start
+service openhab2 restart >/dev/null 2>&1
 dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox \
 "\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
-
 }
 
 
@@ -979,8 +882,8 @@ systemctl start syncthing@${CHOSEN_USER}.service >/dev/null 2>&1
 # wait until config file is created
 while :
 do
-    if [[ -f /home/${CHOSEN_USER}/.config/syncthing/config.xml ]]; then break; fi
-    sleep 1
+	if [[ -f /home/${CHOSEN_USER}/.config/syncthing/config.xml ]]; then break; fi
+	sleep 1
 done
 # change to server IP
 sed -i "s/127.0.0.1/${serverIP}/" /home/${CHOSEN_USER}/.config/syncthing/config.xml
@@ -1010,8 +913,8 @@ install_emby_server ()
 #
 # Emby server
 #
-  ARCH=$(dpkg --print-architecture)
-  URL=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases/latest | grep "/emby-server-deb.*${ARCH}.deb" | cut -d : -f 2,3 | tr -d \")
+	ARCH=$(dpkg --print-architecture)
+	URL=$(curl -s https://api.github.com/repos/MediaBrowser/Emby.Releases/releases/latest | grep "/emby-server-deb.*${ARCH}.deb" | cut -d : -f 2,3 | tr -d \")
 	fancy_wget "$URL" "-O ${TEMP_DIR}/emby.deb"
 	dpkg -i ${TEMP_DIR}/emby.deb >/dev/null 2>&1
 	apt-get -yy -f install
@@ -1181,10 +1084,10 @@ install_packet "debconf-utils unzip build-essential html2text apt-transport-http
 URL=$(wget -q $PREFIX -O - | html2text | grep rtm | awk ' { print $(NF) }' | tail -1)
 SUFIX="${URL/-tree/}"
 if [ "$(dpkg --print-architecture | grep armhf)" != "" ]; then
-DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_ARM_EABI/softether-vpnclient-$SUFIX-linux-arm_eabi-32bit.tar.gz"
+	DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_ARM_EABI/softether-vpnclient-$SUFIX-linux-arm_eabi-32bit.tar.gz"
 else
-install_packet "gcc-multilib" "Install libraries"
-DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_Intel_x86/softether-vpnclient-$SUFIX-linux-x86-32bit.tar.gz"
+	install_packet "gcc-multilib" "Install libraries"
+	DLURL=$PREFIX$URL"/Linux/SoftEther_VPN_Client/32bit_-_Intel_x86/softether-vpnclient-$SUFIX-linux-x86-32bit.tar.gz"
 fi
 wget -q $DLURL -O - | tar -xz
 cd vpnclient
@@ -1296,8 +1199,8 @@ install_Virus ()
 packets="amavisd-new spamassassin clamav clamav-daemon unzip bzip2 arj p7zip unrar-free rpm nomarch lzop \
 cabextract apt-listchanges libnet-ldap-perl libauthen-sasl-perl clamav-docs daemon libio-string-perl libio-socket-ssl-perl \
 libnet-ident-perl zip libnet-dns-perl postgrey"
-if [[ $distribution != "bionic" ]] && [[ $distribution != "buster" ]]; then 
-    packets=$packets" zoo"
+if [[ $distribution != "bionic" ]] && [[ $distribution != "buster" ]]; then
+	packets=$packets" zoo"
 fi
 if [[ $distribution != "buster" ]]; then packets=$packets" ripole"; fi
 install_packet "$packets" "amavisd, spamassassin, clamav"
@@ -1339,15 +1242,15 @@ install_phpmyadmin ()
 # Phpmyadmin unattended installation
 #
 if [[ "$family" != "Ubuntu" ]]; then
-DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y install phpmyadmin
+	DEBIAN_FRONTEND=noninteractive debconf-apt-progress -- apt-get -y install phpmyadmin
 else
-debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect true"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
-echo "phpmyadmin phpmyadmin/internal/skip-preseed boolean true" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
-debconf-apt-progress -- apt-get install -y phpmyadmin
+	debconf-set-selections <<< "phpmyadmin phpmyadmin/internal/skip-preseed boolean true"
+	debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect true"
+	debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean false"
+	echo "phpmyadmin phpmyadmin/internal/skip-preseed boolean true" | debconf-set-selections
+	echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect" | debconf-set-selections
+	echo "phpmyadmin phpmyadmin/dbconfig-install boolean false" | debconf-set-selections
+	debconf-apt-progress -- apt-get install -y phpmyadmin
 fi
 # Apache2 needs additional hack
 WWW_RECONFIG=$(expect -c "
@@ -1410,22 +1313,22 @@ EOT
 
 a2enmod actions proxy_fcgi setenvif fastcgi alias httpoxy suexec rewrite ssl actions include dav_fs dav auth_digest cgi headers >/dev/null 2>&1
 	case $distribution in
-	        jessie)
-			a2enconf php5-fpm >/dev/null 2>&1
-	                ;;
-	        xenial)
-			a2enconf php7.0-fpm >/dev/null 2>&1
-	                ;;
-	        stretch)
-			a2enconf php7.0-fpm >/dev/null 2>&1
-	                ;;
-	        bionic)
-			a2enconf php7.2-fpm >/dev/null 2>&1
-	                ;;
-	        buster)
-			a2enconf php7.3-fpm >/dev/null 2>&1
-	                ;;
-	        esac
+	jessie)
+		a2enconf php5-fpm >/dev/null 2>&1
+	;;
+	xenial)
+		a2enconf php7.0-fpm >/dev/null 2>&1
+	;;
+	stretch)
+		a2enconf php7.0-fpm >/dev/null 2>&1
+	;;
+	bionic)
+		a2enconf php7.2-fpm >/dev/null 2>&1
+	;;
+	buster)
+		a2enconf php7.3-fpm >/dev/null 2>&1
+	;;
+	esac
 service apache2 restart >> /dev/null
 }
 
@@ -1462,37 +1365,37 @@ local temp="pkg_${distribution}"
 install_packet "${pkg} ${!temp}" "Nginx for $family $distribution"
 
 case $distribution in
-        jessie)
+	jessie)
 		phpenmod mcrypt mbstring
 		debconf-apt-progress -- apt-get install -y python-certbot -t jessie-backports
-        	service php5-fpm reload >> /dev/null
-                ;;
+		service php5-fpm reload >> /dev/null
+		;;
 	xenial)
 		phpenmod mcrypt mbstring
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-        	sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
-        	service php7.0-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
+		service php7.0-fpm reload >> /dev/null
 		;;
 	stretch)
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
-        	service php7.0-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.0/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.0/fpm/php.ini
+		service php7.0-fpm reload >> /dev/null
 		phpenmod mcrypt mbstring
 		;;
 	bionic)
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.2/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.2/fpm/php.ini
-        	service php7.2-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.2/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.2/fpm/php.ini
+		service php7.2-fpm reload >> /dev/null
 		phpenmod mbstring
 		;;
 	buster)
 		tz=$(cat /etc/timezone | sed 's/\//\\\//g')
-	        sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.3/fpm/php.ini
-        	sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.3/fpm/php.ini
-        	service php7.3-fpm reload >> /dev/null
+		sed -i "s/^cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/" /etc/php/7.3/fpm/php.ini
+		sed -i "s/^date.timezone=.*/date.timezone=""$tz""/" /etc/php/7.3/fpm/php.ini
+		service php7.3-fpm reload >> /dev/null
 		phpenmod mbstring
 		;;
         esac
@@ -1656,10 +1559,10 @@ cd ${TEMP_DIR}/ispconfig3_install/install/
 php -q install.php --autoinstall=${TEMP_DIR}/isp.conf.php &>> /var/log/ispconfig_config.log
 dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Auto updating SSL certificate " --clear --yesno "\nDo you want to secure ISPConfig control panel and all services with free Let's Encrypt SSL certificate?" 8 80
 if [[ $? == 0 ]]; then
-dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
-curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip  2> /dev/null
-unzip -qq master.zip
-bash LE4ISPC-master/${server}/le4ispc.sh 2>&1
+	dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Instructions " --clear --msgbox "\n1. Access admin panel with your browser: \Z1https://$serverIP:8080\Z0\n\nUsername: \Z1admin\Z0\nPassword: \Z11234\Z0 \n\n\n2. Go to Sites > Website > \Z1Add new website\Z0\n\nDomain: \Z1$(hostname -f)\Z0\nAuto-Subdomain: \Z1None\Z0\nSSL: \Z1enable\Z0\nLet's Encrypt SSL: \Z1enable\Z0\n\n\n3. Go to Tools > \Z1Password and language\Z0\n\nChange ISPConfig control panel password.\n\nSave and Logout. \n\n\n4. Wait until SSL is not working here: \Z1https://$(hostname -f)\Z0 \n\nIt can take up to a few minutes.\n\n\n5. Proceed with install (\Z1Press ENTER\Z0):" 33 80
+	curl -sSL https://github.com/ahrasis/LE4ISPC/archive/master.zip > master.zip  2> /dev/null
+	unzip -qq master.zip
+	bash LE4ISPC-master/${server}/le4ispc.sh 2>&1
 fi
 }
 
@@ -1802,10 +1705,10 @@ if ! is_package_manager_running; then
 			selection=${selection//Hassio/}
 		fi
 
-                if [[ "$selection" == *OpenHAB* && "$OPENHAB_STATUS" != "on" ]]; then
-                        install_openhab
-                        selection=${selection//OpenHAB/}
-                fi
+		if [[ "$selection" == *OpenHAB* && "$OPENHAB_STATUS" != "on" ]]; then
+			install_openhab
+			selection=${selection//OpenHAB/}
+		fi
 
 		if [[ "$selection" == *server* && "$VPN_SERVER_STATUS" != "on" ]]; then
 			install_vpn_server
@@ -1816,9 +1719,9 @@ if ! is_package_manager_running; then
 			install_vpn_client
 			selection=${selection//\"VPN client\"/}
 		fi
-                if [[ "$selection" == *NCP* && "$NCP_STATUS" != "on" ]]; then
+		if [[ "$selection" == *NCP* && "$NCP_STATUS" != "on" ]]; then
 			install_ncp
-                        selection=${selection//NCP/}
+			selection=${selection//NCP/}
 		fi
 
 		if [[ "$selection" == *OMV* && "$OMV_STATUS" != "on" ]]; then

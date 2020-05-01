@@ -11,6 +11,7 @@
 
 function jobs ()
 {
+unset selection
 	# Shows box with loading ...
 	#
 	dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
@@ -97,9 +98,9 @@ function jobs ()
 		sleep 2
 	;;
 
-        # SBC-becn
-        #
-        "Benchmarking" )
+	# SBC-becn
+	#
+	"Benchmarking" )
 		if [[ ! -f /usr/local/bin/sbc-benc ]]; then
 			wget -q -O /usr/local/bin/sbc-bench https://raw.githubusercontent.com/ThomasKaiser/sbc-bench/master/sbc-bench.sh
 			chmod +x /usr/local/bin/sbc-bench
@@ -107,7 +108,7 @@ function jobs ()
 		sbc-bench
 		echo ""
 		read -n 1 -s -p "Press any key to continue"
-        ;;
+	;;
 
 
 	# Send diagnostics
@@ -152,21 +153,29 @@ function jobs ()
 	#
 	# Install kernel headers
 	#
-	"Headers" )
+	"Headers_install" )
 		if ! is_package_manager_running; then
-			TARGET_BRANCH=$BRANCH
-			exceptions "$BRANCH"
-			REMOVE_PKG="linux-headers-*"
 			if [[ -f /etc/armbian-release ]]; then
-				INSTALL_PKG="linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}";
+				INSTALL_PKG="linux-headers-${BRANCH}-${LINUXFAMILY}";
 				else
 				INSTALL_PKG="linux-headers-$(uname -r | sed 's/'-$(dpkg --print-architecture)'//')";
 			fi
+			debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
+		fi
+	;;
+
+
+	#
+	# Remove kernel headers
+	#
+	"Headers_remove" )
+		if ! is_package_manager_running; then
+			REMOVE_PKG="linux-headers-*"
 			if [[ -n $(dpkg -l | grep linux-headers) ]]; then
-					debconf-apt-progress -- apt-get -y purge ${REMOVE_PKG}
-					rm -rf /usr/src/linux-headers*
+				debconf-apt-progress -- apt-get -y purge ${REMOVE_PKG}
+				rm -rf /usr/src/linux-headers*
 			else
-					debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
+				debconf-apt-progress -- apt-get -y install ${INSTALL_PKG}
 			fi
 			# cleanup
 			apt clean
@@ -175,33 +184,90 @@ function jobs ()
 	;;
 
 
-
-
 	#
 	# Install kernel source
 	#
-	"Source" )
-                if ! is_package_manager_running; then
-		PACKAGE=$(echo "$SOURCE_PKG" | sed "s/-next//" | sed "s/-dev//" | sed "s/-default//")
-			if ls /usr/src/linux-source* 1> /dev/null 2>&1; then
-					debconf-apt-progress -- apt-get -y purge linux-source*
-					debconf-apt-progress -- apt -y autoremove
-					apt clean
-					rm -r /usr/src/linux-source*
-                        else
-                                        debconf-apt-progress -- apt-get -y install ${SOURCE_PKG}
-					mkdir -p /usr/src/$PACKAGE
-					(pv -n /usr/src/$PACKAGE".tar.xz" | xz -d -T0 - | tar xf - -C /usr/src/$PACKAGE ) 2>&1 | dialog --colors --backtitle "$BACKTITLE" --title " Please wait! " --gauge "\nDecompressing kernel sources to /usr/src/$PACKAGE" 8 80
-					xz -d /usr/src/*config.xz --stdout > /usr/src/$PACKAGE/.config
-					rm /usr/src/$PACKAGE".tar.xz" /usr/src/*config.xz
-					apt clean
-					debconf-apt-progress -- apt-get -y purge linux-source*
-					debconf-apt-progress -- apt -y autoremove
-					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find pre-configured kernel sources in /usr/src/$PACKAGE" 7 72
-                        fi
-                fi
-        ;;
+	"Source_install" )
+		if ! is_package_manager_running; then
 
+			if [[ -z $scripted ]]; then
+				LIST=()
+				for pkg in $SOURCE_PKG_LIST
+				do
+					LIST+=( "$pkg" "" )
+				done
+
+				exec 3>&1
+				selection=$(dialog --backtitle "$BACKTITLE" --title "Kernel install" --clear --cancel-label "Back" \
+				--menu "Choose kernel version" 12 70 ${#LIST[@]} "${LIST[@]}" 2>&1 1>&3)
+				exit_status=$?
+				exec 3>&-
+				[[ $exit_status == 1 || $exit_status == 255 ]] && clear
+			else
+				selection=$(echo $SOURCE_PKG_LIST | awk '{ print $NF }')
+			fi
+
+			PACKAGE=$(echo "$selection" | sed "s/-current//" | sed "s/-dev//" | sed "s/-legacy//")
+			if [[ -n $PACKAGE ]]; then
+				debconf-apt-progress -- apt-get -y install ${selection}
+				mkdir -p /usr/src/$PACKAGE
+				(pv -n /usr/src/$PACKAGE".tar.xz" | xz -d -T0 - | tar xf - -C /usr/src/$PACKAGE ) 2>&1 | dialog --colors --backtitle "$BACKTITLE" --title " Please wait! " --gauge "\nDecompressing kernel sources to /usr/src/$PACKAGE" 8 80
+				xz -d /usr/src/*config.xz --stdout > /usr/src/$PACKAGE/.config
+				rm /usr/src/$PACKAGE".tar.xz" /usr/src/*config.xz
+				apt clean
+				debconf-apt-progress -- apt-get -y purge linux-source*
+				debconf-apt-progress -- apt -y autoremove
+				if [[ -z $scripted ]]; then
+					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\nYou will find pre-configured kernel sources in /usr/src/$PACKAGE" 7 72
+				fi
+			else
+				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nLoading software submodule ... " 5 34
+			fi
+		fi
+	;;
+
+
+
+	#
+	# Remove kernel source
+	#
+	"Source_remove" )
+		if ! is_package_manager_running; then
+
+			if [[ -z $scripted ]]; then
+				LIST=()
+				for pkg in $SOURCE_PKG_LIST_INSTALLED
+				do
+					LIST+=( "$pkg" "" )
+				done
+
+				exec 3>&1
+				selection=$(dialog --backtitle "$BACKTITLE" --title "Kernel remove" --clear --cancel-label "Back" \
+				--menu "Choose kernel version" 12 70 ${#LIST[@]} "${LIST[@]}" 2>&1 1>&3)
+				exit_status=$?
+				exec 3>&-
+				[[ $exit_status == 1 || $exit_status == 255 ]] && clear
+			else
+				selection=$(echo $SOURCE_PKG_LIST_INSTALLED | awk '{ print $NF }')
+			fi
+
+			if [[ -n $selection ]]; then
+				PACKAGE="linux-source-$(echo $selection | sed 's/[-|(|[:alpha:]|(|[:space:]|(|/]//g')-${BRANCH}-${LINUXFAMILY}"
+				if ls $selection 1> /dev/null 2>&1; then
+					debconf-apt-progress -- apt-get -y purge $PACKAGE
+					debconf-apt-progress -- apt -y autoremove
+					apt clean
+					dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nRemoving $selection ... " 5 72
+					rm -r $selection
+				fi
+				if [[ -z $scripted ]]; then
+					dialog --colors --backtitle "$BACKTITLE" --no-collapse --title " Kernel source " --clear --msgbox "\n$selection removed" 7 72
+				fi
+			else
+				dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nLoading software submodule ... " 5 34
+			fi
+		fi
+	;;
 
 
 
@@ -342,17 +408,17 @@ function jobs ()
 	# Connect to wireless access point
 	#
 	"WiFi" )
-			# disable AP mode on certain adapters
-			wlan_exceptions "off"
-			[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to STA mode" 7 62 && reboot
-			nmtui-connect
+		# disable AP mode on certain adapters
+		wlan_exceptions "off"
+		[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to STA mode" 7 62 && reboot
+		nmtui-connect
 	;;
 
 
 	# Connect to 3G/4G network
 	#
 	"LTE" )
-	if ! is_package_manager_running; then
+		if ! is_package_manager_running; then
 			if [[ $LTE_MODEM == *online* ]]; then
 				dialog --title " LTE modem is connected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Disconnect" --yesno "\n\Z1Disconnect:\Z0 kill mobile connection\n\n" 7 42
 				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "off"
@@ -360,28 +426,28 @@ function jobs ()
 				dialog --title " LTE modem is disconnected " --colors --backtitle "$BACKTITLE" --yes-label "Back" --no-label "Connect" --yesno "\n\Z1Connect:\Z0 dial mobile connection\n\n" 7 42
 				[[ $? = 1 ]] && lte "$LTE_MODEM_ID" "on"
 			fi
-	fi
+		fi
 	;;
 
 
 	# Connect to wireless access point
 	#
 	"Clear" )
-			# remove managed interfaces
-			systemctl daemon-reload
-			nmcli con delete $(nmcli --fields NAME,UUID,TYPE con | grep wifi | awk '{print $2}')
-			sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
-			sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
-			rm -f /etc/network/interfaces.d/armbian.ap.*
-			rm -f /etc/dnsmasq.conf
-			systemctl stop dnsmasq
-			systemctl disable dnsmasq
-			iptables -t nat -D POSTROUTING 1 >/dev/null 2>&1
-			systemctl stop armbian-restore-iptables.service
-			systemctl disable armbian-restore-iptables.service
-			rm -f /etc/iptables.ipv4.nat
-			rm -f /var/run/hostapd/* >/dev/null 2>&1
-			reload-nety
+		# remove managed interfaces
+		systemctl daemon-reload
+		nmcli con delete $(nmcli --fields NAME,UUID,TYPE con | grep wifi | awk '{print $2}')
+		sed 's/interface-name:wl.*//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+		sed 's/,$//' -i /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
+		rm -f /etc/network/interfaces.d/armbian.ap.*
+		rm -f /etc/dnsmasq.conf
+		systemctl stop dnsmasq
+		systemctl disable dnsmasq
+		iptables -t nat -D POSTROUTING 1 >/dev/null 2>&1
+		systemctl stop armbian-restore-iptables.service
+		systemctl disable armbian-restore-iptables.service
+		rm -f /etc/iptables.ipv4.nat
+		rm -f /var/run/hostapd/* >/dev/null 2>&1
+		reload-nety
 	;;
 
 
@@ -663,69 +729,69 @@ function jobs ()
 	}
 
 	function raise_dev {
-			i=0;
-			while [[ -z "$TEMP" && $i<5 ]]; do
-					TEMP=$(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected)
-					sleep 1
-					i=$((i+1))
-			done
-			dhclient vpn_se
+		i=0;
+		while [[ -z "$TEMP" && $i<5 ]]; do
+				TEMP=$(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected)
+				sleep 1
+				i=$((i+1))
+		done
+		dhclient vpn_se
 	}
 
 	if pgrep -x "vpnclient" > /dev/null
 	then
+		${VPNDIR}vpnclient stop >/dev/null 2>&1
+		${VPNDIR}vpnclient start >/dev/null 2>&1
+		if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd nicList | grep Enabled) ]]; then
+			${VPNDIR}vpncmd /client localhost /cmd niccreate se >/dev/null 2>&1
+		fi
+		if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Server") ]]; then
+			dialog --backtitle "$BACKTITLE" --no-label " Cancel " --yes-label " Import " --title " VPN " --yesno "\nA VPN configuration was not found.\n\nPlace valid file at /etc/server.vpn" 9 45
+			if [[ $? = 0 && -f /etc/server.vpn ]]; then
+				${VPNDIR}vpncmd /client localhost /cmd accountimport //etc//server.vpn >/dev/null 2>&1
 				${VPNDIR}vpnclient stop >/dev/null 2>&1
 				${VPNDIR}vpnclient start >/dev/null 2>&1
-				if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd nicList | grep Enabled) ]]; then
-					${VPNDIR}vpncmd /client localhost /cmd niccreate se >/dev/null 2>&1
-				fi
-				if [[ -z $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep "VPN Server") ]]; then
-					dialog --backtitle "$BACKTITLE" --no-label " Cancel " --yes-label " Import " --title " VPN " --yesno "\nA VPN configuration was not found.\n\nPlace valid file at /etc/server.vpn" 9 45
-					if [[ $? = 0 && -f /etc/server.vpn ]]; then
-						${VPNDIR}vpncmd /client localhost /cmd accountimport //etc//server.vpn >/dev/null 2>&1
-						${VPNDIR}vpnclient stop >/dev/null 2>&1
-						${VPNDIR}vpnclient start >/dev/null 2>&1
-						[[ $? = 0 ]] && dialog --backtitle "$BACKTITLE" --title " VPN " --msgbox "\nConfiguration was successfully imported!" 7 43
-					fi
-				fi
+				[[ $? = 0 ]] && dialog --backtitle "$BACKTITLE" --title " VPN " --msgbox "\nConfiguration was successfully imported!" 7 43
+			fi
+		fi
 
-				# raise devices
-				raise_dev
+		# raise devices
+		raise_dev
 
-				if [[ -n $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected) ]]; then
-					get_numbers
-					echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
-					echo "ip route del default"
-					echo "ip route add default via $GW dev vpn_se"
-					read
-					dialog --title "VPN client is connected to $VPNSERVERIP" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label " Import " --yesno "\n\Z1Stop:  \Z0 stop\n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
-				fi
-				response=$?
-				if [[ $response = 0 ]]; then
-					get_numbers
-					echo "ip route del $VPNSERVERIP"
-					echo "ip route del default"
-					echo "ip route add default via $IP dev $ADAPTER"
-					read
-					dialog --backtitle "$BACKTITLE"  --nocancel --nook --infobox "\nClosing VPN connection" 5 27
-					${VPNDIR}vpnclient stop >/dev/null 2>&1
-				fi
+		if [[ -n $(${VPNDIR}vpncmd /client localhost /cmd accountlist | grep Status | grep Connected) ]]; then
+			get_numbers
+			echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
+			echo "ip route del default"
+			echo "ip route add default via $GW dev vpn_se"
+			read
+			dialog --title "VPN client is connected to $VPNSERVERIP" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Stop" --no-label " Import " --yesno "\n\Z1Stop:  \Z0 stop\n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+		fi
+		response=$?
+		if [[ $response = 0 ]]; then
+			get_numbers
+			echo "ip route del $VPNSERVERIP"
+			echo "ip route del default"
+			echo "ip route add default via $IP dev $ADAPTER"
+			read
+			dialog --backtitle "$BACKTITLE"  --nocancel --nook --infobox "\nClosing VPN connection" 5 27
+			${VPNDIR}vpnclient stop >/dev/null 2>&1
+		fi
 	else
-				dialog --title "VPN client is disconnected" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Connect" --no-label " Import " --yesno "\n\Z1Connect:\Z0 Connect with your VPN server \n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
-				response=$?
-				if [[ $response = 0 ]]; then
-					${VPNDIR}vpnclient start >/dev/null 2>&1
+		dialog --title "VPN client is disconnected" --colors --backtitle "$BACKTITLE" --help-button --help-label "Cancel" --yes-label "Connect" --no-label " Import " --yesno "\n\Z1Connect:\Z0 Connect with your VPN server \n\n\Z1Import:\Z0 import new config from /etc/armbian.vpn" 9 70
+		response=$?
+		if [[ $response = 0 ]]; then
+			${VPNDIR}vpnclient start >/dev/null 2>&1
 
-					# raise devices
-					raise_dev
-					get_numbers
-					echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
-					echo "ip route del default"
-					echo "ip route add default via $GW dev vpn_se"
-					read
+			# raise devices
+			raise_dev
+			get_numbers
+			echo "ip route add $VPNSERVERIP via $IP dev $ADAPTER"
+			echo "ip route del default"
+			echo "ip route add default via $GW dev vpn_se"
+			read
 
-				fi
-				[[ $response = 1 ]] && vpn_reconfigure
+		fi
+		[[ $response = 1 ]] && vpn_reconfigure
 	fi
 	;;
 
@@ -733,8 +799,8 @@ function jobs ()
 	# Connect to Bluetooth
 	#
 	"BT discover" )
-	dialog --backtitle "$BACKTITLE" --title " Bluetooth " --msgbox "\nVerify that your Bluetooth device is discoverable!" 7 54
-	connect_bt_interface
+		dialog --backtitle "$BACKTITLE" --title " Bluetooth " --msgbox "\nVerify that your Bluetooth device is discoverable!" 7 54
+		connect_bt_interface
 	;;
 
 
@@ -803,7 +869,7 @@ function jobs ()
 		fi
 	;;
 
-	# ZSH
+	# Bash
 	#
 	"BASH" )
 		# change shell for root
@@ -824,7 +890,9 @@ function jobs ()
 		sed -i "s/^SHELL=.*/SHELL=\/bin\/bash/" /etc/default/useradd
 		# remove crontab
 		crontab -l | grep -v oh-my  | crontab -
-		dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1BASH\Z0\n\nPlease logout & login from this session!" 9 47
+		if [[ -z $scripted ]]; then
+			dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1BASH\Z0\n\nPlease logout & login from this session!" 9 47
+		fi
 	;;
 
 
@@ -832,41 +900,43 @@ function jobs ()
 	#
 	"ZSH" )
 		if ! is_package_manager_running; then
-		if ! check_if_installed zsh ; then
-			debconf-apt-progress -- apt-get update
-			debconf-apt-progress -- apt-get install -y zsh tmux
-		fi
-		rm -rf /etc/oh-my-zsh
-		git clone --quiet https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh
-		cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
-		mkdir -p /etc/skel/.oh-my-zsh/cache
-		# change shell for future users
-		sed -i "s/^SHELL=.*/SHELL=\/usr\/bin\/zsh/" /etc/default/useradd
-		# we have common settings
-		sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" /etc/skel/.zshrc
-		# user cache
-		sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" /etc/skel/.zshrc
-		# define theme
-		sed -i 's/^ZSH_THEME=.*/ZSH_THEME="risto"/' /etc/skel/.zshrc
-		# define default plugins
-		sed -i 's/^plugins=.*/plugins=(git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc		
-		# change shell for root
-		chsh -s $(grep /zsh$ /etc/shells | tail -1)
-		# copy cache directory
-		cp -R --attributes-only /etc/skel/.oh-my-zsh /root/.oh-my-zsh
-		cp /etc/skel/.zshrc /root/.zshrc
-		# and for selected normal user
-		add_choose_user
-		if [ -n "$CHOSEN_USER" ]; then
-			chsh -s $(grep /zsh$ /etc/shells | tail -1) $CHOSEN_USER
+			if ! check_if_installed zsh ; then
+				debconf-apt-progress -- apt-get update
+				debconf-apt-progress -- apt-get install -y zsh tmux
+			fi
+			rm -rf /etc/oh-my-zsh
+			git clone --quiet https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh
+			cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
+			mkdir -p /etc/skel/.oh-my-zsh/cache
+			# change shell for future users
+			sed -i "s/^SHELL=.*/SHELL=\/usr\/bin\/zsh/" /etc/default/useradd
+			# we have common settings
+			sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" /etc/skel/.zshrc
+			# user cache
+			sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" /etc/skel/.zshrc
+			# define theme
+			sed -i 's/^ZSH_THEME=.*/ZSH_THEME="risto"/' /etc/skel/.zshrc
+			# define default plugins
+			sed -i 's/^plugins=.*/plugins=(git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc
+			# change shell for root
+			chsh -s $(grep /zsh$ /etc/shells | tail -1)
 			# copy cache directory
-			cp -R --attributes-only /etc/skel/.oh-my-zsh /home/$CHOSEN_USER/.oh-my-zsh
-			cp /etc/skel/.zshrc /home/$CHOSEN_USER/.zshrc
-			chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/{.zshrc,.oh-my-zsh}
-		fi
-		# add a cronjob to update oh-my-zsh once per month
-		(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git -q pull origin master >/dev/null 2>/dev/null") | crontab -
-		dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
+			cp -R --attributes-only /etc/skel/.oh-my-zsh /root/.oh-my-zsh
+			cp /etc/skel/.zshrc /root/.zshrc
+			# and for selected normal user
+			add_choose_user
+			if [ -n "$CHOSEN_USER" ]; then
+				chsh -s $(grep /zsh$ /etc/shells | tail -1) $CHOSEN_USER
+				# copy cache directory
+				cp -R --attributes-only /etc/skel/.oh-my-zsh /home/$CHOSEN_USER/.oh-my-zsh
+				cp /etc/skel/.zshrc /home/$CHOSEN_USER/.zshrc
+				chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/{.zshrc,.oh-my-zsh}
+			fi
+			# add a cronjob to update oh-my-zsh once per month
+			(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git pull origin master >/dev/null 2>/dev/null") | crontab -
+			if [[ -z $scripted ]]; then
+				dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
+			fi
 		fi
 	;;
 
@@ -881,13 +951,16 @@ function jobs ()
 			exec 3>&-
 			mon_x=$(echo $monitor | awk '{print $2}' | sed 's/,//');mon_x=$(( $mon_x / 2 ))
 			mon_y=$(echo $monitor | awk '{print $3}' | sed 's/,//');
+			if [[ -z $scripted ]]; then
 			dialog --title " Update " --backtitle "$BACKTITLE" --no-label "No" --yesno "\nDo you want to update board firmware?" 7 41
-			if [[ $? = 0 ]]; then
+			fi
+			if [[ $? -eq 0 ]]; then
 				debconf-apt-progress -- apt-get update
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
+				[[ -z $scripted ]] && \
 				dialog --title " Firmware update " --colors --no-label "No" --backtitle "$BACKTITLE" --yesno \
 				"\nFirmware has been updated. Reboot?   " 7 39
-				if [[ $? = 0 ]]; then reboot; fi
+				if [[ $? -eq 0 ]]; then reboot; fi
 			fi
 		fi
 	;;
@@ -904,38 +977,35 @@ function jobs ()
 	#
 	"Freeze" | "Defreeze" )
 	if ! is_package_manager_running; then
-		dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
+		if [[ -z $scripted ]]; then dialog --title " Updating " --backtitle "$BACKTITLE" --yes-label "$1" --no-label "Cancel" --yesno \
 		"\nDo you want to ${1,,} Armbian firmware updates?" 7 54
-		if [[ $? = 0 ]]; then
-		TARGET_BRANCH=$BRANCH
-		exceptions "$BRANCH"
-		unset PACKAGE_LIST
-
-		# basic packages
-		check_if_installed linux-u-boot-${BOARD}-${UBOOT_BRANCH} && PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UBOOT_BRANCH}"
-		check_if_installed linux-image${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-image${TARGET_BRANCH}-${TARGET_FAMILY}"
-		check_if_installed linux-dtb$TARGET_BRANCH-$TARGET_FAMILY && PACKAGE_LIST=$PACKAGE_LIST" linux-dtb$TARGET_BRANCH-$TARGET_FAMILY"
-
-		# old BSP
-		check_if_installed linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD && PACKAGE_LIST=$PACKAGE_LIST" linux-$(lsb_release -cs)-root$TARGET_BRANCH-$BOARD"
-		check_if_installed linux-headers${TARGET_BRANCH}-${TARGET_FAMILY} && PACKAGE_LIST=$PACKAGE_LIST" linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}"
-
-		# new BSP
-		check_if_installed armbian-${LINUXFAMILY} && PACKAGE_LIST=$PACKAGE_LIST" armbian-${LINUXFAMILY}"
-		check_if_installed armbian-${BOARD} && PACKAGE_LIST=$PACKAGE_LIST" armbian-${BOARD}"
-		check_if_installed armbian-$(lsb_release -cs) && PACKAGE_LIST=$PACKAGE_LIST" armbian-$(lsb_release -cs)"
-		check_if_installed armbian-$(lsb_release -cs)-desktop-xfce && PACKAGE_LIST=$PACKAGE_LIST" armbian-$(lsb_release -cs)-desktop-xfce"
-		check_if_installed armbian-firmware && PACKAGE_LIST=$PACKAGE_LIST" armbian-firmware"
-		check_if_installed armbian-firmware-full && PACKAGE_LIST=$PACKAGE_LIST" armbian-firmware-full"
-
-
-		local words=( $PACKAGE_LIST )
-		local command="unhold"
-		IFS=" "
-		[[ $1 == "Freeze" ]] && local command="hold"
-		for word in $PACKAGE_LIST; do apt-mark $command $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
 		fi
-	fi
+		if [[ $? -eq 0 ]]; then
+
+			unset PACKAGE_LIST
+
+			# basic packages
+
+			check_if_installed linux-u-boot-${BOARD}-${BRANCH} && PACKAGE_LIST+=" linux-u-boot-${BOARD}-${BRANCH}"
+			check_if_installed linux-image-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-image-${BRANCH}-${LINUXFAMILY}"
+			check_if_installed linux-dtb-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-dtb-${BRANCH}-${LINUXFAMILY}"
+			check_if_installed linux-headers-${BRANCH}-${LINUXFAMILY} && PACKAGE_LIST+=" linux-headers-${BRANCH}-${LINUXFAMILY}"
+
+			# new BSP
+			check_if_installed armbian-${LINUXFAMILY} && PACKAGE_LIST+=" armbian-${LINUXFAMILY}"
+			check_if_installed armbian-${BOARD} && PACKAGE_LIST+=" armbian-${BOARD}"
+			check_if_installed armbian-${DISTROID} && PACKAGE_LIST+=" armbian-${DISTROID}"
+			check_if_installed armbian-${DISTROID}-desktop-xfce && PACKAGE_LIST+=" armbian-${DISTROID}-desktop-xfce"
+			check_if_installed armbian-firmware && PACKAGE_LIST+=" armbian-firmware"
+			check_if_installed armbian-firmware-full && PACKAGE_LIST+=" armbian-firmware-full"
+
+			local words=( $PACKAGE_LIST )
+			local command="unhold"
+			IFS=" "
+			[[ $1 == "Freeze" ]] && local command="hold"
+			for word in $PACKAGE_LIST; do apt-mark $command $word; done | dialog --backtitle "$BACKTITLE" --title "Packages ${1,,}" --progressbox $((${#words[@]}+2)) 64
+			fi
+		fi
 	;;
 
 
@@ -1001,7 +1071,7 @@ function jobs ()
 	;;
 
 	"Default" )
-	configure_desktop "--install-recommends"
+		configure_desktop "--install-recommends"
 	;;
 
 	"RDP" )
@@ -1028,24 +1098,28 @@ function jobs ()
 		fi
 	;;
 
-        "Gimp" )
-                if ! check_if_installed gimp then ; then
-                        debconf-apt-progress -- apt-get -y install gimp
-                else
-                        debconf-apt-progress -- apt-get -y purge gimp
-                fi
-        ;;
+	"Gimp" )
+		if ! check_if_installed gimp then ; then
+			debconf-apt-progress -- apt-get -y install gimp
+		else
+			debconf-apt-progress -- apt-get -y purge gimp
+		fi
+	;;
 
 	"Libre" )
 		debconf-apt-progress -- apt-get -y purge libreoffice*
 	;;
 
 	"Writer" )
-		debconf-apt-progress -- apt-get -y install libreoffice-writer libreoffice-style-tango libreoffice-gtk
+		pkg_install="libreoffice-writer libreoffice-style-tango"
+		if [[ "$DISTROID" == "xenial" ]]; then pkg_install+=" libreoffice-gtk"; else pkg_install+=" libreoffice-gtk2"; fi
+		debconf-apt-progress -- apt-get -y install $pkg_install
 	;;
 
 	"Suite" )
-		debconf-apt-progress -- apt-get -y install libreoffice libreoffice-style-tango libreoffice-gtk
+		pkg_install="libreoffice libreoffice-style-tango"
+		if [[ "$DISTROID" == "xenial" ]]; then pkg_install+=" libreoffice-gtk"; else pkg_install+=" libreoffice-gtk2"; fi
+		debconf-apt-progress -- apt-get -y install $pkg_install
 	;;
 
 
@@ -1063,7 +1137,7 @@ function jobs ()
 	#
 	"CPU" )
 		POLICY="policy0"
-	        [[ $(grep -c '^processor' /proc/cpuinfo) -gt 4 ]] && POLICY="policy4"
+		[[ $(grep -c '^processor' /proc/cpuinfo) -gt 4 ]] && POLICY="policy4"
 		[[ ! -d /sys/devices/system/cpu/cpufreq/policy4 ]] && POLICY="policy0"
 		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies)" "Select minimum CPU speed"
 		MIN_SPEED=$PARAMETER
@@ -1112,9 +1186,9 @@ function jobs ()
 	#
 	"Bootscript" )
 		if [[ -f /boot/boot.ini ]]; then
-		dialog --title " Edit boot.ini script " --ok-label "Save" \
-		--no-collapse --editbox /boot/boot.ini 30 0 2> /boot/boot.ini.out
-		[[ $? = 0 ]] && mv /boot/boot.ini.out /boot/boot.ini
+			dialog --title " Edit boot.ini script " --ok-label "Save" \
+			--no-collapse --editbox /boot/boot.ini 30 0 2> /boot/boot.ini.out
+			[[ $? = 0 ]] && mv /boot/boot.ini.out /boot/boot.ini
 		fi
 	;;
 
@@ -1408,13 +1482,14 @@ function jobs ()
 	"Nightly" )
 
 		if ! is_package_manager_running; then
+			[[ -z $scripted ]] &&
 			dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "Yes" \
 			--no-label "No" --yesno \
 			"\nYou are switching to an untested auto-build repository which might break your system.\n\nContinue?" 10 48
 
-			if [[ $? = 0 ]]; then
+			if [[ $? = 0 || -n $scripted ]]; then
 				sed -i 's/^deb http:\/\/[^ ]*/deb http:\/\/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
-				reload_bsp
+				reload_bsp $branch
 			fi
 		fi
 	;;
@@ -1425,13 +1500,14 @@ function jobs ()
 	"Stable" )
 
 		if ! is_package_manager_running; then
+			[[ -z $scripted ]] &&
 			dialog --colors --title " \Z1Warning\Z0 " --backtitle "$BACKTITLE" --yes-label "Yes" \
 			--no-label "No" --yesno \
 			"\nYou are switching to a stable repository where you will receive future updates.\n\nContinue?" 9 44
 
-			if [[ $? = 0 ]]; then
+			if [[ $? = 0 || -n $scripted ]]; then
 				sed -i 's/^deb http:\/\/beta/deb http:\/\/apt/' /etc/apt/sources.list.d/armbian.list
-				reload_bsp
+				reload_bsp $branch
 			fi
 		fi
 
@@ -1443,13 +1519,13 @@ function jobs ()
 		if ! is_package_manager_running; then
 			aval_dtbs
 			if [[ $exitstatus = 0 ]]; then
-			BOX_LENGTH=$((${#TARGET_BOARD}+28));
-			dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGTH
-			if [[ $? = 0 ]]; then
-				sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt 2> /dev/null && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt 2> /dev/null || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
-				[[ "$LINUXFAMILY" = odroidxu4 ]] && sed -i "s/^fdt_file/board_name/" /boot/armbianEnv.txt && sed -i "s/^BOARD_NAME.*/BOARD_NAME=\"Odroid ${TARGET_BOARD^^}\"/" /etc/armbian-release
-				reboot;
-			fi
+				BOX_LENGTH=$((${#TARGET_BOARD}+28));
+				dialog --title "Switching board config" --backtitle "$BACKTITLE" --yes-label "Reboot" --no-label "Cancel" --yesno "\nReboot to $TARGET_BOARD settings?" 7 $BOX_LENGTH
+				if [[ $? = 0 ]]; then
+					sed -i "s/^fdt_file=.*/fdt_file=$TARGET_BOARD/" /boot/armbianEnv.txt 2> /dev/null && grep -q "fdt_file=$TARGET_BOARD" /boot/armbianEnv.txt 2> /dev/null || echo "fdt_file=$TARGET_BOARD" >> /boot/armbianEnv.txt
+					[[ "$LINUXFAMILY" = odroidxu4 ]] && sed -i "s/^fdt_file/board_name/" /boot/armbianEnv.txt && sed -i "s/^BOARD_NAME.*/BOARD_NAME=\"Odroid ${TARGET_BOARD^^}\"/" /etc/armbian-release
+					reboot;
+				fi
 			fi
 		fi
 	;;
@@ -1480,4 +1556,7 @@ function jobs ()
 
 
 	esac
+
+
+[[ -n $scripted ]] && exit
 }
