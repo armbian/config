@@ -917,7 +917,7 @@ unset selection
 			# define theme
 			sed -i 's/^ZSH_THEME=.*/ZSH_THEME="risto"/' /etc/skel/.zshrc
 			# disable prompt while update
-			sed -i 's/# DISABLE_UPDATE_PROMPT="true"/DISABLE_UPDATE_PROMPT="true"/g' a.zsh
+			sed -i 's/# DISABLE_UPDATE_PROMPT="true"/DISABLE_UPDATE_PROMPT="true"/g' /etc/skel/.zshrc
 			# define default plugins
 			sed -i 's/^plugins=.*/plugins=(git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc
 			# change shell for root
