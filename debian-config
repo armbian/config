@@ -76,6 +76,7 @@ if [[ $1 == "--help" ]]; then
 	echo "Update, upgrade and reboot:			${BASH_SOURCE[0]} main=System selection=Firmware"
 	echo "Switch to nightly builds:				${BASH_SOURCE[0]} main=System selection=Nightly"
 	echo "Switch to stable builds: 				${BASH_SOURCE[0]} main=System selection=Stable"
+	echo "Install default desktop:                          ${BASH_SOURCE[0]} main=System selection=Default"
 	echo "Change to ZSH:					${BASH_SOURCE[0]} main=System selection=ZSH"
 	echo "Change to BASH: 					${BASH_SOURCE[0]} main=System selection=BASH"
 	echo "Change to stable repository [branch=dev]:		${BASH_SOURCE[0]} main=System selection=Stable"
