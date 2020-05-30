@@ -401,7 +401,7 @@ function reload_bsp(){
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
 
-		debconf-apt-progress -- apt -y -qq purge $PACKAGE_PURGE
+		debconf-apt-progress -- apt-get -y -qq purge $PACKAGE_PURGE
 		find "/boot/" -name "System.map*" -type f -delete
 		find "/boot/" -name "config*" -type f -delete
 		find "/boot/" -name "vmlinuz*" -type f -delete
@@ -409,7 +409,7 @@ function reload_bsp(){
 
 		# install packages
 		echo $PACKAGE_INSTALL >> /var/log/upgrade.log
-		debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends --reinstall \
+		debconf-apt-progress -- apt-get -y -qq --allow-downgrades --no-install-recommends --reinstall \
 		-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install $PACKAGE_INSTALL
 
 		if [[ $? -eq 1 ]]; then
