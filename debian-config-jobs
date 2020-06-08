@@ -11,10 +11,12 @@
 
 function jobs ()
 {
-unset selection
 	# Shows box with loading ...
 	#
 	dialog --backtitle "$BACKTITLE" --title " Please wait " --infobox "\nLoading ${selection,,} submodule ... " 5 $((26+${#selection}))
+
+	unset selection
+
 	case $1 in
 
 	#-------------------------------------------------------------------------------------------------------------------------------------#
