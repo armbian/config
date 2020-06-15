@@ -904,7 +904,7 @@ function jobs ()
 		if ! is_package_manager_running; then
 			if ! check_if_installed zsh ; then
 				debconf-apt-progress -- apt-get update
-				debconf-apt-progress -- apt-get install -y zsh tmux
+				debconf-apt-progress -- apt-get install -y zsh tmux git
 			fi
 			rm -rf /etc/oh-my-zsh
 			git clone --quiet https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh
