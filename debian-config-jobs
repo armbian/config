@@ -77,14 +77,16 @@ function jobs ()
 			IFS='.' read -a array <<< $(uname -r)
 			[[ -z $(dpkg -l | grep linux-headers) ]] && debconf-apt-progress -- apt-get -y \
 			install linux-headers${TARGET_BRANCH}-${TARGET_FAMILY}
-			rm -rf /usr/src/usb-redirector-linux-arm-eabi
 			if (( "${array[0]}" == "4" )) && (( "${array[1]}" >= "1" )); then
-				wget -qO- http://www.incentivespro.com/usb-redirector-linux-arm-eabi.tar.gz | tar xz -C /usr/src
+				rm -rf /usr/src/usb-redirector-linux-arm-gnueabi
+				wget -qO- https://www.incentivespro.com/usb-redirector-linux-arm-gnueabi.tar.gz | tar xz -C /usr/src
+				cd /usr/src/usb-redirector-linux-arm-gnueabi/
 			else
+				rm -rf /usr/src/usb-redirector-linux-arm-eabi
 				wget -qO- https://raw.githubusercontent.com/armbian/build/master/packages/blobs/usb-redirector/usb-redirector-old.tgz \
 				| tar xz -C /usr/src
+				cd /usr/src/usb-redirector-linux-arm-eabi/
 			fi
-			cd /usr/src/usb-redirector-linux-arm-eabi/
 			./installer.sh install
 			sleep 3
 			check_port "32032" "USB Redirector"
