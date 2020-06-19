@@ -462,6 +462,8 @@ function other_kernel_version ()
 			new_list+=( "${LIST[$prvi]}=${LIST[$drugi]}" )
 			new_list+=( ${LIST[$tretji]} )
 		fi
+		local tmp="${LIST[$prvi]}=${LIST[$drugi]}${LIST[$tretji]}"
+		[[ ${#tmp} -gt $chrlen ]] && local chrlen=${#tmp}
 	done
 
 	# copy back to main array
@@ -475,9 +477,8 @@ function other_kernel_version ()
 		\n\n\Z1In case of troubles expect no help!\Z0"
 		if [[ -n $ACKNOWLEDGEMENT ]]; then
 			exec 3>&1
-			TARGET_VERSION=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Switch from and reboot" --clear --menu "\n${CURRENT_VERSION} $(uname -r) \n \n" \
-			$((9+${LIST_LENGTH})) 62 25 "${LIST[@]}" 2>&1 1>&3)
+			TARGET_VERSION=$(dialog --ok-label "Reboot" --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
+			--title "Select kernel and reboot" --clear --menu "" $((6+${LIST_LENGTH})) $((7+${chrlen})) 25 "${LIST[@]}" 2>&1 1>&3)
 			exitstatus=$?;
 			exec 3>&-
 			if [[ $exitstatus = 0 ]]; then
@@ -497,8 +498,11 @@ function other_kernel_version ()
 				TARGET_VERSION_PRE=$(echo $TARGET_VERSION_DTB | cut -f1 -d"=")
 				TARGET_VERSION_SUB=$(echo $TARGET_VERSION_DTB | cut -f2 -d"=")
 				[[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]] && \
+				# installs u-boot only if exits
+				apt-cache show linux-u-boot-${BOARD}-${UPGRADE_UBOOT} 2> /dev/null
+				[[ $? -eq 0 ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UPGRADE_UBOOT}"
 
-				PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB linux-u-boot-${BOARD}-${UPGRADE_UBOOT}"
+				PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
 				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
 				debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST
 
