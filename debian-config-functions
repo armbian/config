@@ -368,21 +368,22 @@ function reload_bsp(){
 
 	clear
 	debconf-apt-progress -- apt-get update
-	debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
 
 	# must exits
 	PACKAGE_INSTALL="linux-image-${BRANCH}-${LINUXFAMILY} linux-dtb-${BRANCH}-${LINUXFAMILY}"
 	PACKAGE_PURGE="linux-image* linux-dtb*"
 
 	# create install and remove logic
-	apt --simulate --allow-downgrades -y --no-install-recommends install linux-${DISTROID}-root-${BRANCH}-${BOARD} &>/dev/null
-	if [[ $? -eq 0 ]]; then
+	command=$(apt-get --download-only --simulate --allow-downgrades -y --no-install-recommends install linux-${DISTROID}-root-${BRANCH}-${BOARD} 2>/dev/null | grep "not possible")
+	errcode=$?
+	if [[ $errcode -ne 0 ]]; then
 		PACKAGE_INSTALL+=" linux-${DISTROID}-root-${BRANCH}-${BOARD}"
 		PACKAGE_PURGE+=" linux-${DISTROID}-root*"
 	fi
 
-	apt --simulate --allow-downgrades -y --no-install-recommends install linux-u-boot-${BOARD}-${BRANCH} &>/dev/null
-	if [[ $? -eq 0 ]]; then
+	command=$(apt-get --download-only --simulate --reinstall --allow-downgrades -y --no-install-recommends install linux-u-boot-${BOARD}-${BRANCH} 2>/dev/null | grep "not possible")
+	errcode=$?
+	if [[ $errcode -ne 0 ]]; then
 		PACKAGE_INSTALL+=" linux-u-boot-${BOARD}-${BRANCH}"
 		PACKAGE_PURGE+=" linux-u-boot-${BOARD}-*"
 	fi
