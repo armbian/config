@@ -396,6 +396,8 @@ function reload_bsp(){
 		PACKAGE_PURGE+=" linux-headers*"
 	fi
 
+	debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
+
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
 
