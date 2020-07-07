@@ -374,14 +374,14 @@ function reload_bsp(){
 	PACKAGE_PURGE="linux-image* linux-dtb*"
 
 	# create install and remove logic
-	command=$(apt-get --download-only --simulate --allow-downgrades -y --no-install-recommends install linux-${DISTROID}-root-${BRANCH}-${BOARD} 2>/dev/null)
-	if [[ $? -eq 0 ]]; then
+	command=$(LC_ALL=C apt-get --download-only --simulate --allow-downgrades -y --no-install-recommends install linux-${DISTROID}-root-${BRANCH}-${BOARD} 2>/dev/null)
+	if [[ $? -eq 0 && -z $(echo $command | grep "not possible") ]]; then
 		PACKAGE_INSTALL+=" linux-${DISTROID}-root-${BRANCH}-${BOARD}"
 		PACKAGE_PURGE+=" linux-${DISTROID}-root*"
 	fi
 
-	command=$(apt-get --download-only --simulate --reinstall --allow-downgrades -y --no-install-recommends install linux-u-boot-${BOARD}-${BRANCH} 2>/dev/null)
-	if [[ $? -eq 0 ]]; then
+	command=$(LC_ALL=C apt-get --download-only --simulate --reinstall --allow-downgrades -y --no-install-recommends install linux-u-boot-${BOARD}-${BRANCH} 2>/dev/null)
+	if [[ $? -eq 0 && -z $(echo $command | grep "not possible") ]]; then
 		PACKAGE_INSTALL+=" linux-u-boot-${BOARD}-${BRANCH}"
 		PACKAGE_PURGE+=" linux-u-boot-${BOARD}-*"
 	fi
@@ -396,8 +396,7 @@ function reload_bsp(){
 		PACKAGE_PURGE+=" linux-headers*"
 	fi
 
-	debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
-
+	debconf-apt-progress -- apt-get --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
 
@@ -406,6 +405,7 @@ function reload_bsp(){
 		find "/boot/" -name "config*" -type f -delete
 		find "/boot/" -name "vmlinuz*" -type f -delete
 		find "/boot/" -name "*nitrd*" -type f -delete
+		find "/boot/" -name "*Image" -type l -delete
 
 		# install packages
 		echo $PACKAGE_INSTALL >> /var/log/upgrade.log
