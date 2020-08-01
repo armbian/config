@@ -1256,45 +1256,6 @@ function jobs ()
 
 	;;
 
-	# Change to other mirrors
-	#
-	"Mirror" )
-
-		IFS=$'\r\n'
-		GLOBIGNORE='*'
-		LIST_CONST=3
-		BEFORE="$(cat /etc/apt/sources.list.d/armbian.list | sed 's/http/\nhttp/g' | grep ^http | sed 's/\(^http[^ <]*\)\(.*\)/\1/g' | sed 's/https\?:\/\///')"
-		BEFORE_DESC=$(description "${BEFORE}")
-		PREFIX="$(echo $BEFORE | cut -f1 -d".")"
-		AVAL_MIRROR=()
-		if [[ $PREFIX == beta ]]; then
-			AVAL_MIRROR=("beta.armbian.com" "mirrors.netix.net/armbian/apt/")
-			else
-			AVAL_MIRROR+=("apt.armbian.com" "mirrors.tuna.tsinghua.edu.cn/armbian/" "mirrors.netix.net/armbian/apt/" "mirrors.dotsrc.org/armbian-apt/")
-		fi
-		local LIST=()
-		for i in "${AVAL_MIRROR[@]}"
-			do
-			DESC=$(description "${i[0]}")
-			[[ "${i[0]}" != "$BEFORE" ]] && LIST+=( "${i[0]//[[:blank:]]/}" "$DESC" )
-		done
-		LIST_LENGTH=$(($LIST_CONST+${#LIST[@]}/2));
-		if [ "$LIST_LENGTH" -le 3 ]; then
-			TARGET_MIRROR=${AVAL_MIRROR[0]}
-			dialog --backtitle "$BACKTITLE" --title "Please wait" --colors --msgbox "\nThere are no mirrors available!" 7 35
-		else
-			exec 3>&1
-			TARGET_MIRROR=$(dialog --cancel-label "Cancel" --backtitle "$BACKTITLE" --no-collapse \
-			--title "Change repository location" --colors --clear --menu "\nfrom \Z1$BEFORE_DESC\Z0 to:\n " $((6+${LIST_LENGTH})) 60 15 "${LIST[@]}" 2>&1 1>&3)
-			exitstatus=$?;
-			exec 3>&-
-		fi
-
-		if [[ $exitstatus == 0 ]]; then
-			sed -i "s~$BEFORE~$TARGET_MIRROR~" /etc/apt/sources.list.d/armbian.list
-			dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nArmbian package repository was switched to:\n\n\Z1$TARGET_MIRROR\Z0" 9 47
-		fi
-	;;
 
 	# Toggle welcome screen items
 	#
