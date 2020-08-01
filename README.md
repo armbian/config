@@ -70,7 +70,7 @@ Login as root and type:
 Development version:
 
 	# Install dependencies
-	apt install git iperf3 psmisc curl bc expect dialog network-manager sunxi-tools iptables \
+	apt install git iperf3 psmisc curl bc expect dialog network-manager sunxi-tools \
 	debconf-utils unzip dirmngr software-properties-common psmisc
 
 	git clone https://github.com/armbian/config
