@@ -620,7 +620,7 @@ function jobs ()
 
 						# install dnsmas and iptables
 						if [[ $(dpkg-query -W -f='${db:Status-Abbrev}\n' dnsmasq 2>/dev/null) != "*ii*" ]]; then
-							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq;
+							debconf-apt-progress -- apt-get -qq -y --no-install-recommends install dnsmasq iptables
 							systemctl enable dnsmasq
 						fi
 
