@@ -276,7 +276,7 @@ ISPConfig            TCP     10000\n
 DNS                  UDP        53\n
 Database             UDP      3306\n
 ";
-dialog --colors --title "Warning" --msgbox "\nYour internal and external IP addresses are different which seems that you are behing a router. \n\nMake sure \Z1$serverIP\Z0 is a static IP address. Then forward external ports to those services which you plan to use.\n\n\n$table" 38 38
+dialog --colors --title "Warning" --msgbox "\nYour internal and external IP addresses are different which seems that you are behind a router. \n\nMake sure \Z1$serverIP\Z0 is a static IP address. Then forward external ports to those services which you plan to use.\n\n\n$table" 38 38
 fi
 #
 HOSTNAMEFQDN=$(\
