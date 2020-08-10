@@ -397,7 +397,7 @@ function reload_bsp(){
 		PACKAGE_PURGE+=" linux-headers*"
 	fi
 
-	debconf-apt-progress -- apt-get --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
+	debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confold" --force-yes --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_INSTALL
 	# if download is ok, remove old packages
 	if [[ $? = 0 ]]; then
 
@@ -505,7 +505,7 @@ function other_kernel_version ()
 
 				PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
 				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
-				debconf-apt-progress -- apt --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST
+				debconf-apt-progress -- apt -o Dpkg::Options::="--force-confold" --force-yes --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST
 
 				if [[ $? = 0 ]]; then
 					dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nRemoving current kernel ..." 5 36
@@ -518,8 +518,8 @@ function other_kernel_version ()
 					find "/boot/" -name "vmlinuz*" -type f -delete;	find "/boot/" -name "*nitrd*" -type f -delete
 					apt clean
 					# BSP must be installed separate otherwise it won't work
-					debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends install linux-${DISTROID}-root${UPGRADE_ROOT}-${BOARD}
-					debconf-apt-progress -- apt -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
+					debconf-apt-progress -- apt -o Dpkg::Options::="--force-confold" --force-yes -y -qq --allow-downgrades --no-install-recommends install linux-${DISTROID}-root${UPGRADE_ROOT}-${BOARD}
+					debconf-apt-progress -- apt -o Dpkg::Options::="--force-confold" --force-yes -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
 					if [[ $? = 0 ]]; then
 						# update boot loader
 						[[ -f /usr/lib/u-boot/platform_install.sh ]] && source /usr/lib/u-boot/platform_install.sh
