@@ -342,7 +342,7 @@ function generic_select()
 	done
 	LIST_LENGTH=$((${#LIST[@]}/2));
 	if [ "$LIST_LENGTH" -eq 1 ]; then
-		PARAMETER=${PARAMETER[0]}
+		PARAMETER=${LIST[0]}
 	else
 		exec 3>&1
 		PARAMETER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse \
