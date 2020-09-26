@@ -575,7 +575,7 @@ function select_interface ()
 {
 	IFS=$'\r\n'
 	GLOBIGNORE='*'
-	local ADAPTER=($(nmcli device status | grep ethernet | awk '{ print $1 }' | grep -v lo))
+	local ADAPTER=($(nmcli device status | awk '{ print $1 }' | grep -v lo | tail -n +2))
 	local LIST=()
 	for i in "${ADAPTER[@]}"
 	do
@@ -591,12 +591,11 @@ function select_interface ()
 	elif [ "$LIST_LENGTH" -eq 1 ]; then
 		SELECTED_ADAPTER=${ADAPTER[0]}
 	else
-	exec 3>&1
-	SELECTED_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Select $1 interface" --clear \
-	--menu "" $((6+${LIST_LENGTH})) 74 14 "${LIST[@]}" 2>&1 1>&3)
-	exec 3>&-
+		exec 3>&1
+		SELECTED_ADAPTER=$(dialog --nocancel --backtitle "$BACKTITLE" --no-collapse --title "Select $1 interface" --clear \
+		--menu "" $((6+${LIST_LENGTH})) 74 14 "${LIST[@]}" 2>&1 1>&3)
+		exec 3>&-
 	fi
-
 }
 
 
