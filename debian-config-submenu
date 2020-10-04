@@ -41,9 +41,9 @@ while true; do
 	# armbian specific function
 	if [[ -f /etc/armbian-release ]]; then
 		if [[ -n "${mark}" ]]; then
-				LIST+=( "Defreeze" "Enable Armbian upgrades " )
+				LIST+=( "Defreeze" "Enable Armbian kernel upgrades " )
 			else
-				LIST+=( "Freeze" "Disable Armbian upgrades " )
+				LIST+=( "Freeze" "Disable Armbian kernel upgrades " )
 		fi
 	fi
 
