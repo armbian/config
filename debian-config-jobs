@@ -961,6 +961,7 @@ function jobs ()
 			dialog --title " Update " --backtitle "$BACKTITLE" --no-label "No" --yesno "\nDo you want to update board firmware?" 7 41
 			fi
 			if [[ $? -eq 0 ]]; then
+				debconf-apt-progress -- apt --fix-broken -y install
 				debconf-apt-progress -- apt-get update
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade
 				[[ -z $scripted ]] && \
