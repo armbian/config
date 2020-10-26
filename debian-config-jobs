@@ -914,6 +914,7 @@ function jobs ()
 			mkdir -p /etc/skel/.oh-my-zsh/cache
 			# change shell for future users
 			sed -i "s/^SHELL=.*/SHELL=\/usr\/bin\/zsh/" /etc/default/useradd
+			sed -i "s/^DSHELL=.*/DSHELL=\/usr\/bin\/zsh/" /etc/adduser.conf
 			# we have common settings
 			sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" /etc/skel/.zshrc
 			# user cache
@@ -931,7 +932,7 @@ function jobs ()
 			cp /etc/skel/.zshrc /root/.zshrc
 			# and for selected normal user
 			add_choose_user
-			if [ -n "$CHOSEN_USER" ]; then
+			if [[ -n "$CHOSEN_USER" && -z $scripted ]]; then
 				chsh -s $(grep /zsh$ /etc/shells | tail -1) $CHOSEN_USER
 				# copy cache directory
 				cp -R --attributes-only /etc/skel/.oh-my-zsh /home/$CHOSEN_USER/.oh-my-zsh
