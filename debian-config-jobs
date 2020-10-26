@@ -931,8 +931,8 @@ function jobs ()
 			cp -R --attributes-only /etc/skel/.oh-my-zsh /root/.oh-my-zsh
 			cp /etc/skel/.zshrc /root/.zshrc
 			# and for selected normal user
-			add_choose_user
-			if [[ -n "$CHOSEN_USER" && -z $scripted ]]; then
+			[[ -z $scripted ]] && add_choose_user
+			if [[ -n "$CHOSEN_USER" ]]; then
 				chsh -s $(grep /zsh$ /etc/shells | tail -1) $CHOSEN_USER
 				# copy cache directory
 				cp -R --attributes-only /etc/skel/.oh-my-zsh /home/$CHOSEN_USER/.oh-my-zsh
