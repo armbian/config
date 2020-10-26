@@ -915,6 +915,8 @@ function jobs ()
 			# change shell for future users
 			sed -i "s/^SHELL=.*/SHELL=\/usr\/bin\/zsh/" /etc/default/useradd
 			sed -i "s/^DSHELL=.*/DSHELL=\/usr\/bin\/zsh/" /etc/adduser.conf
+			# add support for bash profile
+			echo "emulate sh -c 'source /etc/profile'" >> /etc/zsh/zprofile
 			# we have common settings
 			sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" /etc/skel/.zshrc
 			# user cache
