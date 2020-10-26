@@ -909,7 +909,7 @@ function jobs ()
 				debconf-apt-progress -- apt-get install -y zsh tmux git
 			fi
 			rm -rf /etc/oh-my-zsh
-			git clone --quiet https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh
+			git clone https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh 2>/dev/null
 			cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
 			mkdir -p /etc/skel/.oh-my-zsh/cache
 			# change shell for future users
