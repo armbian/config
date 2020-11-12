@@ -1750,7 +1750,7 @@ if ! is_package_manager_running; then
 		fi
 
 		if [[ "$selection" == *hole* && "$PI_HOLE_STATUS" != "on" ]]; then
-			curl -L "https://install.pi-hole.net" | bash
+			curl -L "https://install.pi-hole.net" | PIHOLE_SKIP_OS_CHECK=true bash
 			selection=${selection//\"Pi hole\"/}
 		fi
 
