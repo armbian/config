@@ -1090,7 +1090,7 @@ function jobs ()
 			systemctl disable xrdp.service >/dev/null 2>&1
 		else
 			if ! is_package_manager_running; then
-				debconf-apt-progress -- apt-get -y install xrdp vnc4server xorgxrdp
+				debconf-apt-progress -- apt-get -y install xrdp xorgxrdp
 				systemctl enable xrdp.service >/dev/null 2>&1
 				systemctl start xrdp.service >/dev/null 2>&1
 				dialog --title "Info" --backtitle "$BACKTITLE" --nocancel --no-collapse --pause \
