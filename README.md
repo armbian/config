@@ -79,10 +79,10 @@ Development version:
 
 # Software testings
 
-|Application name|Buster|Stretch*|Bionic|Test install|
+|Application name|Buster|Stretch*|Bionic*|Test install|
 |:--|:--:|:--:|:--:|--:|
-|TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
-|Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|10.06.2019|
+|TV headend (IPTV server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|15.11.2020|
+|Syncthing (personal cloud)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|15.11.2020|
 |SoftEther VPN server (VPN server)|:grey_question:|:heavy_check_mark:|:heavy_check_mark:|09.03.2019|
 |Plex (Plex media server)|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|15.07.2019|
 |Emby (Emby server)|:heavy_check_mark:|:heavy_check_mark:|:grey_question:|24.07.2019|
