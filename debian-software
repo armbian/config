@@ -645,11 +645,16 @@ fi
 
 install_docker ()
 {
-echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${family,,} $distribution edge" >\
- /etc/apt/sources.list.d/docker.list
-curl -fsSL "https://download.docker.com/linux/${family,,}/gpg" | apt-key add -qq - > /dev/null 2>&1
+if [[ $distribution == groovy || $distribution == focal || $distribution == bionic ]]; then
+echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu focal edge" > \
+/etc/apt/sources.list.d/docker.list
+else
+echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/debian buster edge" >\
+/etc/apt/sources.list.d/docker.list
+fi
+curl -fsSL "https://download.docker.com/linux/debian/gpg" | apt-key add -qq - > /dev/null 2>&1
 debconf-apt-progress -- apt-get update
-debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce
+debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
 }
 
 
