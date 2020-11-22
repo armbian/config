@@ -646,10 +646,10 @@ fi
 install_docker ()
 {
 if [[ $distribution == groovy || $distribution == focal || $distribution == bionic ]]; then
-echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu focal edge" > \
+echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu focal stable" > \
 /etc/apt/sources.list.d/docker.list
 else
-echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/debian buster edge" >\
+echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/debian buster stable" >\
 /etc/apt/sources.list.d/docker.list
 fi
 curl -fsSL "https://download.docker.com/linux/debian/gpg" | apt-key add -qq - > /dev/null 2>&1
