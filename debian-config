@@ -114,6 +114,7 @@ do
 	POLICY="policy0"
 	[[ $(grep -c '^processor' /proc/cpuinfo) -gt 4 ]] && POLICY="policy4"
 	[[ ! -d /sys/devices/system/cpu/cpufreq/policy4 ]] && POLICY="policy0"
+	[[ -d /sys/devices/system/cpu/cpufreq/policy0 && -d /sys/devices/system/cpu/cpufreq/policy2 ]] && POLICY="policy2"
 	num=$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_min_freq 2> /dev/null)
 	if [[ -f /etc/default/cpufrequtils && ! -z "${num##*[!0-9]*}" ]]; then
 		LISTLENGTH=$((LISTLENGTH + 2))
