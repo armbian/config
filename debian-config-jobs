@@ -1527,7 +1527,81 @@ function jobs ()
 	;;
 
 
+	
+	"Dtc" )
+		# Check if dtc command installed and install it if missing
+		if ! command -v dtc 2> /dev/null
+		then
+			echo "device tree compiler (dtc) could not be found, ask for installing it"
+			sudo apt install dtc
+			if ! command -v dtc 2> /dev/null
+			then
+				echo "Failed to install device tree compiler (dtc), exiting!"
+				exit
+			fi
+		else
+			echo "dtc already installed!"
+		fi
+
+		# Read current used dtb in /boot/armbianEnv.txt
+		dtbfolder=/boot/dtb
+		source /boot/armbianEnv.txt
+		echo "Current dtb: ${dtbfolder}/${fdtfile}"
+
+		# Decompile it to a dts in /tmp
+		dtbfile=${dtbfolder}/${fdtfile}
+		dtc -I dtb ${dtbfile} -O dts -o /tmp/current.dts
+
+		dts_edit=1
+		while [[ ${dts_edit} != 0 ]]; do
+			# Edit dts
+			oldtime=`stat -c %Y "/tmp/current.dts"`
+			nano /tmp/current.dts
+
+			# Check if modified
+			if [[ `stat -c %Y "/tmp/current.dts"` -gt ${oldtime} ]] ; then
+				# Yes: recompile to dtb
+				dtc -I dts /tmp/current.dts -O dtb -o /tmp/current.dtb
+				# Check if errors at the compilation step
+				if [ $? -eq 0 ]; then
+					# No: ask for dtb replacement in boot folder
+					read -p "Do you want to replace active dtb with current modification(s)? (y/n)" yn
+					case $yn in
+						[Yy]* )
+							# Keep a copy of original file
+							sudo cp ${dtbfile} ${dtbfile}.bak;
+							# Replace with current file
+							sudo cp /tmp/current.dtb ${dtbfile};
+							# Ask for immediate reboot
+							read -p "Do you want to reboot to check modification(s) effect? (y/n)" ynr
+							case $ynr in
+								[Yy]* ) sudo reboot;;
+								* ) break;;
+							esac
+							;;
+						* ) 
+							echo "Modifications cancelled!"
+							;;
+					esac
+				else
+					echo "Wrong device tree modifications!"
+				fi
+			fi
+			read -p "Do you want to edit the device tree again? (y/n)" yne
+			case $yne in
+				[Yy]* )
+					dts_edit=1
+					;;
+				* )
+					dts_edit=0
+					;;
+			esac
+		done
+		echo "Device tree modifications finished!"
+	;;
+
 	esac
+
 
 
 [[ -n $scripted ]] && exit
