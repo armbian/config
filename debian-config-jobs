@@ -1551,7 +1551,7 @@ function jobs ()
 		# Decompile it to a dts in /tmp
 		dtbfile=${dtbfolder}/${fdtfile}
 		tmpdir=$(mktemp -d || exit 1)
-		chmod 700 ${TEMP_DIR}
+		chmod 700 ${tmpdir}
 		dtsfile=${tmpdir}/current.dts
 		dtc -I dtb ${dtbfile} -O dts -o ${dtsfile}
 
