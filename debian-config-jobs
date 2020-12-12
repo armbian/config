@@ -1533,7 +1533,7 @@ function jobs ()
 		if ! command -v dtc 2> /dev/null
 		then
 			echo "device tree compiler (dtc) could not be found, ask for installing it"
-			sudo apt install dtc
+			sudo apt install -y dtc
 			if ! command -v dtc 2> /dev/null
 			then
 				echo "Failed to install device tree compiler (dtc), exiting!"
