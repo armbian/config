@@ -1550,21 +1550,22 @@ function jobs ()
 
 		# Decompile it to a dts in /tmp
 		dtbfile=${dtbfolder}/${fdtfile}
-		tmpdir=$(mktemp -d || exit 1)
-		chmod 700 ${tmpdir}
-		dtsfile=${tmpdir}/current.dts
-		dtc -I dtb ${dtbfile} -O dts -o ${dtsfile}
+		tmpdir="$(mktemp -d || exit 1)"
+		chmod 700 "${tmpdir}"
+		trap "rm -f \"${tmpdir}\" ; exit 0" 0 1 2 3 15
+		dtsfile="${tmpdir}/current.dts"
+		dtc -I dtb "${dtbfile}" -O dts -o "${dtsfile}"
 
 		dts_edit=1
 		while [[ ${dts_edit} != 0 ]]; do
 			# Edit dts
 			oldtime=`stat -c %Y "${dtsfile}"`
-			nano ${dtsfile}
+			nano "${dtsfile}"
 
 			# Check if modified
 			if [[ `stat -c %Y "${dtsfile}"` -gt ${oldtime} ]] ; then
 				# Yes: recompile to dtb
-				dtc -I dts ${dtsfile} -O dtb -o $tmpdir/current.dtb
+				dtc -I dts "${dtsfile}" -O dtb -o "${tmpdir}/current.dtb"
 				# Check if errors at the compilation step
 				if [ $? -eq 0 ]; then
 					# No: ask for dtb replacement in boot folder
@@ -1572,9 +1573,9 @@ function jobs ()
 					case $yn in
 						[Yy]* )
 							# Keep a copy of original file
-							sudo cp ${dtbfile} ${dtbfile}.bak;
+							sudo cp -p "${dtbfile}" "${dtbfile}.bak";
 							# Replace with current file
-							sudo cp ${tmpdir}/current.dtb ${dtbfile};
+							sudo cat "${tmpdir}/current.dtb" >"${dtbfile}";
 							# Ask for immediate reboot
 							read -p "Do you want to reboot to check modification(s) effect? (y/n)" ynr
 							case $ynr in
@@ -1600,7 +1601,6 @@ function jobs ()
 					;;
 			esac
 		done
-		rm -rf ${tmpdir}
 		echo "Device tree modifications finished!"
 	;;
 
