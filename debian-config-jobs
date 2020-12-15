@@ -1513,17 +1513,26 @@ function jobs ()
 				dialog --title " Root overlay " --backtitle "$BACKTITLE" --yes-label "Disable" \
 				--no-label "Cancel" \
 				--yesno "\nYour system is already virtual read-only.\n\nDo you want to disable this feature and reboot?" 9 60
-				[[ $? = 0 ]] && overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf && \
-				overlayroot-chroot rm /etc/update-motd.d/97-overlayroot && reboot
+				if [[ $? = 0 ]]; then
+					overlayroot-chroot sed -i "s/^overlayroot=.*/overlayroot=\"\"/" /etc/overlayroot.conf
+					sed -i "s/^overlayroot_cfgdisk=.*/overlayroot_cfgdisk=\"disabled\"/" /etc/overlayroot.conf
+					overlayroot-chroot rm /etc/update-motd.d/97-overlayroot
+					reboot
+				fi
 			else
-				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y --no-install-recommends install overlayroot
+				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y install overlayroot
+				debconf-apt-progress -- apt-get -f -yy install
 				echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
 				echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then \
 				echo -e "[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]\n";fi' >> /etc/update-motd.d/97-overlayroot
 				chmod +x /etc/update-motd.d/97-overlayroot
 				dialog --title "Root overlay" --backtitle "$BACKTITLE" --yes-label "Reboot" \
 				--no-label "Cancel" --yesno "\nEnable virtual read-only root and reboot." 7 45
-				[[ $? = 0 ]] && sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf && reboot
+				if [[ $? = 0 ]]; then
+					sed -i "s/^overlayroot=.*/overlayroot=\"tmpfs\"/" /etc/overlayroot.conf
+					sed -i "s/^overlayroot_cfgdisk=.*/overlayroot_cfgdisk=\"enabled\"/" /etc/overlayroot.conf
+					reboot
+				fi
 			fi
 		fi
 	;;
