@@ -910,6 +910,8 @@ function jobs ()
 			fi
 			rm -rf /etc/oh-my-zsh
 			git clone https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh 2>/dev/null
+			cd /etc/oh-my-zsh
+			git submodule add https://github.com/mroth/evalcache plugins/evalcache 2>/dev/null
 			cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
 			mkdir -p /etc/skel/.oh-my-zsh/cache
 			# change shell for future users
@@ -926,7 +928,7 @@ function jobs ()
 			# disable prompt while update
 			sed -i 's/# DISABLE_UPDATE_PROMPT="true"/DISABLE_UPDATE_PROMPT="true"/g' /etc/skel/.zshrc
 			# define default plugins
-			sed -i 's/^plugins=.*/plugins=(git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc
+			sed -i 's/^plugins=.*/plugins=(evalcache git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc
 			# change shell for root
 			chsh -s $(grep /zsh$ /etc/shells | tail -1)
 			# copy cache directory
@@ -942,7 +944,7 @@ function jobs ()
 				chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/{.zshrc,.oh-my-zsh}
 			fi
 			# add a cronjob to update oh-my-zsh once per month
-			(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git pull origin master >/dev/null 2>/dev/null") | crontab -
+			(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git pull --recurse-submodules >/dev/null 2>/dev/null") | crontab -
 			if [[ -z $scripted ]]; then
 				dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
 			fi
