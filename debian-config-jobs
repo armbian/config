@@ -1519,6 +1519,7 @@ function jobs ()
 				fi
 			else
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y install overlayroot
+				debconf-apt-progress -- apt-get -f -yy install
 				echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
 				echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then \
 				echo -e "[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]\n";fi' >> /etc/update-motd.d/97-overlayroot
