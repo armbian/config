@@ -912,6 +912,7 @@ function jobs ()
 			git clone https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh 2>/dev/null
 			cd /etc/oh-my-zsh
 			git submodule add https://github.com/mroth/evalcache plugins/evalcache 2>/dev/null
+			chmod -R g-w,o-w /etc/oh-my-zsh/
 			cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
 			mkdir -p /etc/skel/.oh-my-zsh/cache
 			# change shell for future users
