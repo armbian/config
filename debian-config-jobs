@@ -925,7 +925,7 @@ function jobs ()
 			# user cache
 			sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" /etc/skel/.zshrc
 			# define theme
-			sed -i 's/^ZSH_THEME=.*/ZSH_THEME="jreese"/' /etc/skel/.zshrc
+			sed -i 's/^ZSH_THEME=.*/ZSH_THEME="mrtazz"/' /etc/skel/.zshrc
 			# disable prompt while update
 			sed -i 's/# DISABLE_UPDATE_PROMPT="true"/DISABLE_UPDATE_PROMPT="true"/g' /etc/skel/.zshrc
 			# define default plugins
