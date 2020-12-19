@@ -121,13 +121,13 @@ function check_status
 
         # OpenHab 2
 	OPENHAB2_STATUS="$([[ -f /etc/default/openhab2 ]] && echo "on" || echo "off" )"
-	alive_port "Openhab smarthome suite v2" "8080"
+	DESCRIPTION="Openhab smarthome suite"
 	LIST+=( "OpenHAB2" "$DESCRIPTION" "$OPENHAB2_STATUS" )
 
 	# OpenHab
 	OPENHAB_STATUS="$([[ -f /etc/default/openhab ]] && echo "on" || echo "off" )"
-	alive_port "Openhab smarthome suite v3" "8080"
-	LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
+	DESCRIPTION="Openhab smarthome suite"
+	LIST+=( "OpenHAB3" "$DESCRIPTION" "$OPENHAB_STATUS" )
 
 	# VPN
 	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
@@ -1774,7 +1774,7 @@ if ! is_package_manager_running; then
 			selection=${selection//OpenHAB2/}
 		fi
 
-		if [[ "$selection" == *OpenHAB && "$OPENHAB_STATUS" != "on" ]]; then
+		if [[ "$selection" == *OpenHAB3 && "$OPENHAB_STATUS" != "on" ]]; then
 			install_openhab
 			selection=${selection//OpenHAB/}
 		fi
