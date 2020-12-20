@@ -114,6 +114,8 @@ while true; do
 		fi
 	fi
 
+	LIST+=( "Dtc" "View/Edit/Compile device tree WIP" )
+
 	# count number of menu items to adjust window size
 	LISTLENGTH="$((6+${#LIST[@]}/2))"
 	BOXLENGTH=${#LIST[@]}

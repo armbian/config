@@ -1485,7 +1485,139 @@ function jobs ()
 	;;
 
 
+	
+	"Dtc" )
+		# Check if dtc command installed and install it if missing
+		if ! command -v dtc 2> /dev/null
+		then
+			echo "device tree compiler (dtc) could not be found, ask for installing it"
+			sudo apt install -y dtc
+			if ! command -v dtc 2> /dev/null
+			then
+				echo "Failed to install device tree compiler (dtc), exiting!"
+				exit
+			fi
+		else
+			echo "dtc already installed!"
+		fi
+
+
+		## Start search for current dtb in use
+		# read compatible field of the device tree
+		comp=$(sed 's/\x0/,/g' /proc/device-tree/compatible)
+
+		# split strings using ','
+		OLDIFS=$IFS
+		IFS=', ' read -r -a array <<< "${comp}"
+		IFS=OLDIFS
+
+		for element in "${array[@]}"
+		do
+			if [[ $element == *"rockchip"* ]]; then
+				soc_manufacturer="rockchip"
+				break
+			elif [[ $element == *"amlogic"* ]]; then
+				soc_manufacturer="amlogic"
+				break
+			elif [[ $element == *"allwinner"* ]]; then
+				soc_manufacturer="allwinner"
+				break
+			elif [[ $element == *"freescale"* ]]; then
+				soc_manufacturer="freescale"
+				break
+			elif [[ $element == *"nexell"* ]]; then
+				soc_manufacturer="nexell"
+				break
+			elif [[ $element == *"marvell"* ]]; then
+				soc_manufacturer="marvell"
+				break
+			elif [[ $element == *"samsung"* ]]; then
+				soc_manufacturer="samsung"
+				break
+			fi
+		done
+		# thanks to compatible property convention: https://elinux.org/Device_Tree_Usage#Understanding_the_compatible_Property
+		board_name="${array[1]}"
+
+		echo "SoC manufacturer: ${soc_manufacturer}"
+		echo "board name: ${board_name}"
+
+		#  check dtbs folder
+		if [[ -d "/boot/dtb/${soc_manufacturer}" ]]; then
+			dtb_path="/boot/dtb/${soc_manufacturer}"
+		else
+			dtb_path="/boot/dtb"
+		fi
+
+		#~ echo "dtb path: ${dtb_path}"
+
+		# search the used dtb in the dtbs folder
+		for dtb in ${dtb_path}/*.dtb
+		do
+			if [[ $dtb == *"${board_name}"* ]]; then
+				used_dtb=$dtb
+				break
+			fi
+		done
+		## End search for current dtb in use
+		
+		dtbfile="${used_dtb}"
+		tmpdir="$(mktemp -d || exit 1)"
+		chmod 700 "${tmpdir}"
+		trap "rm -rf \"${tmpdir}\" ; exit 0" 0 1 2 3 15
+		dtsfile="${tmpdir}/current.dts"
+		dtc -I dtb "${dtbfile}" -O dts -o "${dtsfile}"
+
+		dts_edit=1
+		while [[ ${dts_edit} != 0 ]]; do
+			# Edit dts
+			oldtime=`stat -c %Y "${dtsfile}"`
+			nano "${dtsfile}"
+
+			# Check if modified
+			if [[ `stat -c %Y "${dtsfile}"` -gt ${oldtime} ]] ; then
+				# Yes: recompile to dtb
+				dtc -I dts "${dtsfile}" -O dtb -o "${tmpdir}/current.dtb"
+				# Check if errors at the compilation step
+				if [ $? -eq 0 ]; then
+					# No: ask for dtb replacement in boot folder
+					read -p "Do you want to replace active dtb with current modification(s)? (y/n)" yn
+					case $yn in
+						[Yy]* )
+							# Keep a copy of original file
+							sudo cp -p "${dtbfile}" "${dtbfile}.bak";
+							# Replace with current file
+							sudo cat "${tmpdir}/current.dtb" >"${dtbfile}";
+							# Ask for immediate reboot
+							read -p "Do you want to reboot to check modification(s) effect? (y/n)" ynr
+							case $ynr in
+								[Yy]* ) sudo reboot;;
+								* ) break;;
+							esac
+							;;
+						* ) 
+							echo "Modifications cancelled!"
+							;;
+					esac
+				else
+					echo "Wrong device tree modifications!"
+				fi
+			fi
+			read -p "Do you want to edit the device tree again? (y/n)" yne
+			case $yne in
+				[Yy]* )
+					dts_edit=1
+					;;
+				* )
+					dts_edit=0
+					;;
+			esac
+		done
+		echo "Device tree modifications finished!"
+	;;
+
 	esac
+
 
 
 [[ -n $scripted ]] && exit
