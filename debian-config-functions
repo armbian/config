@@ -444,10 +444,11 @@ function other_kernel_version ()
 	[[ ${LINUXFAMILY} == cubox || ${LINUXFAMILY} == udoo ]] && LINUXFAMILY=imx6
 	[[ ${BOARD} == odroidc2 || ${BOARD} == kvim1 || ${BOARD} == lafrite || ${BOARD} == lepotato || ${BOARD} == nanopik2-s905 ]] && HIDDEN="legacy"
 	[[ ${LINUXFAMILY} == odroidn2 ]] && LINUXFAMILY=meson64
+	[[ ${BOARDFAMILY} == rk3399 ]] && LINUXFAMILY="((current|dev)-rockchip64|legacy-rk3399)"
 
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
-	LIST=($(apt-cache show linux-image*${LINUXFAMILY} | grep -E  "Package:|Version:|version:" \
+	LIST=($(apt-cache show linux-image.*${LINUXFAMILY} | grep -E  "Package:|Version:|version:" \
 	| grep -v "Config-Version" | sed -n -e 's/^.*: //p' | sed 's/\.$//g'))
 	new_list=()
 
