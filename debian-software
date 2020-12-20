@@ -26,6 +26,7 @@
 # install_transmission
 # install_transmission_seed_armbian_torrents
 # install_hassio
+# install_openhab2
 # install_openhab
 # install_syncthing
 # install_plex_media_server
@@ -118,10 +119,15 @@ function check_status
 	alive_port "Home assistant smarthome suite" "8123"
 	LIST+=( "Hassio" "$DESCRIPTION" "$HASS_STATUS" )
 
+        # OpenHab 2
+	OPENHAB2_STATUS="$([[ -f /etc/default/openhab2 ]] && echo "on" || echo "off" )"
+	DESCRIPTION="Openhab smarthome suite"
+	LIST+=( "OpenHAB2" "$DESCRIPTION" "$OPENHAB2_STATUS" )
+
 	# OpenHab
-	OPENHAB_STATUS="$([[ -f /usr/bin/openhab-cli ]] && echo "on" || echo "off" )"
-	alive_port "Openhab2 smarthome suite" "8080"
-	LIST+=( "OpenHAB" "$DESCRIPTION" "$OPENHAB_STATUS" )
+	OPENHAB_STATUS="$([[ -f /etc/default/openhab ]] && echo "on" || echo "off" )"
+	DESCRIPTION="Openhab smarthome suite"
+	LIST+=( "OpenHAB3" "$DESCRIPTION" "$OPENHAB_STATUS" )
 
 	# VPN
 	if [[ "$(dpkg --print-architecture)" == "armhf" || "$(dpkg --print-architecture)" == "amd64" ]]; then
@@ -797,7 +803,7 @@ fi
 
 
 
-install_openhab ()
+install_openhab2 ()
 {
 #
 # Install Openhab2 smart home suite openhab.org
@@ -853,6 +859,60 @@ systemctl start openhab2.service >/dev/null 2>&1
 # apt-get install -y openhab2-addons
 sed -i 's|EXTRA_JAVA_OPTS=""|EXTRA_JAVA_OPTS="-Dgnu.io.rxtx.SerialPorts=/dev/ttyUSB0:/dev/ttyS0:/dev/ttyS2:/dev/ttyACM0:/dev/ttyAMA0"|' /etc/default/openhab2
 service openhab2 restart >/dev/null 2>&1
+dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox \
+"\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
+}
+
+
+
+
+install_openhab ()
+{
+#
+# Install Openhab smart home suite
+#
+
+local jdkArch=$(dpkg --print-architecture)
+
+case $jdkArch in
+
+	armhf)
+		URL="https://cdn.azul.com/zulu-embedded/bin/zulu11.43.100-ca-jdk11.0.9.1-linux_aarch32hf.tar.gz"
+		;;
+	arm64)
+		URL="https://cdn.azul.com/zulu-embedded/bin/zulu11.43.100-ca-jdk11.0.9.1-linux_aarch64.tar.gz"
+		;;
+	amd64)
+		URL="https://cdn.azul.com/zulu/bin/zulu11.43.55-ca-jdk11.0.9.1-linux_x64.tar.gz"
+		;;
+	*)
+		URL="https://cdn.azul.com/zulu/bin/zulu11.43.55-ca-jdk11.0.9.1-linux_i686.tar.gz"
+
+esac
+
+fancy_wget "$URL" "-O ${TEMP_DIR}/zulu11.tar.gz"
+mkdir -p /opt/jdk
+tar -xpzf ${TEMP_DIR}/zulu11.tar.gz -C /opt/jdk
+jdkBin=$(find /opt/jdk/*/bin ... -print -quit)
+jdkLib=$(find /opt/jdk/*/lib ... -print -quit)
+update-alternatives --remove-all java >/dev/null 2>&1
+update-alternatives --remove-all javac >/dev/null 2>&1
+update-alternatives --install /usr/bin/java java "$jdkBin"/java 1083000 >/dev/null 2>&1
+update-alternatives --install /usr/bin/javac javac "$jdkBin"/javac 1083000 >/dev/null 2>&1
+echo "$jdkLib"/"$jdkArch" > /etc/ld.so.conf.d/java.conf
+echo "$jdkLib"/"$jdkArch"/jli >> /etc/ld.so.conf.d/java.conf
+ldconfig >/dev/null 2>&1
+wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
+echo 'deb https://openhab.jfrog.io/openhab/openhab-linuxpkg testing main' | sudo tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
+
+debconf-apt-progress -- apt-get update
+debconf-apt-progress -- apt-get install -y openhab
+systemctl daemon-reload >/dev/null 2>&1
+systemctl enable openhab.service >/dev/null 2>&1
+systemctl start openhab.service >/dev/null 2>&1
+debconf-apt-progress -- apt-get install -y openhab-addons
+sed -i 's|EXTRA_JAVA_OPTS=""|EXTRA_JAVA_OPTS="-Dgnu.io.rxtx.SerialPorts=/dev/ttyUSB0:/dev/ttyS0:/dev/ttyS2:/dev/ttyACM0:/dev/ttyAMA0"|' /etc/default/openhab
+service openhab restart >/dev/null 2>&1
 dialog --backtitle "$BACKTITLE" --title "Please wait" --msgbox \
 "\nIt can take several minutes before OpenHAB UI becomes available! " 7 68
 }
@@ -1709,7 +1769,12 @@ if ! is_package_manager_running; then
 			selection=${selection//Hassio/}
 		fi
 
-		if [[ "$selection" == *OpenHAB* && "$OPENHAB_STATUS" != "on" ]]; then
+		if [[ "$selection" == *OpenHAB2 && "$OPENHAB2_STATUS" != "on" ]]; then
+			install_openhab2
+			selection=${selection//OpenHAB2/}
+		fi
+
+		if [[ "$selection" == *OpenHAB3 && "$OPENHAB_STATUS" != "on" ]]; then
 			install_openhab
 			selection=${selection//OpenHAB/}
 		fi
