@@ -1567,6 +1567,9 @@ function jobs ()
 			elif [[ $element == *"freescale"* ]]; then
 				soc_manufacturer="freescale"
 				break
+			elif [[ $element == *"nexell"* ]]; then
+				soc_manufacturer="nexell"
+				break
 			fi
 		done
 		# thanks to compatible property convention: https://elinux.org/Device_Tree_Usage#Understanding_the_compatible_Property
