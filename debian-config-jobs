@@ -876,26 +876,11 @@ function jobs ()
 	# Bash
 	#
 	"BASH" )
-		# change shell for root
-		chsh -s /bin/bash
-		add_choose_user
-		if [ -n "$CHOSEN_USER" ]; then
-			chsh -s /bin/bash $CHOSEN_USER
-		fi
-		# cleanup
-		rm -rf /etc/oh-my-zsh /etc/skel/.zshrc /etc/skel/.oh-my-zsh
-		rm -rf /root/{.zshrc,.oh-my-zsh}
-		# and for selected normal user
-		add_choose_user
-		if [ -n "$CHOSEN_USER" ]; then
-			rm -rf /home/$CHOSEN_USER/{.zshrc,.oh-my-zsh}
-		fi
-		# change shell for future users
-		sed -i "s/^SHELL=.*/SHELL=\/bin\/bash/" /etc/default/useradd
-		# remove crontab
-		crontab -l | grep -v oh-my  | crontab -
-		if [[ -z $scripted ]]; then
+		if ! is_package_manager_running; then
+			debconf-apt-progress -- apt-get purge -y armbian-zsh
+			if [[ -z $scripted ]]; then
 			dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1BASH\Z0\n\nPlease logout & login from this session!" 9 47
+			fi
 		fi
 	;;
 
@@ -904,48 +889,9 @@ function jobs ()
 	#
 	"ZSH" )
 		if ! is_package_manager_running; then
-			if ! check_if_installed zsh ; then
-				debconf-apt-progress -- apt-get update
-				debconf-apt-progress -- apt-get install -y zsh tmux git
-			fi
-			rm -rf /etc/oh-my-zsh
-			git clone https://github.com/robbyrussell/oh-my-zsh.git /etc/oh-my-zsh 2>/dev/null
-			cd /etc/oh-my-zsh
-			git submodule add https://github.com/mroth/evalcache plugins/evalcache 2>/dev/null
-			chmod -R g-w,o-w /etc/oh-my-zsh/
-			cp /etc/oh-my-zsh/templates/zshrc.zsh-template /etc/skel/.zshrc
-			mkdir -p /etc/skel/.oh-my-zsh/cache
-			# change shell for future users
-			sed -i "s/^SHELL=.*/SHELL=\/usr\/bin\/zsh/" /etc/default/useradd
-			sed -i "s/^DSHELL=.*/DSHELL=\/usr\/bin\/zsh/" /etc/adduser.conf
-			# add support for bash profile
-			echo "emulate sh -c 'source /etc/profile'" >> /etc/zsh/zprofile
-			# we have common settings
-			sed -i "s/^export ZSH=.*/export ZSH=\/etc\/oh-my-zsh/" /etc/skel/.zshrc
-			# user cache
-			sed -i "/^export ZSH=.*/a export ZSH_CACHE_DIR=~\/.oh-my-zsh\/cache" /etc/skel/.zshrc
-			# define theme
-			sed -i 's/^ZSH_THEME=.*/ZSH_THEME="mrtazz"/' /etc/skel/.zshrc
-			# disable prompt while update
-			sed -i 's/# DISABLE_UPDATE_PROMPT="true"/DISABLE_UPDATE_PROMPT="true"/g' /etc/skel/.zshrc
-			# define default plugins
-			sed -i 's/^plugins=.*/plugins=(evalcache git git-extras debian tmux screen history extract colorize web-search docker)/' /etc/skel/.zshrc
-			# change shell for root
-			chsh -s $(grep /zsh$ /etc/shells | tail -1)
-			# copy cache directory
-			cp -R --attributes-only /etc/skel/.oh-my-zsh /root/.oh-my-zsh
-			cp /etc/skel/.zshrc /root/.zshrc
-			# and for selected normal user
-			[[ -z $scripted ]] && add_choose_user
-			if [[ -n "$CHOSEN_USER" ]]; then
-				chsh -s $(grep /zsh$ /etc/shells | tail -1) $CHOSEN_USER
-				# copy cache directory
-				cp -R --attributes-only /etc/skel/.oh-my-zsh /home/$CHOSEN_USER/.oh-my-zsh
-				cp /etc/skel/.zshrc /home/$CHOSEN_USER/.zshrc
-				chown -R ${CHOSEN_USER}:${CHOSEN_USER} /home/${CHOSEN_USER}/{.zshrc,.oh-my-zsh}
-			fi
-			# add a cronjob to update oh-my-zsh once per month
-			(crontab -l 2>/dev/null; echo "0 0 1 * * cd /etc/oh-my-zsh ; git pull --recurse-submodules >/dev/null 2>/dev/null") | crontab -
+			debconf-apt-progress -- apt-get update
+			debconf-apt-progress -- apt-get install -y armbian-zsh
+			awk -F'[/:]' '{if ($3 >= 1000 && $3 != 65534 || $3 == 0) print $1}' /etc/passwd | xargs -L1 chsh -s $(grep /zsh$ /etc/shells | tail -1)
 			if [[ -z $scripted ]]; then
 				dialog --backtitle "$BACKTITLE" --title "Info" --colors --msgbox "\nYour default shell was switched to: \Z1ZSH\Z0\n\nPlease logout & login from this session!" 9 47
 			fi
