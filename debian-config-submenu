@@ -319,6 +319,7 @@ while true; do
 	LIST+=( "Keyboard" "Change console keyboard layout (\Z5$(cat /etc/default/keyboard | grep XKBLAYOUT | grep -o '".*"' | sed 's/"//g')\Z0)")
 	LIST+=( "Hostname" "Change your hostname \Z5($(cat /etc/hostname))\Z0" )
 	LIST+=( "Welcome" "Toggle welcome screen items" )
+        LIST+=( "Mirrors" "Reconfigure APT mirrors" )
 
 	# count number of menu items to adjust window sizee
 	LISTLENGTH="$((6+${#LIST[@]}/2))"
@@ -353,7 +354,6 @@ while true; do
 	check_desktop
 
 	LIST=()
-        LIST+=( "Mirrors" "Reconfigure APT mirrors" )
 	[[ -f /usr/bin/softy || -f softy ]] && LIST+=( "Softy" "3rd party applications installer" )
 	[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && \
 	LIST+=( "Consumption" "Control board consumption" )

@@ -1620,8 +1620,10 @@ function jobs ()
 	"Mirrors")
 
 		# Unique mirrors to simple list
+		default_url="http://apt.armbian.com"
 		mirror_url="https://apt.armbian.com/mirrors"
 		readarray -t mirror_list <<< $(wget -qO- "${mirror_url}" | jq -r '.[] | .[]' | sort | uniq)
+                mirror_list=( "${default_url}" "${mirror_list[@]}" )
 
 		LIST=()
 		for mirror in "${mirror_list[@]}"; do
@@ -1640,7 +1642,6 @@ function jobs ()
 			mirror=${mirror_list[$selection]}
 			echo "deb ${mirror} ${codename} main ${codename}-utils ${codename}-desktop" > /etc/apt/sources.list.d/armbian.list
 			apt-get update
-			echo "Software mirror updated!"
 		fi
 		;;
 
