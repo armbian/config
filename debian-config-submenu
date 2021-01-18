@@ -353,6 +353,7 @@ while true; do
 	check_desktop
 
 	LIST=()
+        LIST+=( "Mirrors" "Reconfigure APT mirrors" )
 	[[ -f /usr/bin/softy || -f softy ]] && LIST+=( "Softy" "3rd party applications installer" )
 	[[ -f /usr/bin/h3consumption && "$LINUXFAMILY" = "sun8i" && "$BRANCH" = "default" ]] && \
 	LIST+=( "Consumption" "Control board consumption" )

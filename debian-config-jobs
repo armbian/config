@@ -1617,6 +1617,33 @@ function jobs ()
 		echo "Device tree modifications finished!"
 	;;
 
+	"Mirrors")
+
+		# Unique mirrors to simple list
+		mirror_url="https://apt.armbian.com/mirrors"
+		readarray -t mirror_list <<< $(wget -qO- "${mirror_url}" | jq -r '.[] | .[]' | sort | uniq)
+
+		LIST=()
+		for mirror in "${mirror_list[@]}"; do
+			LIST+=( "$[ ${#LIST[@]} / 2 ]" "${mirror}" )
+		done
+
+		exec 3>&1
+		selection=$(dialog --colors --backtitle "${BACKTITLE}" --title " Select APT mirror " --clear --menu "Select mirror" 0 0 0 "${LIST[@]}" 2>&1 1>&3)
+		exit_status=$?
+		exec 3>&-
+		clear
+
+		if [ $exit_status -eq 0 ]; then
+			# Reconfigure apt
+			codename=$(lsb_release -sc)
+			mirror=${mirror_list[$selection]}
+			echo "deb ${mirror} ${codename} main ${codename}-utils ${codename}-desktop" > /etc/apt/sources.list.d/armbian.list
+			apt-get update
+			echo "Software mirror updated!"
+		fi
+		;;
+
 	esac
 
 
