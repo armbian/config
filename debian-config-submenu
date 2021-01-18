@@ -82,6 +82,11 @@ while true; do
 	[[ -z ${mark} ]] && [[ -f /etc/apt/sources.list.d/armbian.list ]] && LIST+=( "Other" "Switch to other kernels" )
 
 	LIST+=( "SSH" "Reconfigure SSH daemon" )
+	zpoolstatus="$(zpool status </dev/stdin 2>&1 )"
+	testvercomp "$(uname -r | sed 's/-.*//')" "3.10.0" ">"
+	kernelok=$?
+	[[ -z $(echo $zpoolstatus | grep 'not loaded') && $kernelok == 0 && "$(dpkg --print-architecture)" != "armhf" ]] && LIST+=( "ZFS" "Enable ZFS support" )
+
 	LIST+=( "Firmware" "Run apt update & apt upgrade" )
 
 	if [[ "$SHELL" != "/bin/bash" ]]; then

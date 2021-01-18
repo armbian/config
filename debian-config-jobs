@@ -1132,6 +1132,14 @@ function jobs ()
 	fi
 	;;
 
+	"ZFS")
+	if ! is_package_manager_running; then
+		if ! check_if_installed zfs-dkms ; then
+			debconf-apt-progress -- apt-get -y install zfs-dkms dkms python3-distutils python3-lib2to3 zfsutils-linux
+		fi
+	fi
+	;;
+
 
 	# Edit boot environment
 	#
