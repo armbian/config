@@ -1469,6 +1469,7 @@ function jobs ()
 			else
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confnew" -y install overlayroot
 				debconf-apt-progress -- apt-get -f -yy install
+				[[ ! -f /etc/overlayroot.conf ]] && cp /etc/overlayroot.conf.dpkg-new /etc/overlayroot.conf
 				echo '#!/bin/bash' > /etc/update-motd.d/97-overlayroot
 				echo 'if [ -n "$(mount | grep -w tmpfs-root)" ]; then \
 				echo -e "[\e[0m \e[1mremember: your system is in virtual read only mode\e[0m ]\n";fi' >> /etc/update-motd.d/97-overlayroot
@@ -1485,7 +1486,7 @@ function jobs ()
 	;;
 
 
-	
+
 	"Dtc" )
 		# Check if dtc command installed and install it if missing
 		if ! command -v dtc 2> /dev/null
