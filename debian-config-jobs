@@ -1619,19 +1619,25 @@ function jobs ()
 
 	"Mirrors")
 
-		# Unique mirrors to simple list
-		default_url="http://apt.armbian.com"
-		mirror_url="https://apt.armbian.com/mirrors"
-		readarray -t mirror_list <<< $(wget -qO- "${mirror_url}" | jq -r '.[] | .[]' | sort | uniq)
-                mirror_list=( "${default_url}" "${mirror_list[@]}" )
+		# Default automated mirror
+		url="http://apt.armbian.com"
+		LIST=( "0" "Automated" )
+		mirrors=( "${url}" )
 
-		LIST=()
-		for mirror in "${mirror_list[@]}"; do
-			LIST+=( "$[ ${#LIST[@]} / 2 ]" "${mirror}" )
+		# Mirrors for each region
+		for region in $(wget -qO- "${url}/regions" | jq -r '.[]' | sort | grep -v default); do
+			LIST+=( "${#mirrors[@]}" "Region ${region}" )
+			mirrors+=( "${url}/region/${region}/" )
+		done
+
+		# Individual mirrors
+		for mirror in $(wget -qO- "${url}/mirrors" | jq -r '.[] | .[]' | sort | uniq); do
+			LIST+=( "${#mirrors[@]}" "${mirror}" )
+			mirrors+=( "${mirror}" )
 		done
 
 		exec 3>&1
-		selection=$(dialog --colors --backtitle "${BACKTITLE}" --title " Select APT mirror " --clear --menu "Select mirror" 0 0 0 "${LIST[@]}" 2>&1 1>&3)
+		selection=$(dialog --colors --backtitle "${BACKTITLE}" --title " Select APT mirror " --clear --menu "Select mirror" 0 0 10 "${LIST[@]}" 2>&1 1>&3)
 		exit_status=$?
 		exec 3>&-
 		clear
@@ -1639,7 +1645,7 @@ function jobs ()
 		if [ $exit_status -eq 0 ]; then
 			# Reconfigure apt
 			codename=$(lsb_release -sc)
-			mirror=${mirror_list[$selection]}
+			mirror=${mirrors[$selection]}
 			echo "deb ${mirror} ${codename} main ${codename}-utils ${codename}-desktop" > /etc/apt/sources.list.d/armbian.list
 			apt-get update
 		fi
