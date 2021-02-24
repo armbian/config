@@ -154,7 +154,7 @@ function check_status
 	# Plex media server
 	PLEX_STATUS="$((check_if_installed plexmediaserver || check_if_installed plexmediaserver-installer) \
 	&& echo "on" || echo "off" )"
-	alive_port "Plex media server" "32400"
+	alive_port "Plex media server" "32400" "" "/web"
 	LIST+=( "Plex" "$DESCRIPTION" "$PLEX_STATUS" )
 
 	# Emby server
