@@ -1,3 +1,5 @@
+NOTICE: We are refactoring this tool. [Your input & help is more then welcome!](https://forum.armbian.com/topic/16933-armbian-config-rfc-ideas)
+
 # Armbian configuration utility
 
 Utility for configuring your board, adjusting services and installing applications.
