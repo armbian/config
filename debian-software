@@ -154,7 +154,7 @@ function check_status
 	# Plex media server
 	PLEX_STATUS="$((check_if_installed plexmediaserver || check_if_installed plexmediaserver-installer) \
 	&& echo "on" || echo "off" )"
-	alive_port "Plex media server" "32400"
+	alive_port "Plex media server" "32400" "" "/web"
 	LIST+=( "Plex" "$DESCRIPTION" "$PLEX_STATUS" )
 
 	# Emby server
@@ -553,34 +553,22 @@ if [ -f /etc/armbian-release ]; then
 	. /etc/armbian-release
 fi
 
-# Don't allow installation on Ubuntu
-if [[ "$family" == "Ubuntu" ]]; then
-	dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian." 7 52
-	sleep 5
-	exit 1
-fi
-
-# Warning / Notice before install
-case $distribution in
-	wheezy|jessie)
-		dialog --backtitle "$BACKTITLE" --title "OMV3 is End of Life" --msgbox "\nUpgrade to a supported OS : Debian Stretch or Buster." 7 52
+# OMV5 Requirement
+if [[ "$distribution" != "buster" ]]; then
+		dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nOpenMediaVault 5 can only be installed on Debian Buster." 7 52
 		sleep 5
 		exit 1
-		;;
-esac
+fi
 
 # Download OMV install script
 wgeturl="https://github.com/OpenMediaVault-Plugin-Developers/installScript/raw/master/install"
 fancy_wget "$wgeturl" "-O ${TEMP_DIR}/omv_install.sh"
 
-# Remove Crony on Stretch since OMV4 depends on NTP
-if [[ "$distribution" == "stretch" ]]; then
-	apt-get -y -qq remove chrony
-fi
-
 # Execute install script
-echo "Now installing OpenMediaVault. Be patient, it will take several minutes..."
-bash ${TEMP_DIR}/omv_install.sh &>> /var/log/omv_install.log
+clear
+echo "Starting OpenMediaVault install. Be patient, it will take several minutes..."
+sleep 2
+bash ${TEMP_DIR}/omv_install.sh -r
 
 # Board Specific Tweak
 echo "Now applying board tweak if required..."
@@ -591,13 +579,14 @@ lsusb | grep -q -i "05e3:0735" && sed -i "/exit 0/i echo 20 > /sys/class/block/s
 
 case ${BOARD} in
 	odroidxu4)
-		HMP_Fix='; taskset -c -p 4-7 $i '
 		apt install -y i2c-tools
 		/usr/sbin/i2cdetect -y 1 | grep -q "60: 60"
 		if [ $? -eq 0 ]; then
 			add-apt-repository -y ppa:kyle1117/ppa
-			sed -i 's/jessie/xenial/' /etc/apt/sources.list.d/kyle1117-ppa-jessie.list
-			apt install -y -q cloudshell-lcd odroid-cloudshell cloudshell2-fan &
+			apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3028C3C96AD57103
+			sed -i 's/hirsute/focal/' /etc/apt/sources.list.d/kyle1117-ubuntu-ppa-hirsute.list
+			apt update
+			apt install -y -q cloudshell-lcd odroid-cloudshell cloudshell2-fan
 			lsusb -v | awk -F"__" '/RANDOM_/ {print $2}' | head -n1 | while read ; do
 				echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"disk\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}\"" >> /etc/udev/rules.d/99-cloudshell2.rules
 				echo "ATTRS{idVendor}==\"152d\", ATTRS{idProduct}==\"0561\", KERNEL==\"sd*\", ENV{DEVTYPE}==\"partition\", SYMLINK=\"disk/by-id/\$env{ID_BUS}-CloudShell2-${REPLY}-\$env{ID_MODEL}-part%n\"" >> /etc/udev/rules.d/99-cloudshell2.rules
@@ -608,20 +597,22 @@ case ${BOARD} in
 		# Make mdadm display fault events on Fault LED
 		# NOTE : this is not a permanent approach need to be improved via some OMV core code change
 		if [ -f /usr/sbin/mdadm-fault-led.sh ]; then
-			if [[ "$distribution" == "stretch" ]]; then
-				sed -i -e "/HOMEHOST/a \\\n# Trigger Fault Led script when an event is detected\\nPROGRAM \/usr\/sbin\/mdadm-fault-led.sh" /usr/share/openmediavault/mkconf/mdadm
-				/usr/sbin/omv-mkconf mdadm
-			elif [[ "$distribution" == "buster" ]]; then
-				cat <<EOF > /srv/salt/omv/deploy/mdadm/25faultled.sls
+			cat <<EOF > /srv/salt/omv/deploy/mdadm/25faultled.sls
 mdadm_add_program_config:
   cmd.run:
     - name: "echo -e '\n# Trigger Fault Led script when an event is detected\nPROGRAM /usr/sbin/mdadm-fault-led.sh' >> /etc/mdadm/mdadm.conf"
 EOF
-				/usr/sbin/omv-salt deploy run mdadm
-			fi
+			/usr/sbin/omv-salt deploy run mdadm
 		fi
 	;;
 esac
+
+if check_if_installed openmediavault; then
+	dialog --colors --backtitle "$BACKTITLE" --no-collapse --title "OMV Installation" --yesno "\nIt is recommended to reboot your system to finish OMV setup. Do you want to reboot now?" 8 80
+	if [[ $? == 0 ]]; then
+		reboot
+	fi
+fi
 }
 
 install_tvheadend ()
