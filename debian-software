@@ -568,7 +568,7 @@ fancy_wget "$wgeturl" "-O ${TEMP_DIR}/omv_install.sh"
 clear
 echo "Starting OpenMediaVault install. Be patient, it will take several minutes..."
 sleep 2
-bash ${TEMP_DIR}/omv_install.sh -r
+bash ${TEMP_DIR}/omv_install.sh -r -n
 
 # Board Specific Tweak
 echo "Now applying board tweak if required..."
