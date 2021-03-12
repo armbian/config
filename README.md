@@ -73,7 +73,7 @@ Development version:
 
 	# Install dependencies
 	apt install git iperf3 psmisc curl bc expect dialog network-manager sunxi-tools \
-	debconf-utils unzip dirmngr software-properties-common psmisc
+	debconf-utils unzip dirmngr software-properties-common psmisc jq
 
 	git clone https://github.com/armbian/config
 	cd config
