@@ -363,7 +363,7 @@ function reload_bsp(){
 	[[ -n "$1" ]] && BRANCH=$1
 
 	# deal with exceptions
-	if [[ $BRANCH == current || $BRANCH == dev ]]; then
+	if [[ $BRANCH == current || $BRANCH == dev || $BRANCH == edge ]]; then
 		[[ ${LINUXFAMILY} == rk3399 ]] && LINUXFAMILY=rockchip64
 	fi
 
@@ -493,6 +493,8 @@ function other_kernel_version ()
 				[[ $TARGET_VERSION == *next* ]] && UPGRADE_ROOT="-next"  && UPGRADE_UBOOT="next"
 				[[ $TARGET_VERSION == *current* ]] && UPGRADE_ROOT="-current" && UPGRADE_UBOOT="current"
 				[[ $TARGET_VERSION == *dev* ]] && UPGRADE_ROOT="-dev" && UPGRADE_UBOOT="dev"
+				[[ $TARGET_VERSION == *edge* ]] && UPGRADE_ROOT="-edge" && UPGRADE_UBOOT="dev"
+
 
 				# install packages
 				PACKAGE_LIST="$TARGET_VERSION"
