@@ -894,7 +894,7 @@ echo "$jdkLib"/"$jdkArch" > /etc/ld.so.conf.d/java.conf
 echo "$jdkLib"/"$jdkArch"/jli >> /etc/ld.so.conf.d/java.conf
 ldconfig >/dev/null 2>&1
 wget -qO - 'https://bintray.com/user/downloadSubjectPublicKey?username=openhab' | apt-key add - >/dev/null 2>&1
-echo 'deb https://openhab.jfrog.io/openhab/openhab-linuxpkg testing main' | sudo tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
+echo 'deb https://dl.bintray.com/openhab/apt-repo2 stable main' | sudo tee /etc/apt/sources.list.d/openhab2.list >/dev/null 2>&1
 
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get install -y openhab
