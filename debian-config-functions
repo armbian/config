@@ -493,7 +493,7 @@ function other_kernel_version ()
 				[[ $TARGET_VERSION == *next* ]] && UPGRADE_ROOT="-next"  && UPGRADE_UBOOT="next"
 				[[ $TARGET_VERSION == *current* ]] && UPGRADE_ROOT="-current" && UPGRADE_UBOOT="current"
 				[[ $TARGET_VERSION == *dev* ]] && UPGRADE_ROOT="-dev" && UPGRADE_UBOOT="dev"
-				[[ $TARGET_VERSION == *edge* ]] && UPGRADE_ROOT="-edge" && UPGRADE_UBOOT="dev"
+				[[ $TARGET_VERSION == *edge* ]] && UPGRADE_ROOT="-edge" && UPGRADE_UBOOT="edge"
 
 
 				# install packages
@@ -501,10 +501,10 @@ function other_kernel_version ()
 				TARGET_VERSION_DTB=${TARGET_VERSION/image/dtb}
 				TARGET_VERSION_PRE=$(echo $TARGET_VERSION_DTB | cut -f1 -d"=")
 				TARGET_VERSION_SUB=$(echo $TARGET_VERSION_DTB | cut -f2 -d"=")
-				[[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]] && \
-				# installs u-boot only if exits
-				apt-cache show linux-u-boot-${BOARD}-${UPGRADE_UBOOT} 2> /dev/null
-				[[ $? -eq 0 ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UPGRADE_UBOOT}"
+				if [[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]]; then
+					# installs u-boot only if exits
+					[[ -n $(apt-cache search --names-only linux-u-boot-${BOARD}-${UPGRADE_UBOOT}) ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UPGRADE_UBOOT}"
+				fi
 
 				PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
 				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
