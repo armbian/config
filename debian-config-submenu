@@ -41,9 +41,9 @@ while true; do
 	# armbian specific function
 	if [[ -f /etc/armbian-release ]]; then
 		if [[ -n "${mark}" ]]; then
-				LIST+=( "Defreeze" "Enable Armbian kernel upgrades " )
-			else
-				LIST+=( "Freeze" "Disable Armbian kernel upgrades " )
+			LIST+=( "Defreeze" "Enable Armbian kernel upgrades " )
+		else
+			LIST+=( "Freeze" "Disable Armbian kernel upgrades " )
 		fi
 	fi
 
@@ -86,7 +86,7 @@ while true; do
 
 	if [[ "$SHELL" != *bash ]]; then
 		LIST+=( "BASH" "Revert to stock BASH shell" )
-		else
+	else
 		LIST+=( "ZSH" "Install ZSH with plugins and tmux" )
 	fi
 
@@ -120,34 +120,36 @@ while true; do
 	LISTLENGTH="$((6+${#LIST[@]}/2))"
 	BOXLENGTH=${#LIST[@]}
 	temp_rc=$(mktemp)
+	temp_rc_list="$temp_rc_list \"$temp_rc\""
+	trap "rm -f ${temp_rc_list} ; exit 0" 0 1 2 3 15
 	if [[ -n ${mark} || -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]]; then
-			cat <<-'EOF' > $temp_rc
-			dialog_color = (RED,WHITE,OFF)
-			screen_color = (WHITE,RED,ON)
-			tag_color = (RED,WHITE,ON)
-			item_selected_color = (WHITE,RED,ON)
-			tag_selected_color = (WHITE,RED,ON)
-			tag_key_selected_color = (WHITE,RED,ON)
-			EOF
-			[[ -n ${mark} ]] && local sys_title=" Warning - firmware packages frozen"
-			[[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && \
-			local sys_title=" Warning - attached to beta repository"
-			[[ -n ${mark} && -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && \
-			sys_title=" Warning - frozen & attached to beta repository"
-		else
-			local sys_title=" System settings "
-			echo > $temp_rc
+		cat <<-'EOF' > $temp_rc
+		dialog_color = (RED,WHITE,OFF)
+		screen_color = (WHITE,RED,ON)
+		tag_color = (RED,WHITE,ON)
+		item_selected_color = (WHITE,RED,ON)
+		tag_selected_color = (WHITE,RED,ON)
+		tag_key_selected_color = (WHITE,RED,ON)
+		EOF
+		[[ -n ${mark} ]] && local sys_title=" Warning - firmware packages frozen"
+		[[ -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && \
+		local sys_title=" Warning - attached to beta repository"
+		[[ -n ${mark} && -n $(grep -w beta /etc/apt/sources.list.d/armbian.list 2> /dev/null) ]] && \
+		sys_title=" Warning - frozen & attached to beta repository"
+	else
+		local sys_title=" System settings "
+		echo > $temp_rc
 	fi
 
-if [[ -z $selection ]]; then
-	exec 3>&1
-	selection=$(DIALOGRC=$temp_rc dialog --colors --backtitle "$BACKTITLE" --title " $sys_title " --clear \
-	--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 0 $BOXLENGTH \
-	"${LIST[@]}" 2>&1 1>&3)
-	exit_status=$?
-	exec 3>&-
-	[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
-fi
+	if [[ -z $selection ]]; then
+		exec 3>&1
+		selection=$(DIALOGRC=$temp_rc dialog --colors --backtitle "$BACKTITLE" --title " $sys_title " --clear \
+		--cancel-label "Back" --menu "$disclaimer" $LISTLENGTH 0 $BOXLENGTH \
+		"${LIST[@]}" 2>&1 1>&3)
+		exit_status=$?
+		exec 3>&-
+		[[ $exit_status == $DIALOG_CANCEL || $exit_status == $DIALOG_ESC ]] && clear && break
+	fi
 
 	# run main function
 	jobs "$selection"
