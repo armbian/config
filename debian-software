@@ -20,6 +20,7 @@
 # install_samba
 # install_ncp
 # install_omv
+# install_yunohost
 # install_tvheadend
 # install_docker
 # install_urbackup
@@ -151,6 +152,11 @@ function check_status
 	[[ "$family" != "Ubuntu" ]] && LIST+=( "OMV" "OpenMediaVault NAS solution" "$OMV_STATUS" ) \
 	&& LIST_CONST=$((LIST_CONST + 1))
 
+	# YunoHost
+	YUNOHOST_STATUS="$(check_if_installed yunohost && echo "on" || echo "off" )"
+	[[ "$family" != "Ubuntu" ]] && LIST+=( "Yunohost" "Yunohost Self Hosting solution" "$YUNOHOST_STATUS" ) \
+	&& LIST_CONST=$((LIST_CONST + 1))
+
 	# Plex media server
 	PLEX_STATUS="$((check_if_installed plexmediaserver || check_if_installed plexmediaserver-installer) \
 	&& echo "on" || echo "off" )"
@@ -231,6 +237,7 @@ function choose_webserver
 #
 # Target web server selection
 #
+#TODO: also manage YunoHost ?
 check_if_installed openmediavault
 case $? in
 	0)
@@ -609,6 +616,43 @@ esac
 
 if check_if_installed openmediavault; then
 	dialog --colors --backtitle "$BACKTITLE" --no-collapse --title "OMV Installation" --yesno "\nIt is recommended to reboot your system to finish OMV setup. Do you want to reboot now?" 8 80
+	if [[ $? == 0 ]]; then
+		reboot
+	fi
+fi
+}
+
+install_yunohost (){
+#
+# Install Yunohost on Debian
+#
+if [ -f /etc/armbian-release ]; then
+	. /etc/armbian-release
+fi
+
+# Yunohost Requirement TODO: improve management of multi debian version
+if [[ "$distribution" != "buster" ]]; then
+		dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nYunohost can only be installed on Debian Buster." 7 52
+		sleep 5
+		exit 1
+fi
+
+# Download Yunohost install script
+wgeturl="https://install.yunohost.org"
+fancy_wget "$wgeturl" "-O ${TEMP_DIR}/yunohost_install.sh"
+
+# Execute install script
+clear
+echo "Starting Yunohost install. Be patient, it will take several minutes..."
+sleep 2
+bash ${TEMP_DIR}/yunohost_install.sh
+
+# Execute Yunohost post install/ ask to launch post install or tel to user to launche post install webadmin
+yunohost tools postinstall
+
+#
+if check_if_installed yunohost; then
+	dialog --colors --backtitle "$BACKTITLE" --no-collapse --title "Yunohost Installation" --yesno "\nIt is recommended to reboot your system to finish Yunohost setup. Do you want to reboot now?" 8 80
 	if [[ $? == 0 ]]; then
 		reboot
 	fi
@@ -1787,6 +1831,11 @@ if ! is_package_manager_running; then
 		if [[ "$selection" == *OMV* && "$OMV_STATUS" != "on" ]]; then
 			install_omv
 			selection=${selection//OMV/}
+		fi
+
+		if [[ "$selection" == *Yunohost* && "$YUNOHOST_STATUS" != "on" ]]; then
+			install_yunohost
+			selection=${selection//Yunohost/}
 		fi
 
 		if [[ "$selection" == *Plex* && "$PLEX_STATUS" != "on" ]]; then

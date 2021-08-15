@@ -49,6 +49,7 @@ Login as root and type:
 		- [ISPConfig](https://www.ispconfig.org/) *(WEB & MAIL server)*
 		- [NCP](https://nextcloudpi.com) *(Nextcloud personal cloud)*
 		- [Openmediavault NAS](http://www.openmediavault.org/) *(NAS server)*
+		- [YunoHost](https://yunohost.org/) *(Self hosting server)*
 		- [OpenHab2](https://www.openhab.org) *(Smarthome suite)*
 		- [Home Assistant](https://www.home-assistant.io/hassio/) *(Smarthome suite within Docker)*
 		- [PI hole](https://pi-hole.net) *(ad blocker)*
