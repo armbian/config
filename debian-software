@@ -152,10 +152,10 @@ function check_status
 	LIST+=( "Plex" "$DESCRIPTION" "$PLEX_STATUS" )
 
 	# Emby server
-	AMBY_STATUS="$((check_if_installed emby-server) \
+	EMBY_STATUS="$((check_if_installed emby-server) \
 	&& echo "on" || echo "off" )"
 	alive_port "Emby server" "8096"
-	LIST+=( "Emby" "$DESCRIPTION" "$AMBY_STATUS" )
+	LIST+=( "Emby" "$DESCRIPTION" "$EMBY_STATUS" )
 
 	# Radarr
 	RADARR_STATUS="$([[ -d /opt/Radarr ]] && echo "on" || echo "off" )"
@@ -1689,11 +1689,6 @@ if ! is_package_manager_running; then
 		if [[ "$selection" == *Hassio* && "$HASS_STATUS" != "on" ]]; then
 			install_hassio
 			selection=${selection//Hassio/}
-		fi
-
-		if [[ "$selection" == *OpenHAB2 && "$OPENHAB2_STATUS" != "on" ]]; then
-			install_openhab2
-			selection=${selection//OpenHAB2/}
 		fi
 
 		if [[ "$selection" == *OpenHAB3 && "$OPENHAB_STATUS" != "on" ]]; then
