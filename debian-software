@@ -1691,7 +1691,7 @@ if ! is_package_manager_running; then
 			selection=${selection//Hassio/}
 		fi
 
-		if [[ "$selection" == *OpenHAB3 && "$OPENHAB_STATUS" != "on" ]]; then
+		if [[ "$selection" == *OpenHAB && "$OPENHAB_STATUS" != "on" ]]; then
 			install_openhab
 			selection=${selection//OpenHAB/}
 		fi
