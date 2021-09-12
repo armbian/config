@@ -1756,7 +1756,7 @@ if ! is_package_manager_running; then
 			selection=${selection//Transmission/}
 			dialog --title "Seed Armbian torrents" --backtitle "$BACKTITLE" --yes-label "Yes" --no-label "No" --yesno "\
 			\nDo you want to help the community and seed armbian torrent files? It will ensure faster downloads for everyone.\
-			\n\nApproximately 400GB disk space is required." 11 44
+			\n\nApproximately 1TB disk space is required." 11 44
 				if [[ $? = 0 ]]; then
 					install_transmission_seed_armbian_torrents
 				fi
