@@ -812,7 +812,6 @@ case $jdkArch in
 		URL="https://cdn.azul.com/zulu/bin/zulu11.43.55-ca-jdk11.0.9.1-linux_i686.tar.gz"
 
 esac
-
 fancy_wget "$URL" "-O ${TEMP_DIR}/zulu11.tar.gz"
 mkdir -p /opt/jdk
 tar -xpzf ${TEMP_DIR}/zulu11.tar.gz -C /opt/jdk
@@ -1692,12 +1691,7 @@ if ! is_package_manager_running; then
 			selection=${selection//Hassio/}
 		fi
 
-		if [[ "$selection" == *OpenHAB2 && "$OPENHAB2_STATUS" != "on" ]]; then
-			install_openhab2
-			selection=${selection//OpenHAB2/}
-		fi
-
-		if [[ "$selection" == *OpenHAB3 && "$OPENHAB_STATUS" != "on" ]]; then
+		if [[ "$selection" == *OpenHAB && "$OPENHAB_STATUS" != "on" ]]; then
 			install_openhab
 			selection=${selection//OpenHAB/}
 		fi
