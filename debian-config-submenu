@@ -223,7 +223,7 @@ while true; do
 	fi
 
 	check_if_installed lirc && LIST+=( "Remove IR" "Remove IR support" ) || LIST+=( "IR" "Install IR support" )
-	if check_if_installed bluetooth then ; then
+	if check_if_installed bluetooth; then
 			LIST+=( "BT remove" "Remove Bluetooth support" )
 			if [[ -n $(service bluetooth status | grep -w active | grep -w running) ]]; then
 				[[ $(hcitool dev | sed '1d') != "" ]] && LIST+=( "BT discover" "Discover and connect Bluetooth devices" )

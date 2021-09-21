@@ -52,7 +52,7 @@ function initialize_lte ()
 # International (CC BY 4.0) license.
 # Source repository: https://github.com/ssinyagin/wwan_udev_rules
 
-if ! check_if_installed ppp then; then
+if ! check_if_installed ppp; then
 	apt-get -y -qq install ppp >/dev/null 2>&1
 fi
 cat >/etc/udev/rules.d/99-wwan.rules <<'EOT'

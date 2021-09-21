@@ -1056,7 +1056,7 @@ function jobs ()
 	;;
 
 	"Thunderbird" )
-		if ! check_if_installed thunderbird then ; then
+		if ! check_if_installed thunderbird; then
 			debconf-apt-progress -- apt-get -y install thunderbird
 		else
 			debconf-apt-progress -- apt-get -y purge thunderbird
@@ -1064,7 +1064,7 @@ function jobs ()
 	;;
 
 	"Gimp" )
-		if ! check_if_installed gimp then ; then
+		if ! check_if_installed gimp; then
 			debconf-apt-progress -- apt-get -y install gimp
 		else
 			debconf-apt-progress -- apt-get -y purge gimp
