@@ -442,9 +442,9 @@ install_cups ()
 debconf-apt-progress -- apt-get -y install cups lpr cups-filters
 # cups-filters if jessie
 sed -e 's/Listen localhost:631/Listen 631/g' -i /etc/cups/cupsd.conf
-sed -e 's/<Location \/>/<Location \/>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
-sed -e 's/<Location \/admin>/<Location \/admin>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
-sed -e 's/<Location \/admin\/conf>/<Location \/admin\/conf>\nallow $SUBNET/g' -i /etc/cups/cupsd.conf
+sed -e "s/<Location \/>/<Location \/>\nallow $SUBNET/g" -i /etc/cups/cupsd.conf
+sed -e "s/<Location \/admin>/<Location \/admin>\nallow $SUBNET/g" -i /etc/cups/cupsd.conf
+sed -e "s/<Location \/admin\/conf>/<Location \/admin\/conf>\nallow $SUBNET/g" -i /etc/cups/cupsd.conf
 service cups restart
 service samba restart | service smbd restart >/dev/null 2>&1
 }
