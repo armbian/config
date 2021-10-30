@@ -960,6 +960,7 @@ function jobs ()
 			check_if_installed armbian-${LINUXFAMILY} && PACKAGE_LIST+=" armbian-${LINUXFAMILY}"
 			check_if_installed armbian-${BOARD} && PACKAGE_LIST+=" armbian-${BOARD}"
 			check_if_installed armbian-${DISTROID} && PACKAGE_LIST+=" armbian-${DISTROID}"
+			check_if_installed armbian-bsp-cli-${BOARD} && PACKAGE_LIST+=" armbian-bsp-cli-${BOARD}"
 			check_if_installed armbian-${DISTROID}-desktop-xfce && PACKAGE_LIST+=" armbian-${DISTROID}-desktop-xfce"
 			check_if_installed armbian-firmware && PACKAGE_LIST+=" armbian-firmware"
 			check_if_installed armbian-firmware-full && PACKAGE_LIST+=" armbian-firmware-full"
