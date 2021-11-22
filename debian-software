@@ -547,9 +547,9 @@ if [ -f /etc/armbian-release ]; then
 	. /etc/armbian-release
 fi
 
-# OMV5 Requirement
-if [[ "$distribution" != "buster" ]]; then
-		dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nOpenMediaVault 5 can only be installed on Debian Buster." 7 52
+# Requirement: OMV5 = Debian Buster, OMV 6 = Debian Bullseye
+if [[ "$distribution" != "buster" ]] && [[ "$distribution" != "bullseye" ]]; then
+		dialog --backtitle "$BACKTITLE" --title "Dependencies not met" --msgbox "\nOpenMediaVault can only be installed on Debian Buster (OMV 5) or Debian Bullseye (OMV 6)." 7 52
 		sleep 5
 		exit 1
 fi
