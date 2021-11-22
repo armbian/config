@@ -49,7 +49,7 @@
 # install_Fail2BanDovecot
 # install_Fail2BanRulesDovecot
 # install_ISPConfig
-
+# install_yggdrasil
 
 
 
@@ -199,13 +199,16 @@ function check_status
 	else
 		MAYAN_STATUS="off"
 	fi
-
 	LIST+=( "Mayan EDMS" "Electronic vault for your documents" "$MAYAN_STATUS")
 
 	# ISPconfig
 	alive_port "SMTP mail, IMAP, POP3 & LAMP/LEMP web server" "8080" "ssl"
 	ISPCONFIG_STATUS="$([[ -d /usr/local/ispconfig ]] && echo "on" || echo "off" )"
 	LIST+=( "ISPConfig" "$DESCRIPTION" "$ISPCONFIG_STATUS" )
+
+	# Yggdrasil
+	YGGDRASIL_STATUS="$((check_if_installed yggdrasil) && echo "on" || echo "off" )"
+	LIST+=( "Yggdrasil" "Free mesh encrypted network" "$YGGDRASIL_STATUS")
 
 	# PHPmyadmin
 #   TODO: fix phpmyadmin installer before uncommenting this section
@@ -1554,6 +1557,15 @@ fi
 
 
 
+install_yggdrasil ()
+{
+curl -fsSL "https://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/key.txt" | apt-key add -qq - > /dev/null 2>&1
+echo 'deb http://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/ debian yggdrasil' > \
+	/etc/apt/sources.list.d/yggdrasil.list
+debconf-apt-progress -- apt-get update
+debconf-apt-progress -- apt-get install -y -qq yggdrasil
+systemctl enable --now yggdrasil
+}
 
 
 #
@@ -1767,6 +1779,11 @@ if ! is_package_manager_running; then
 			fi
 			curl -fsSL https://get.mayan-edms.com | bash
 			selection=${selection//Mayan/}
+		fi
+
+		if [[ "$selection" == *Yggdrasil* && "$YGGDRASIL_STATUS" != "on" ]]; then
+			install_yggdrasil
+			selection=${selection//Yggdrasil/}
 		fi
 
 		i=$[$i+1]
