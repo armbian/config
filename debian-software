@@ -745,6 +745,16 @@ while read i; do
         [[ $i == *Armbian_* || $i == *gcc-linaro-* || $i == *tar.lz4 ]] && transmission-remote -n 'transmission:transmission' -t $(echo "$i" | awk '{print $1}';) --remove-and-delete
 done < ${TEMP_DIR}/torrent-tmp/active.torrents
 # remove temporally files and direcotories
+# prepare to serve files via www as well
+#WEBROOT="/var/www/html/dl/"
+#TORRENT="/var/lib/transmission-daemon/downloads/"
+#mkdir -p ${WEBROOT}
+#find ${WEBROOT} -type l -delete
+#curl -sq http://redirect.armbian.com/dl_map | jq -Mr '.' |  tr -d \"," " | sort | cut -d":" -f2 | tail -n+3 > test.txt
+#cat test.txt | cut -d"/" -f1,2 | uniq | xargs -n1 -i{} mkdir -p "${WEBROOT}{}"
+#mkdir -p ${WEBROOT}_rootfs ${WEBROOT}_toolchain
+#cat test.txt | grep ".xz$" | awk -F "/" '{print "'$TORRENT'"$3 " '$WEBROOT'"$1"/"$2"/"$3}' | xargs -I% -n 2 ln -sf
+#rsync -aq --delete --exclude="*.xz" --exclude="nightly" rsync://mirrors.dotsrc.org/armbian-dl/ ${WEBROOT}
 EOF
 chmod +x /etc/cron.daily/seed-armbian-torrent
 /etc/cron.daily/seed-armbian-torrent &
