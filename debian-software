@@ -750,7 +750,7 @@ done < ${TEMP_DIR}/torrent-tmp/active.torrents
 #TORRENT="/var/lib/transmission-daemon/downloads/"
 #mkdir -p ${WEBROOT}
 #find ${WEBROOT} -type l -delete
-#curl -sq http://redirect.armbian.com/dl_map | jq -Mr '.' |  tr -d \"," " | sort | cut -d":" -f2 | tail -n+3 > test.txt
+#curl -sq http://redirect.armbian.com/dl_map | jq -Mr '.' |  tr -d \"," " | grep -v nightly | sort | cut -d":" -f2 | tail -n+3 > test.txt
 #cat test.txt | cut -d"/" -f1,2 | uniq | xargs -n1 -i{} mkdir -p "${WEBROOT}{}"
 #mkdir -p ${WEBROOT}_rootfs ${WEBROOT}_toolchain
 #cat test.txt | grep ".xz$" | awk -F "/" '{print "'$TORRENT'"$3 " '$WEBROOT'"$1"/"$2"/"$3}' | xargs -I% -n 2 ln -sf
