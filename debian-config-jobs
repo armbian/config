@@ -513,7 +513,7 @@ function jobs ()
 				rm -f /etc/network/interfaces.d/armbian.ap.nat
 				rm -f /etc/network/interfaces.d/armbian.ap.bridge
 				service networking restart
-				service network-manager restart
+				service NetworkManager restart
 				{ for ((i = 0 ; i <= 100 ; i+=20)); do sleep 1; echo $i; done } | dialog --title " Initializing wireless adapters " --colors --gauge "" 5 50 0
 
 				# start with basic config
@@ -522,7 +522,7 @@ function jobs ()
 				if grep -q "^## IEEE 802.11n" /etc/hostapd.conf; then sed '/## IEEE 802.11n/,/^## IEEE 802.11n/ s/.*/#&/' -i /etc/hostapd.conf; fi
 				sed -i "s/^channel=.*/channel=5/" /etc/hostapd.conf
 
-				service network-manager reload
+				service NetworkManager reload
 				# change special adapters to AP mode
 				wlan_exceptions "on"
 				# check for WLAN interfaces
@@ -535,7 +535,7 @@ function jobs ()
 					echo "[keyfile]" > /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 					echo "unmanaged-devices=interface-name:$WIRELESS_ADAPTER" >> /etc/NetworkManager/conf.d/10-ignore-interfaces.conf
 				fi
-				service network-manager reload
+				service NetworkManager reload
 				# display dialog
 				dialog --colors --backtitle "$BACKTITLE" --title "Please wait" --infobox \
 				"\nWireless adapter: \Z1${WIRELESS_ADAPTER}\Z0\n\nProbing nl80211 hostapd driver compatibility." 7 50
