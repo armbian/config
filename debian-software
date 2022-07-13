@@ -1569,9 +1569,11 @@ fi
 
 install_yggdrasil ()
 {
-curl -fsSL "https://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/key.txt" | apt-key add -qq - > /dev/null 2>&1
-echo 'deb http://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/ debian yggdrasil' > \
-	/etc/apt/sources.list.d/yggdrasil.list
+curl -fsSL "https://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/key.txt" \
+	| gpg --dearmor - \
+	| sudo tee /usr/share/keyrings/yggdrasil.gpg > /dev/null
+echo 'deb [signed-by=/usr/share/keyrings/yggdrasil.gpg] http://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/ debian yggdrasil' \
+	> /etc/apt/sources.list.d/yggdrasil.list
 debconf-apt-progress -- apt-get update
 debconf-apt-progress -- apt-get install -y -qq yggdrasil
 systemctl enable --now yggdrasil
