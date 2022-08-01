@@ -25,7 +25,6 @@
 # install_urbackup
 # install_transmission
 # install_transmission_seed_armbian_torrents
-# install_hassio
 # install_openhab
 # install_syncthing
 # install_plex_media_server
@@ -763,41 +762,6 @@ chmod +x /etc/cron.daily/seed-armbian-torrent
 
 
 
-install_hassio ()
-{
-#
-# Install Home assistant smart home suite hass.io / Docker instance by using official installer
-#
-
-local arch=$(dpkg --print-architecture)
-
-case $arch in
-	armhf)
-		local machine=raspberrypi2
-	;;
-	arm64)
-		local machine=raspberrypi4-64
-	;;
-	amd64)
-		local machine=intel-nuc
-	;;
-	*)
-		exit 1
-	;;
-esac
-
-if [ $? == 0 ]; then
-
-	install_docker
-	debconf-apt-progress -- apt-get install -y apparmor-utils apt-transport-https avahi-daemon ca-certificates \
-	dbus jq network-manager socat software-properties-common
-	curl -sL "https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh" | \
-	bash -s -- -m  ${machine}
-	dialog --backtitle "$BACKTITLE" --title "Please wait" \
-	--msgbox "\nIt can take several minutes before Home Assistant UI becomes available! " 7 75
-
-fi
-}
 
 
 
