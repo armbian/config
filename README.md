@@ -64,10 +64,12 @@ Login as root and type:
 
 **Run this utility on 3rd party Debian based distributions**
 
-	echo "deb [arch=arm64] http://apt.armbian.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/armbian.list
-	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 9F0E78D5
-	apt update
-	apt install armbian-config
+        sudo wget https://apt.armbian.com/armbian.key -O key
+        sudo gpg --dearmor < key | sudo tee /usr/share/keyrings/armbian.gpg > /dev/null
+        sudo chmod go+r /usr/share/keyrings/armbian.gpg
+        sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/armbian.gpg] http://apt.armbian.com $(lsb_release -cs) main  $(lsb_release -cs)-utils  $(lsb_release -cs)-desktop" | sudo tee /etc/apt/sources.list.d/armbian.list
+        apt update
+        apt install armbian-config
 
 Development version:
 
