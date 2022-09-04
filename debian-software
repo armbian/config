@@ -639,10 +639,6 @@ fi
 install_docker ()
 {
 case $distribution in
-	focal)
-		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker.io
-	;;
 	jammy)
 		curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
