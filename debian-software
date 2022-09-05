@@ -638,17 +638,26 @@ fi
 
 install_docker ()
 {
-curl -fsSL "https://download.docker.com/linux/debian/gpg" | apt-key add -qq - > /dev/null 2>&1
-debconf-apt-progress -- apt-get update
-if [[ $distribution == hirsute || $distribution == focal || $distribution == bionic ]]; then
-echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu focal stable" > \
-/etc/apt/sources.list.d/docker.list
-debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker.io
-else
-echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/debian buster stable" >\
-/etc/apt/sources.list.d/docker.list
-debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
-fi
+case $distribution in
+	jammy)
+		curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+			> /etc/apt/sources.list.d/docker.list
+		debconf-apt-progress -- apt-get update
+		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
+	;;
+	bullseye|buster)
+		curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > \
+			/etc/apt/sources.list.d/docker.list
+		debconf-apt-progress -- apt-get update
+		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
+	;;
+	*)
+		debconf-apt-progress -- apt-get update
+		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker.io
+	;;
+esac
 }
 
 
