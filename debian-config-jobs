@@ -1416,7 +1416,7 @@ function jobs ()
 			"\nYou are switching to an untested auto-build repository which might break your system.\n\nContinue?" 10 48
 
 			if [[ $? = 0 || -n $scripted ]]; then
-				sed -i 's/^deb http:\/\/[^ ]*/deb http:\/\/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
+				sed -i 's/http:\/\/[^ ]*/http:\/\/beta.armbian.com/' /etc/apt/sources.list.d/armbian.list
 				reload_bsp $branch
 			fi
 		fi
@@ -1434,7 +1434,7 @@ function jobs ()
 			"\nYou are switching to a stable repository where you will receive future updates.\n\nContinue?" 9 44
 
 			if [[ $? = 0 || -n $scripted ]]; then
-				sed -i 's/^deb http:\/\/beta/deb http:\/\/apt/' /etc/apt/sources.list.d/armbian.list
+				sed -i 's/http:\/\/[^ ]*/http:\/\/apt.armbian.com/' /etc/apt/sources.list.d/armbian.list
 				reload_bsp $branch
 			fi
 		fi
