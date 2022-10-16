@@ -919,6 +919,10 @@ function jobs ()
 			dialog --title " Update " --backtitle "$BACKTITLE" --no-label "No" --yesno "\nDo you want to update board firmware?" 7 41
 			fi
 			if [[ $? -eq 0 ]]; then
+
+				# unfreeze packages
+				apt-mark showhold | egrep "linux|armbian" | xargs sudo apt-mark unhold
+
 				debconf-apt-progress -- apt --fix-broken -y install
 				debconf-apt-progress -- apt-get -o Acquire::CompressionTypes::Order::=gz -o Acquire::http::No-Cache=true -o Acquire::BrokenProxy=true -o Acquire::http::Pipeline-Depth=0 update
 				debconf-apt-progress -- apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y upgrade

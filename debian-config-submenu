@@ -82,7 +82,7 @@ while true; do
 	[[ -z ${mark} ]] && [[ -f /etc/apt/sources.list.d/armbian.list ]] && LIST+=( "Other" "Switch to other kernels" )
 
 	LIST+=( "SSH" "Reconfigure SSH daemon" )
-	LIST+=( "Firmware" "Run apt update & apt upgrade" )
+	LIST+=( "Firmware" "Update all packages and firmware" )
 
 	if [[ "$SHELL" != *bash ]]; then
 		LIST+=( "BASH" "Revert to stock BASH shell" )
