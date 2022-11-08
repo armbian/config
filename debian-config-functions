@@ -506,7 +506,8 @@ function other_kernel_version ()
 					[[ -n $(apt-cache search --names-only linux-u-boot-${BOARD}-${UPGRADE_UBOOT}) ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UPGRADE_UBOOT}"
 				fi
 
-				PACKAGE_LIST=$PACKAGE_LIST" $TARGET_VERSION_DTB"
+				[[ -n $(apt-cache search --names-only ${TARGET_VERSION_DTB}) ]] && PACKAGE_LIST=$PACKAGE_LIST" ${TARGET_VERSION_DTB}"
+
 				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
 				debconf-apt-progress -- apt -o Dpkg::Options::="--force-confold" --force-yes --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST
 
@@ -525,12 +526,14 @@ function other_kernel_version ()
 					debconf-apt-progress -- apt -o Dpkg::Options::="--force-confold" --force-yes -y -qq --allow-downgrades --no-install-recommends install $PACKAGE_LIST
 					if [[ $? = 0 ]]; then
 						# update boot loader
-						[[ -f /usr/lib/u-boot/platform_install.sh ]] && source /usr/lib/u-boot/platform_install.sh
-						#recognize_root
-						root_uuid=$(sed -e 's/^.*root=//' -e 's/ .*$//' < /proc/cmdline)
-						root_partition=$(blkid | tr -d '":' | grep "${root_uuid}" | awk '{print $1}')
-						root_partition_device="${root_partition::-2}"
-						write_uboot_platform "$DIR" "${root_partition_device}"
+						if [[ -f /usr/lib/u-boot/platform_install.sh ]]; then
+							source /usr/lib/u-boot/platform_install.sh
+							#recognize_root
+							root_uuid=$(sed -e 's/^.*root=//' -e 's/ .*$//' < /proc/cmdline)
+							root_partition=$(blkid | tr -d '":' | grep "${root_uuid}" | awk '{print $1}')
+							root_partition_device="${root_partition::-2}"
+							write_uboot_platform "$DIR" "${root_partition_device}"
+						fi
 						reboot
 					fi
 				else
