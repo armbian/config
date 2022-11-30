@@ -72,7 +72,7 @@ if [[ $1 == "--help" ]]; then
 	echo ""
 	echo "Examples:"
 	echo ""
-	echo "Install headers:					${BASH_SOURCE[0]} main=Sytem selection=Headers"
+	echo "Install headers:					${BASH_SOURCE[0]} main=System selection=Headers"
 	echo "Update, upgrade and reboot:				${BASH_SOURCE[0]} main=System selection=Firmware"
 	echo "Change to ZSH:						${BASH_SOURCE[0]} main=System selection=ZSH"
 	echo "Change to BASH: 					${BASH_SOURCE[0]} main=System selection=BASH"
