@@ -501,12 +501,16 @@ function other_kernel_version ()
 				TARGET_VERSION_DTB=${TARGET_VERSION/image/dtb}
 				TARGET_VERSION_PRE=$(echo $TARGET_VERSION_DTB | cut -f1 -d"=")
 				TARGET_VERSION_SUB=$(echo $TARGET_VERSION_DTB | cut -f2 -d"=")
+				
+				# check for DTB
 				if [[ -n $(apt-cache madison "$TARGET_VERSION_PRE" | grep $TARGET_VERSION_SUB ) ]]; then
-					# installs u-boot only if exits
-					[[ -n $(apt-cache search --names-only linux-u-boot-${BOARD}-${UPGRADE_UBOOT}) ]] && PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UPGRADE_UBOOT}"
+					PACKAGE_LIST=$PACKAGE_LIST" ${TARGET_VERSION_DTB}"
 				fi
 
-				[[ -n $(apt-cache search --names-only ${TARGET_VERSION_DTB}) ]] && PACKAGE_LIST=$PACKAGE_LIST" ${TARGET_VERSION_DTB}"
+				# check for u-boot
+				if [[ -n $(apt-cache madison "linux-u-boot-${BOARD}-${UPGRADE_UBOOT}" | grep $TARGET_VERSION_SUB ) ]]; then
+					PACKAGE_LIST=$PACKAGE_LIST" linux-u-boot-${BOARD}-${UPGRADE_UBOOT}"
+				fi
 
 				echo $PACKAGE_LIST > /tmp/switch_kernel.log 2>&1
 				debconf-apt-progress -- apt -o Dpkg::Options::="--force-confold" --force-yes --download-only --allow-downgrades -y --no-install-recommends install $PACKAGE_LIST
