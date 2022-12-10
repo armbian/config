@@ -640,14 +640,18 @@ install_docker ()
 {
 case $distribution in
 	jammy)
-		curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+		mkdir -p /etc/apt/keyrings
+		curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+			| gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
 			> /etc/apt/sources.list.d/docker.list
 		debconf-apt-progress -- apt-get update
 		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
 	;;
 	bullseye|buster)
-		curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+		mkdir -p /etc/apt/keyrings
+		curl -fsSL https://download.docker.com/linux/debian/gpg \
+			| gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > \
 			/etc/apt/sources.list.d/docker.list
 		debconf-apt-progress -- apt-get update
@@ -1543,8 +1547,7 @@ fi
 install_yggdrasil ()
 {
 curl -fsSL "https://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/key.txt" \
-	| gpg --dearmor - \
-	| sudo tee /usr/share/keyrings/yggdrasil.gpg > /dev/null
+	| gpg --dearmor -o /usr/share/keyrings/yggdrasil.gpg
 echo 'deb [signed-by=/usr/share/keyrings/yggdrasil.gpg] http://neilalexander.s3.dualstack.eu-west-2.amazonaws.com/deb/ debian yggdrasil' \
 	> /etc/apt/sources.list.d/yggdrasil.list
 debconf-apt-progress -- apt-get update
