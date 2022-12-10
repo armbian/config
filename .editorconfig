@@ -1,0 +1,34 @@
+# EditorConfig is awesome: http://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = tab
+indent_size = 4
+trim_trailing_whitespace = false
+insert_final_newline = true
+
+[*.md]
+indent_style = space
+insert_final_newline = false
+
+[*.json]
+indent_style = space
+trim_trailing_whitespace = false
+insert_final_newline = true
+
+# Custom Armbian formatting for bash sources and configuration
+[*.{sh,inc,conf,eos,wip,tvb,csc}]
+indent_style = tab
+indent_size = 4
+shell_variant = bash
+binary_next_line = false
+switch_case_indent = true
+space_redirects = true
+keep_padding = false
+function_next_line = false
+
+
