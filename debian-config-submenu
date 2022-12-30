@@ -180,6 +180,7 @@ while true; do
 	LIST+=( "IP" "Select dynamic or edit static IP address" )
 
 	# hostapd
+	sudo apt-get -y -qq install hostapd > /dev/null
 	HOSTAPDBRIDGE=$(cat /etc/hostapd.conf 2> /dev/null | grep -w "^bridge=br0")
 	HOSTAPDSTATUS=$(service hostapd status 2> /dev/null | grep -w active | grep -w running)
 	if [[ -n "$HOSTAPDSTATUS" ]]; then
