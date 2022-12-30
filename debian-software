@@ -638,30 +638,27 @@ fi
 
 install_docker ()
 {
-case $distribution in
-	jammy)
-		mkdir -p /etc/apt/keyrings
+mkdir -p /etc/apt/keyrings
+
+case $family in
+	Ubuntu)
+		# https://docs.docker.com/engine/install/ubuntu/
 		curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
 			| gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
 			> /etc/apt/sources.list.d/docker.list
-		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
 	;;
-	bullseye|buster)
-		mkdir -p /etc/apt/keyrings
+	Debian)
+		# https://docs.docker.com/engine/install/debian/
 		curl -fsSL https://download.docker.com/linux/debian/gpg \
 			| gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > \
-			/etc/apt/sources.list.d/docker.list
-		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
-	;;
-	*)
-		debconf-apt-progress -- apt-get update
-		debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker.io
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+			> /etc/apt/sources.list.d/docker.list
 	;;
 esac
+
+debconf-apt-progress -- apt-get update
+debconf-apt-progress -- apt-get install -y -qq --no-install-recommends docker-ce docker-ce-cli containerd.io
 }
 
 
