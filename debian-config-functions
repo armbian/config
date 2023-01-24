@@ -58,7 +58,7 @@ function main(){
 	OVERLAYDIR="/boot/dtb/overlay";
 	[[ "$LINUXFAMILY" == "sunxi64" ]] && OVERLAYDIR="/boot/dtb/allwinner/overlay";
 	[[ "$LINUXFAMILY" == "meson64" ]] && OVERLAYDIR="/boot/dtb/amlogic/overlay";
-	[[ "$LINUXFAMILY" == "rockchip64" || "$LINUXFAMILY" == "rk3399" ]] && OVERLAYDIR="/boot/dtb/rockchip/overlay";
+	[[ "$LINUXFAMILY" == "rockchip64" || "$LINUXFAMILY" == "rk3399" || "$LINUXFAMILY" == "rockchip-rk3588" ]] && OVERLAYDIR="/boot/dtb/rockchip/overlay";
 	# detect desktop
 	check_desktop
 	dialog --backtitle "$BACKTITLE" --title "Please wait" --infobox "\nLoading Armbian configuration utility ... " 5 45
