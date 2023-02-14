@@ -1190,6 +1190,13 @@ function jobs ()
 			j=0
 			DIALOG_CANCEL=1
 			DIALOG_ESC=255
+
+			def_overlays=$(ls -1 ${OVERLAYDIR}/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g')
+			if [ $BOARDFAMILY == "rockchip-rk3588" ] && [ $BRANCH == "legacy" ]; then
+        		builtin_overlays=$(ls -1 ${OVERLAYDIR}/*.dtbo | grep -v ${overlay_prefix} | sed 's#^'${OVERLAYDIR}'/##' | sed 's/.dtbo//g')
+        		def_overlays="$def_overlays"'\n'"$builtin_overlays"
+			fi
+
 			while read line
 			do
 				STATUS=$([[ -n $(cat /boot/armbianEnv.txt | grep overlays | grep -w ${line}) ]] && echo "on")
@@ -1197,7 +1204,7 @@ function jobs ()
 				MOTD+=( "$line" "$DESC" "$STATUS")
 				LINES[ $j ]=$line
 				(( j++ ))
-			done < <(ls -1 ${OVERLAYDIR}/${overlay_prefix}*.dtbo | sed 's/^.*\('${overlay_prefix}'.*\)/\1/g' | sed 's/'${overlay_prefix}'-//g' | sed 's/.dtbo//g' )
+			done < <(echo -e $def_overlays | tr " " "\n" )
 
 			exec 3>&1
 				selection=$(dialog --backtitle "$BACKTITLE" --colors --title "Toggle hardware configuration" --clear --cancel-label \
