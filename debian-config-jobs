@@ -1221,7 +1221,7 @@ function jobs ()
 					CHANGES="true"
 					newoverlays="$(echo "$selection" | sed "s|[^ ]* *|&|g")"
 					sed -i "s/^overlays=.*/overlays=$newoverlays/" /boot/armbianEnv.txt
-					if ! grep -q "overlays" /boot/armbianEnv.txt; then echo "overlays=$newoverlays" >> /boot/armbianEnv.txt; fi
+					if ! grep -q "^overlays" /boot/armbianEnv.txt; then echo "overlays=$newoverlays" >> /boot/armbianEnv.txt; fi
 					if [[ -z $newoverlays ]]; then sed -i "/^overlays/d" /boot/armbianEnv.txt; fi
 					sync
 				;;
