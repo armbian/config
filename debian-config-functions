@@ -364,7 +364,7 @@ function reload_bsp(){
 
 	# deal with exceptions
 	if [[ $BRANCH == current || $BRANCH == dev || $BRANCH == edge ]]; then
-		[[ ${LINUXFAMILY} == rk3399 ]] && LINUXFAMILY=rockchip64
+		[[ ${LINUXFAMILY} == rk3399 || ${LINUXFAMILY} == rk35xx ]] && LINUXFAMILY=rockchip64
 	fi
 
 	clear
