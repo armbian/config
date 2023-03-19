@@ -1146,7 +1146,7 @@ function jobs ()
 			service avahi-daemon stop
 			debconf-apt-progress -- apt-get -y purge avahi-daemon
 		else
-			debconf-apt-progress -- apt-get -y install avahi-daemon
+			debconf-apt-progress -- apt-get -y install avahi-daemon libnss-mdns
 			[[ -f /usr/share/doc/avahi-daemon/examples/sftp-ssh.service ]] && cp /usr/share/doc/avahi-daemon/examples/sftp-ssh.service /etc/avahi/services/
 			[[ -f /usr/share/doc/avahi-daemon/examples/ssh.service ]] && cp /usr/share/doc/avahi-daemon/examples/ssh.service /etc/avahi/services/
 			service avahi-daemon restart
