@@ -112,11 +112,6 @@ function check_status
 	alive_port "Personal cloud @syncthing.net" "8384"
 	LIST+=( "Syncthing" "$DESCRIPTION" "$SYNCTHING_STATUS" )
 
-	# Hass.io
-	HASS_STATUS="$([[ -f /etc/hassio.json ]] && echo "on" || echo "off" )"
-	alive_port "Home assistant smarthome suite" "8123"
-	LIST+=( "Hassio" "$DESCRIPTION" "$HASS_STATUS" )
-
 	# OpenHab
 	OPENHAB_STATUS="$([[ -f /etc/default/openhab ]] && echo "on" || echo "off" )"
 	DESCRIPTION="Openhab smarthome suite"
@@ -1684,11 +1679,6 @@ if ! is_package_manager_running; then
 		if [[ "$selection" == *Syncthing* && "$SYNCTHING_STATUS" != "on" ]]; then
 			install_syncthing
 			selection=${selection//Syncthing/}
-		fi
-
-		if [[ "$selection" == *Hassio* && "$HASS_STATUS" != "on" ]]; then
-			install_hassio
-			selection=${selection//Hassio/}
 		fi
 
 		if [[ "$selection" == *OpenHAB && "$OPENHAB_STATUS" != "on" ]]; then
