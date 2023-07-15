@@ -1590,7 +1590,8 @@ function jobs ()
 			fi
 		done
 		## End search for current dtb in use
-		
+		DTS_EDITOR=${EDITOR:-nano}
+
 		dtbfile="${used_dtb}"
 		tmpdir="$(mktemp -d || exit 1)"
 		chmod 700 "${tmpdir}"
@@ -1602,7 +1603,7 @@ function jobs ()
 		while [[ ${dts_edit} != 0 ]]; do
 			# Edit dts
 			oldtime=`stat -c %Y "${dtsfile}"`
-			nano "${dtsfile}"
+			${DTS_EDITOR} "${dtsfile}"
 
 			# Check if modified
 			if [[ `stat -c %Y "${dtsfile}"` -gt ${oldtime} ]] ; then
