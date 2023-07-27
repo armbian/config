@@ -1533,64 +1533,69 @@ function jobs ()
 
 
 		## Start search for current dtb in use
-		# read compatible field of the device tree
-		comp=$(sed 's/\x0/,/g' /proc/device-tree/compatible)
-
-		# split strings using ','
-		OLDIFS=$IFS
-		IFS=', ' read -r -a array <<< "${comp}"
-		IFS=OLDIFS
-
-		for element in "${array[@]}"
-		do
-			if [[ $element == *"rockchip"* ]]; then
-				soc_manufacturer="rockchip"
-				break
-			elif [[ $element == *"amlogic"* ]]; then
-				soc_manufacturer="amlogic"
-				break
-			elif [[ $element == *"allwinner"* ]]; then
-				soc_manufacturer="allwinner"
-				break
-			elif [[ $element == *"freescale"* ]]; then
-				soc_manufacturer="freescale"
-				break
-			elif [[ $element == *"nexell"* ]]; then
-				soc_manufacturer="nexell"
-				break
-			elif [[ $element == *"marvell"* ]]; then
-				soc_manufacturer="marvell"
-				break
-			elif [[ $element == *"samsung"* ]]; then
-				soc_manufacturer="samsung"
-				break
-			fi
-		done
-		# thanks to compatible property convention: https://elinux.org/Device_Tree_Usage#Understanding_the_compatible_Property
-		board_name="${array[1]}"
-
-		echo "SoC manufacturer: ${soc_manufacturer}"
-		echo "board name: ${board_name}"
-
-		#  check dtbs folder
-		if [[ -d "/boot/dtb/${soc_manufacturer}" ]]; then
-			dtb_path="/boot/dtb/${soc_manufacturer}"
+		# look ii extlinux.conf is available
+		if test -f "/boot/extlinux/extlinux.conf"
+			used_dtb = `sed -n 's/^.*fdt //p' /boot/extlinux/extlinux.conf`
 		else
-			dtb_path="/boot/dtb"
-		fi
+			# read compatible field of the device tree
+			comp=$(sed 's/\x0/,/g' /proc/device-tree/compatible)
 
-		#~ echo "dtb path: ${dtb_path}"
+			# split strings using ','
+			OLDIFS=$IFS
+			IFS=', ' read -r -a array <<< "${comp}"
+			IFS=OLDIFS
 
-		# search the used dtb in the dtbs folder
-		for dtb in ${dtb_path}/*.dtb
-		do
-			if [[ $dtb == *"${board_name}"* ]]; then
-				used_dtb=$dtb
-				break
+			for element in "${array[@]}"
+			do
+				if [[ $element == *"rockchip"* ]]; then
+					soc_manufacturer="rockchip"
+					break
+				elif [[ $element == *"amlogic"* ]]; then
+					soc_manufacturer="amlogic"
+					break
+				elif [[ $element == *"allwinner"* ]]; then
+					soc_manufacturer="allwinner"
+					break
+				elif [[ $element == *"freescale"* ]]; then
+					soc_manufacturer="freescale"
+					break
+				elif [[ $element == *"nexell"* ]]; then
+					soc_manufacturer="nexell"
+					break
+				elif [[ $element == *"marvell"* ]]; then
+					soc_manufacturer="marvell"
+					break
+				elif [[ $element == *"samsung"* ]]; then
+					soc_manufacturer="samsung"
+					break
+				fi
+			done
+			# thanks to compatible property convention: https://elinux.org/Device_Tree_Usage#Understanding_the_compatible_Property
+			board_name="${array[1]}"
+
+			echo "SoC manufacturer: ${soc_manufacturer}"
+			echo "board name: ${board_name}"
+
+			#  check dtbs folder
+			if [[ -d "/boot/dtb/${soc_manufacturer}" ]]; then
+				dtb_path="/boot/dtb/${soc_manufacturer}"
+			else
+				dtb_path="/boot/dtb"
 			fi
-		done
-		## End search for current dtb in use
-		DTS_EDITOR=${EDITOR:-nano}
+
+			#~ echo "dtb path: ${dtb_path}"
+
+			# search the used dtb in the dtbs folder
+			for dtb in ${dtb_path}/*.dtb
+			do
+				if [[ $dtb == *"${board_name}"* ]]; then
+					used_dtb=$dtb
+					break
+				fi
+			done
+			## End search for current dtb in use
+			DTS_EDITOR=${EDITOR:-nano}
+		fi
 
 		dtbfile="${used_dtb}"
 		tmpdir="$(mktemp -d || exit 1)"
