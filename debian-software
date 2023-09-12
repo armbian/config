@@ -331,7 +331,7 @@ alive_port ()
 #
 # Displays URL to the service $1 on port $2 or just that is active if $3 = boolean $4 = path
 #
-if [[ -n $(netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ".'$2'"') ]]; then
+if [[ -n $(ss -lntH src :$2) ]]; then
 	if [[ $3 == boolean ]]; then
 		DESCRIPTION="$1 is \Z1active\Z0";
 	elif [[ $3 == ssl ]]; then
