@@ -1121,19 +1121,31 @@ function jobs ()
 		[[ $(grep -c '^processor' /proc/cpuinfo) -gt 4 ]] && POLICY="policy4"
 		[[ ! -d /sys/devices/system/cpu/cpufreq/policy4 ]] && POLICY="policy0"
 		[[ -d /sys/devices/system/cpu/cpufreq/policy0 && -d /sys/devices/system/cpu/cpufreq/policy2 ]] && POLICY="policy2"
-		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/$POLICY/cpuinfo_min_freq 2>/dev/null)" "Select minimum CPU speed"
-		MIN_SPEED=$PARAMETER
-		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/$POLICY/cpuinfo_max_freq 2>/dev/null)" "Select maximum CPU speed" "$PARAMETER"
-		MAX_SPEED=$PARAMETER
-		generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_governors)" "Select CPU governor"
-		GOVERNOR=$PARAMETER
+		if [[ -n $(grep -w "ENABLE=true" /etc/default/cpufrequtils) ]]; then
+		   generic_select "true false" "Set ENABLE CPU frequency utilities."
+		else
+		   generic_select "false true" "Set ENABLE CPU frequency utilities."
+		fi
+		ENABLE=$PARAMETER
+		if [[ $ENABLE == true ]]; then
+			dialog --title " Warning: DEPRECATED. THIS MAY NOT WORK ON SOME BOARDS "
+			generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/$POLICY/cpuinfo_min_freq 2>/dev/null)" "Select minimum CPU speed"
+			MIN_SPEED=$PARAMETER
+			generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/$POLICY/cpuinfo_max_freq 2>/dev/null)" "Select maximum CPU speed" "$PARAMETER"
+			MAX_SPEED=$PARAMETER
+			generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_governors)" "Select CPU governor"
+			GOVERNOR=$PARAMETER
+		fi
 		if [[ -n $MIN_SPEED && -n $MAX_SPEED && -n $GOVERNOR ]]; then
-			dialog --colors --title " Apply and save changes " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
-			"\nCPU frequency will be within \Z1$(($MIN_SPEED / 1000))\Z0 and \Z1$(($MAX_SPEED / 1000)) MHz\Z0. The governor \Z1$GOVERNOR\Z0 will decide which speed to use within this range." 9 58
 			if [[ $? -eq 0 ]]; then
-				sed -i "s/MIN_SPEED=.*/MIN_SPEED=$MIN_SPEED/" /etc/default/cpufrequtils
-				sed -i "s/MAX_SPEED=.*/MAX_SPEED=$MAX_SPEED/" /etc/default/cpufrequtils
-				sed -i "s/GOVERNOR=.*/GOVERNOR=$GOVERNOR/" /etc/default/cpufrequtils
+				sed -i "s/ENABLE=.*/ENABLE=$ENABLE/" /etc/default/cpufrequtils	
+				if [[ $ENABLE == true ]]; then		
+					dialog --colors --title " Apply and save changes " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
+					"\nWARNING: cpufrequtils is deprecated.\nThis may not work on some boards.\n\nCPU frequency will be within \Z1$(($MIN_SPEED / 1000))\Z0 and \Z1$(($MAX_SPEED / 1000)) MHz\Z0. The governor \Z1$GOVERNOR\Z0 will decide which speed to use within this range." 11 58
+					sed -i "s/MIN_SPEED=.*/MIN_SPEED=$MIN_SPEED/" /etc/default/cpufrequtils
+					sed -i "s/MAX_SPEED=.*/MAX_SPEED=$MAX_SPEED/" /etc/default/cpufrequtils
+					sed -i "s/GOVERNOR=.*/GOVERNOR=$GOVERNOR/" /etc/default/cpufrequtils
+				fi
 				systemctl restart cpufrequtils
 				sync
 			fi
@@ -1687,3 +1699,4 @@ function jobs ()
 
 [[ -n $scripted ]] && exit
 }
+

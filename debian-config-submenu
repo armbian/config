@@ -60,7 +60,7 @@ while true; do
 	[[ -f /boot/boot.ini ]] && LIST+=( "Bootscript" "Edit boot script" )
 
 	if [[ -f /etc/default/cpufrequtils ]]; then
-		LIST+=( "CPU" "Set CPU speed and governor" )
+		LIST+=( "CPU" "Set CPU speed and governor. Deprecated." )
 	fi
 
 	AVAHIDSTATUS=$(service avahi-daemon status 2> /dev/null | grep -w active | grep -w running)
