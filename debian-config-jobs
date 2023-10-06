@@ -1141,7 +1141,7 @@ function jobs ()
 				sed -i "s/ENABLE=.*/ENABLE=$ENABLE/" /etc/default/cpufrequtils	
 				if [[ $ENABLE == true ]]; then		
 					dialog --colors --title " Apply and save changes " --backtitle "$BACKTITLE" --yes-label "OK" --no-label "Cancel" --yesno \
-					"\nWARNING: cpufrequtils is deprecated.\nThis may not work on some boards.\n\nCPU frequency will be within \Z1$(($MIN_SPEED / 1000))\Z0 and \Z1$(($MAX_SPEED / 1000)) MHz\Z0. The governor \Z1$GOVERNOR\Z0 will decide which speed to use within this range." 9 58
+					"\nWARNING: cpufrequtils is deprecated.\nThis may not work on some boards.\n\nCPU frequency will be within \Z1$(($MIN_SPEED / 1000))\Z0 and \Z1$(($MAX_SPEED / 1000)) MHz\Z0. The governor \Z1$GOVERNOR\Z0 will decide which speed to use within this range." 11 58
 					sed -i "s/MIN_SPEED=.*/MIN_SPEED=$MIN_SPEED/" /etc/default/cpufrequtils
 					sed -i "s/MAX_SPEED=.*/MAX_SPEED=$MAX_SPEED/" /etc/default/cpufrequtils
 					sed -i "s/GOVERNOR=.*/GOVERNOR=$GOVERNOR/" /etc/default/cpufrequtils
