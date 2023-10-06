@@ -1122,9 +1122,9 @@ function jobs ()
 		[[ ! -d /sys/devices/system/cpu/cpufreq/policy4 ]] && POLICY="policy0"
 		[[ -d /sys/devices/system/cpu/cpufreq/policy0 && -d /sys/devices/system/cpu/cpufreq/policy2 ]] && POLICY="policy2"
 		if [[ -n $(grep -w "ENABLE=true" /etc/default/cpufrequtils) ]]; then
-		   generic_select "true false" "Toggle ENABLE CPU frequency utilities."
+		   generic_select "true false" "Set ENABLE CPU frequency utilities."
 		else
-		   generic_select "false true" "Toggle ENABLE CPU frequency utilities."
+		   generic_select "false true" "Set ENABLE CPU frequency utilities."
 		fi
 		ENABLE=$PARAMETER
 		if [[ $ENABLE == true ]]; then
