@@ -1127,6 +1127,7 @@ function jobs ()
 		   generic_select "false true" "Set ENABLE CPU frequency utilities."
 		fi
 		ENABLE=$PARAMETER
+		sed -i "s/ENABLE=.*/ENABLE=$ENABLE/" /etc/default/cpufrequtils
 		if [[ $ENABLE == true ]]; then
 			dialog --title " Warning: DEPRECATED. THIS MAY NOT WORK ON SOME BOARDS "
 			generic_select "$(cat /sys/devices/system/cpu/cpufreq/$POLICY/scaling_available_frequencies 2>/dev/null || cat /sys/devices/system/cpu/cpufreq/$POLICY/cpuinfo_min_freq 2>/dev/null)" "Select minimum CPU speed"
