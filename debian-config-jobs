@@ -691,7 +691,9 @@ function jobs ()
 						ifdown $WIRELESS_ADAPTER 2> /dev/null
 						sleep 2
 						ifup $WIRELESS_ADAPTER 2> /dev/null
-						echo "nameserver 8.8.8.8" > /etc/resolvconf/resolv.conf.d/base
+						DNSCONFIGDIR="/etc/resolvconf/resolv.conf.d/"
+						[ -d "$DNSCONFIGDIR" ] || mkdir -p "$DNSCONFIGDIR"
+						echo "nameserver 8.8.8.8" > "$DNSCONFIGDIR"/base
 						[[ "$reboot_module" == true ]] && dialog --backtitle "$BACKTITLE" --title " Warning " --msgbox "\nReboot is required for this adapter to switch to AP mode" 7 61 && reboot
 						# reload services
 						reload-nety "reload"
