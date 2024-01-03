@@ -464,7 +464,6 @@ exitstatus=$?; if [ $exitstatus = 1 ]; then exit 1; fi
 #
 debconf-apt-progress -- apt-get -y install samba samba-common-bin samba-vfs-modules
 useradd $SMBUSER
-echo -ne "$SMBPASS\n$SMBPASS\n" | passwd $SMBUSER >/dev/null 2>&1
 echo -ne "$SMBPASS\n$SMBPASS\n" | smbpasswd -a -s $SMBUSER >/dev/null 2>&1
 service samba stop | service smbd stop >/dev/null 2>&1
 cp /etc/samba/smb.conf /etc/samba/smb.conf.stock
