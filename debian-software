@@ -685,6 +685,15 @@ install_transmission ()
 install_packet "debconf-utils unzip build-essential html2text apt-transport-https" "Downloading dependencies"
 install_packet "transmission-cli transmission-common transmission-daemon" "Install torrent server"
 service transmission-daemon stop
+download_dir="/var/lib/transmission-daemon/"
+download_dir=$(\
+		dialog --no-cancel --title " Change download folder " --backtitle "$BACKTITLE" --inputbox "\nDownload folder\n " 10 50 $download_dir \
+		3>&1 1>&2 2>&3 3>&- \
+		)
+mkdir -p $download_dir
+chown -R debian-transmission:debian-transmission $download_dir
+download_dir=$(echo "$download_dir" | sed 's%/%\\/%g')
+sed 's/"download-dir": ".*/"download-dir": "'$download_dir'",/g' -i /etc/transmission-daemon/settings.json
 local A=(${serverIP//./ })
 local servernetwork="${A[0]}.${A[1]}.*.*"
 sed "s/\"rpc-whitelist\": \"127.0.0.1.*/\"rpc-whitelist\": \"127.0.0.1,$servernetwork\",/" -i /etc/transmission-daemon/settings.json
