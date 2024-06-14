@@ -445,6 +445,7 @@ function other_kernel_version ()
 	[[ ${BOARD} == odroidc2 || ${BOARD} == kvim1 || ${BOARD} == lafrite || ${BOARD} == lepotato || ${BOARD} == nanopik2-s905 ]] && HIDDEN="legacy"
 	[[ ${LINUXFAMILY} == odroidn2 ]] && LINUXFAMILY=meson64
 	[[ ${BOARDFAMILY} == rk3399 ]] && LINUXFAMILY="((current|edge)-rockchip64|legacy-rk3399)"
+	[[ ${LINUXFAMILY} == rk35xx || ${BOARDFAMILY} == rockchip-rk3588 ]] && LINUXFAMILY="((current|edge|collabora)-rockchip-rk3588|vendor-rk35xx|legacy-rk35xx)"
 
 	# check what is available from the repository
 	debconf-apt-progress -- apt-get update
