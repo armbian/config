@@ -30,7 +30,7 @@ while true; do
 	check_desktop
 
 	# check update status of BSP packages
-	local mark=$(apt-mark showhold | egrep "linux|armbian")
+	local mark=$(apt-mark showhold | egrep "linux|armbian-bsp|armbian-firmware|armbian-*-desktop")
 
 	# check if installer is on the system
 	if [[ -f /usr/sbin/armbian-install ]]; then
