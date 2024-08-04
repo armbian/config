@@ -856,6 +856,7 @@ function jobs ()
 	"Keyboard" )
 		dpkg-reconfigure keyboard-configuration
 		setupcon
+		update-initramfs -u
 	;;
 
 	# Change Hostname
